@@ -1,0 +1,15 @@
+Investigation Report 
+=================== 
+ 
+Timestamp: Tue 10/07/2025 11:32:41.39 
+Project Root: C:\Users\morri\Dropbox\Websites\ezcr 
+ 
+Directories: 
+  Total: 19 
+  Existing: 15 
+  Missing: 4 
+ 
+Files: 
+  Total: 19 
+  Existing: 1 
+  Missing: 18 
