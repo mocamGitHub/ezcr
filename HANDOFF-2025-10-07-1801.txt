@@ -1,0 +1,11 @@
+
+│                                                                                                          │
+│   - Added product_images support with database joins                                                     │
+│   - Updated all product queries to include images relation                                               │
+│   - Created ProductCard with primary image display                                                       │
+│   - Enhanced product detail page with image gallery                                                      │
+│   - Implemented CategoryFilter client component                                                          │
+│   - Added URL-based category filtering                                                                   │
+│   - Updated products page with dynamic filtering                                                         │
+│   - Created category seed migration                                                                      │
+│   - Fixed Next.js 15 searchParams await requirement
