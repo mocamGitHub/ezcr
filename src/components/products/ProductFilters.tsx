@@ -60,10 +60,9 @@ export function ProductFilters() {
   const clearFilters = () => {
     const params = new URLSearchParams()
     const category = searchParams.get('category')
-    const query = searchParams.get('q')
 
+    // Only keep category filter
     if (category) params.set('category', category)
-    if (query) params.set('q', query)
 
     setPriceRange([0, 3000])
 
@@ -74,7 +73,8 @@ export function ProductFilters() {
 
   const hasFilters = availableOnly ||
                      Number(searchParams.get('minPrice')) > 0 ||
-                     Number(searchParams.get('maxPrice')) < 3000
+                     Number(searchParams.get('maxPrice')) < 3000 ||
+                     searchParams.get('q')
 
   return (
     <div className="space-y-6 p-6 border rounded-lg bg-background">

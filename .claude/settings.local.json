@@ -30,7 +30,9 @@
       "Bash(cat:*)",
       "Bash(find:*)",
       "Bash(npx supabase:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(npm install:*)",
+      "Bash(npx shadcn@latest add:*)"
     ],
     "deny": [],
     "ask": []

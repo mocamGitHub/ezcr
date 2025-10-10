@@ -13,12 +13,8 @@ interface ProductPageProps {
   }
 }
 
-export async function generateStaticParams() {
-  const products = await getProducts()
-  return products.map((product) => ({
-    slug: product.slug,
-  }))
-}
+// Disable static generation to allow dynamic cookies()
+export const dynamic = 'force-dynamic'
 
 export async function generateMetadata({ params }: ProductPageProps) {
   const product = await getProductBySlug(params.slug)
@@ -103,7 +99,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             {hasDiscount && (
               <div className="absolute top-4 right-4">
                 <Badge className="bg-[#F78309] text-white">
-                  Save {Math.round(((product.compare_at_price! - product.price) / product.compare_at_price!) * 100)}%
+                  Save {Math.round(((product.compare_at_price! - product.base_price) / product.compare_at_price!) * 100)}%
                 </Badge>
               </div>
             )}

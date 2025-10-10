@@ -3,25 +3,42 @@
 import { Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useTransition } from 'react'
+import { useTransition, useState, useEffect, useRef } from 'react'
 
 export function ProductSearch() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isPending, startTransition] = useTransition()
+  const [searchValue, setSearchValue] = useState(searchParams.get('q') || '')
+  const debounceRef = useRef<NodeJS.Timeout>()
 
-  const handleSearch = (value: string) => {
-    const params = new URLSearchParams(searchParams.toString())
+  // Update local state when URL changes
+  useEffect(() => {
+    setSearchValue(searchParams.get('q') || '')
+  }, [searchParams])
 
-    if (value) {
-      params.set('q', value)
-    } else {
-      params.delete('q')
+  const handleChange = (value: string) => {
+    setSearchValue(value)
+
+    // Clear existing timeout
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current)
     }
 
-    startTransition(() => {
-      router.push(`/products?${params.toString()}`)
-    })
+    // Set new timeout for debounced search
+    debounceRef.current = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString())
+
+      if (value) {
+        params.set('q', value)
+      } else {
+        params.delete('q')
+      }
+
+      startTransition(() => {
+        router.push(`/products?${params.toString()}`)
+      })
+    }, 300)
   }
 
   return (
@@ -30,8 +47,8 @@ export function ProductSearch() {
       <Input
         type="search"
         placeholder="Search products..."
-        defaultValue={searchParams.get('q') || ''}
-        onChange={(e) => handleSearch(e.target.value)}
+        value={searchValue}
+        onChange={(e) => handleChange(e.target.value)}
         className="pl-10"
         disabled={isPending}
       />
