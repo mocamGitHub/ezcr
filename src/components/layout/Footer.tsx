@@ -52,6 +52,30 @@ export function Footer() {
           </div>
         </div>
 
+        {/* Trust Badges */}
+        <div className="mt-12 pt-8 border-t">
+          <div className="flex flex-col md:flex-row items-center justify-center gap-8">
+            <div className="flex items-center gap-3">
+              <div className="w-16 h-16 bg-[#0B5394] rounded-full flex items-center justify-center">
+                <span className="text-white text-2xl font-bold">VO</span>
+              </div>
+              <div>
+                <p className="font-semibold">Veteran Owned</p>
+                <p className="text-sm text-muted-foreground">Proudly serving since 1999</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-16 h-16 bg-[#0B5394] rounded-full flex items-center justify-center">
+                <span className="text-white text-xl font-bold">A+</span>
+              </div>
+              <div>
+                <p className="font-semibold">BBB A+ Rating</p>
+                <p className="text-sm text-muted-foreground">Accredited Business</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Bottom Bar */}
         <div className="mt-12 pt-8 border-t text-center text-sm text-muted-foreground">
           <p>&copy; 2025 NEO-DYNE, USA. All rights reserved.</p>
