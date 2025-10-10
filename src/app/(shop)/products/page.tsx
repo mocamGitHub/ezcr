@@ -27,6 +27,10 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     ? categories.find(c => c.slug === categorySlug)
     : null
 
+  // Debug logging
+  console.log('Categories fetched:', categories.length)
+  console.log('Products fetched:', products.length)
+
   return (
     <div>
       {/* Header */}

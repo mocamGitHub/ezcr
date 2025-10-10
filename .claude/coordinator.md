@@ -178,12 +178,36 @@ Project initialization complete. All agent files created. Ready to begin Week 0 
 - ✅ Created CategoryFilter client component with active state
 - ✅ Updated products page to filter by category dynamically
 
-### Next Session
+### CURRENT STATUS (Session End)
 
-- Phase 2 continued: Add search functionality
-- Seed product images in database
-- Add product specifications display on detail pages
-- Implement shopping cart (Phase 3 preview)
+**⚠️ ISSUE TO RESOLVE:** Category buttons not showing on /products page
+- Categories seeded in database (user confirmed)
+- CategoryFilter component created and working
+- getProductCategories() query timing out - likely Supabase RLS or connection issue
+
+**Files Modified This Session:**
+- src/lib/supabase/queries.ts (lines 1-162) - Added ProductImage interface, updated all queries with product_images joins
+- src/components/products/ProductCard.tsx (lines 1-112) - Displays primary image from product_images
+- src/components/products/CategoryFilter.tsx (lines 1-50) - NEW client component for filtering
+- src/app/(shop)/products/page.tsx (lines 1-67) - Added category filtering with searchParams
+- src/app/(shop)/products/[slug]/page.tsx (lines 1-210) - Added image gallery with thumbnails
+- supabase/migrations/00002_seed_categories.sql - NEW category seed file
+
+**Commit:** 407a8c7 - "feat: Phase 2 - Product images & category filtering"
+
+### Next Session - IMMEDIATE ACTION REQUIRED
+
+1. **FIX CATEGORY QUERY TIMEOUT:**
+   - Check Supabase RLS on product_categories table
+   - Run: `ALTER TABLE product_categories DISABLE ROW LEVEL SECURITY;` (test)
+   - Or add RLS policy: `CREATE POLICY "Public read" ON product_categories FOR SELECT USING (true);`
+   - Verify categories fetch in browser console
+
+2. **AFTER FIX:**
+   - Test category filtering works (click Ramps/Accessories buttons)
+   - Remove test-categories.mjs file
+   - Add product images to database
+   - Implement search functionality
 
 ---
 
