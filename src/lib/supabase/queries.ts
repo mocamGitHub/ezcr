@@ -198,3 +198,80 @@ export async function getProductCategories() {
 
   return data as ProductCategory[]
 }
+
+export interface ProductFilters {
+  category?: string
+  search?: string
+  minPrice?: number
+  maxPrice?: number
+  availableOnly?: boolean
+}
+
+/**
+ * Search and filter products
+ */
+export async function searchProducts(filters: ProductFilters) {
+  const supabase = await createClient()
+
+  let query = supabase
+    .from('products')
+    .select(`
+      *,
+      product_images (
+        id,
+        url,
+        alt_text,
+        display_order,
+        is_primary
+      )
+    `)
+    .eq('tenant_id', TENANT_ID)
+    .eq('is_active', true)
+
+  // Category filter
+  if (filters.category) {
+    const { data: category } = await supabase
+      .from('product_categories')
+      .select('id')
+      .eq('tenant_id', TENANT_ID)
+      .eq('slug', filters.category)
+      .single()
+
+    if (category) {
+      query = query.eq('category_id', category.id)
+    }
+  }
+
+  // Search filter (name or description)
+  if (filters.search) {
+    query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%,short_description.ilike.%${filters.search}%`)
+  }
+
+  // Price range filter
+  if (filters.minPrice !== undefined) {
+    query = query.gte('base_price', filters.minPrice)
+  }
+  if (filters.maxPrice !== undefined) {
+    query = query.lte('base_price', filters.maxPrice)
+  }
+
+  // Available only filter
+  if (filters.availableOnly) {
+    query = query.gt('inventory_count', 0).eq('coming_soon', false)
+  }
+
+  // Order results
+  query = query
+    .order('is_featured', { ascending: false })
+    .order('display_order', { ascending: true })
+    .order('created_at', { ascending: false })
+
+  const { data, error } = await query
+
+  if (error) {
+    console.error('Error searching products:', error)
+    return []
+  }
+
+  return data as Product[]
+}
