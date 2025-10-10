@@ -11,14 +11,14 @@ export function ProductSearch() {
   const [isPending, startTransition] = useTransition()
   const [searchValue, setSearchValue] = useState(searchParams.get('q') || '')
   const debounceRef = useRef<NodeJS.Timeout>()
-
-  // Update local state when URL changes
-  useEffect(() => {
-    setSearchValue(searchParams.get('q') || '')
-  }, [searchParams])
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const handleChange = (value: string) => {
     setSearchValue(value)
+
+    // Store current selection/cursor position
+    const selectionStart = inputRef.current?.selectionStart
+    const selectionEnd = inputRef.current?.selectionEnd
 
     // Clear existing timeout
     if (debounceRef.current) {
@@ -36,7 +36,17 @@ export function ProductSearch() {
       }
 
       startTransition(() => {
-        router.push(`/products?${params.toString()}`)
+        router.push(`/products?${params.toString()}`, { scroll: false })
+
+        // Restore focus and cursor position after navigation
+        requestAnimationFrame(() => {
+          if (inputRef.current) {
+            inputRef.current.focus()
+            if (selectionStart !== null && selectionEnd !== null) {
+              inputRef.current.setSelectionRange(selectionStart, selectionEnd)
+            }
+          }
+        })
       })
     }, 300)
   }
@@ -45,6 +55,7 @@ export function ProductSearch() {
     <div className="relative">
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
       <Input
+        ref={inputRef}
         type="search"
         placeholder="Search products..."
         value={searchValue}
