@@ -32,7 +32,8 @@
       "Bash(npx supabase:*)",
       "Bash(git commit:*)",
       "Bash(npm install:*)",
-      "Bash(npx shadcn@latest add:*)"
+      "Bash(npx shadcn@latest add:*)",
+      "Bash(pkill:*)"
     ],
     "deny": [],
     "ask": []

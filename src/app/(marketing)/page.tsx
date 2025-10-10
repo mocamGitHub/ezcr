@@ -7,7 +7,7 @@ export default function HomePage() {
     <div>
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-[#0B5394] to-blue-800 text-white py-24">
-        <div className="container">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl">
             <h1 className="text-5xl font-bold mb-6">
               Load Your Bike with Confidence
@@ -30,7 +30,7 @@ export default function HomePage() {
 
       {/* Features */}
       <section className="py-16 bg-background">
-        <div className="container">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center">
               <div className="text-4xl mb-4 font-bold text-[#0B5394]">Heavy Duty</div>
@@ -53,7 +53,7 @@ export default function HomePage() {
 
       {/* Featured Products */}
       <section className="py-16 bg-muted/50">
-        <div className="container">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-center mb-12">Featured Ramps</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="bg-background border rounded-lg p-6 text-center hover:shadow-lg transition-shadow">
@@ -83,7 +83,7 @@ export default function HomePage() {
 
       {/* CTA Section */}
       <section className="bg-[#F78309] text-white py-16">
-        <div className="container text-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl font-bold mb-4">Not Sure Which Ramp Is Right?</h2>
           <p className="text-lg mb-8">Use our configurator to find the perfect ramp for your setup.</p>
           <Button asChild size="lg" variant="outline" className="text-white border-white hover:bg-white/10">

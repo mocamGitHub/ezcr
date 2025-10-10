@@ -8,7 +8,7 @@ import Image from 'next/image'
 export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex h-16 items-center">
         {/* Logo */}
         <Link href="/" className="mr-8 flex items-center">
           <Image
@@ -54,7 +54,7 @@ export function Header() {
 
       {/* Trust Badges Bar */}
       <div className="border-t bg-muted/50">
-        <div className="container flex items-center justify-center py-2 space-x-8 text-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-center py-2 space-x-8 text-xs">
           <div className="flex items-center space-x-2">
             <span className="font-medium">Veteran Owned</span>
           </div>

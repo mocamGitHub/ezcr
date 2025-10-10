@@ -36,17 +36,7 @@ export function ProductSearch() {
       }
 
       startTransition(() => {
-        router.push(`/products?${params.toString()}`, { scroll: false })
-
-        // Restore focus and cursor position after navigation
-        requestAnimationFrame(() => {
-          if (inputRef.current) {
-            inputRef.current.focus()
-            if (selectionStart !== null && selectionEnd !== null) {
-              inputRef.current.setSelectionRange(selectionStart, selectionEnd)
-            }
-          }
-        })
+        router.replace(`/products?${params.toString()}`, { scroll: false })
       })
     }, 300)
   }
