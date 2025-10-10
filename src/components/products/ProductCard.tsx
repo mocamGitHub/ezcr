@@ -1,9 +1,12 @@
 // src/components/products/ProductCard.tsx
+'use client'
+
 import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ShoppingCart } from 'lucide-react'
+import { useCart } from '@/contexts/CartContext'
 import type { Product } from '@/lib/supabase/queries'
 
 interface ProductCardProps {
@@ -11,6 +14,7 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product }: ProductCardProps) {
+  const { addItem } = useCart()
   const isOutOfStock = product.inventory_count <= 0
   const isLowStock = product.inventory_count > 0 && product.inventory_count <= 5
   const isComingSoon = product.coming_soon
@@ -105,6 +109,14 @@ export function ProductCard({ product }: ProductCardProps) {
             variant="outline"
             disabled={isOutOfStock || isComingSoon}
             className="hover:bg-[#F78309] hover:text-white hover:border-[#F78309]"
+            onClick={() => addItem({
+              productId: product.id,
+              productName: product.name,
+              productSlug: product.slug,
+              productImage: primaryImage?.url || null,
+              price: product.base_price,
+              sku: product.sku,
+            })}
           >
             <ShoppingCart className="h-4 w-4" />
           </Button>

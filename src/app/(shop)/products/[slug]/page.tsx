@@ -3,21 +3,23 @@ import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { getProductBySlug, getProducts } from '@/lib/supabase/queries'
+import { AddToCartButton } from '@/components/cart/AddToCartButton'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ShoppingCart, ArrowLeft, Check, X } from 'lucide-react'
+import { ArrowLeft, Check, X } from 'lucide-react'
 
 interface ProductPageProps {
-  params: {
+  params: Promise<{
     slug: string
-  }
+  }>
 }
 
 // Disable static generation to allow dynamic cookies()
 export const dynamic = 'force-dynamic'
 
 export async function generateMetadata({ params }: ProductPageProps) {
-  const product = await getProductBySlug(params.slug)
+  const { slug } = await params
+  const product = await getProductBySlug(slug)
 
   if (!product) {
     return {
@@ -32,7 +34,8 @@ export async function generateMetadata({ params }: ProductPageProps) {
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
-  const product = await getProductBySlug(params.slug)
+  const { slug } = await params
+  const product = await getProductBySlug(slug)
 
   if (!product) {
     notFound()
@@ -156,14 +159,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
           {/* Add to Cart */}
           <div className="flex gap-4 mb-8">
-            <Button
-              size="lg"
-              className="flex-1 bg-[#0B5394] hover:bg-[#0B5394]/90"
-              disabled={isOutOfStock || isComingSoon}
-            >
-              <ShoppingCart className="h-5 w-5 mr-2" />
-              {isOutOfStock ? 'Out of Stock' : isComingSoon ? 'Coming Soon' : 'Add to Cart'}
-            </Button>
+            <AddToCartButton
+              product={product}
+              primaryImage={primaryImage}
+              isOutOfStock={isOutOfStock}
+              isComingSoon={isComingSoon}
+            />
             <Button size="lg" variant="outline" className="hover:bg-[#F78309] hover:text-white">
               Contact Us
             </Button>

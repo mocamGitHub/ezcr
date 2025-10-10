@@ -1,7 +1,8 @@
 // src/components/layout/Header.tsx
 import Link from 'next/link'
-import { ShoppingCart, Search, Menu, User } from 'lucide-react'
+import { Search, Menu, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { CartButton } from '@/components/cart/CartButton'
 import Image from 'next/image'
 
 export function Header() {
@@ -44,12 +45,7 @@ export function Header() {
           <Button variant="ghost" size="icon" aria-label="Account">
             <User className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="icon" className="relative" aria-label="Shopping cart">
-            <ShoppingCart className="h-5 w-5" />
-            <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#F78309] text-white text-xs flex items-center justify-center">
-              0
-            </span>
-          </Button>
+          <CartButton />
           <Button variant="ghost" size="icon" className="md:hidden" aria-label="Menu">
             <Menu className="h-5 w-5" />
           </Button>
