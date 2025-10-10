@@ -54,9 +54,9 @@ export function Footer() {
 
         {/* Trust Badges */}
         <div className="mt-12 pt-8 border-t">
-          <div className="flex flex-col md:flex-row items-center justify-center gap-8">
+          <div className="flex flex-col md:flex-row items-center justify-around gap-8 max-w-4xl mx-auto">
             <div className="flex items-center gap-3">
-              <div className="w-16 h-16 bg-[#0B5394] rounded-full flex items-center justify-center">
+              <div className="w-16 h-16 bg-[#0B5394] rounded-full flex items-center justify-center flex-shrink-0">
                 <span className="text-white text-2xl font-bold">VO</span>
               </div>
               <div>
@@ -65,7 +65,7 @@ export function Footer() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="w-16 h-16 bg-[#0B5394] rounded-full flex items-center justify-center">
+              <div className="w-16 h-16 bg-[#0B5394] rounded-full flex items-center justify-center flex-shrink-0">
                 <span className="text-white text-xl font-bold">A+</span>
               </div>
               <div>

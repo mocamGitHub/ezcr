@@ -6,6 +6,7 @@ import { getProductBySlug, getProducts } from '@/lib/supabase/queries'
 import { AddToCartButton } from '@/components/cart/AddToCartButton'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { formatPrice } from '@/lib/utils/format'
 import { ArrowLeft, Check, X } from 'lucide-react'
 
 interface ProductPageProps {
@@ -132,11 +133,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
           {/* Price */}
           <div className="flex items-baseline space-x-3 mb-6">
             <span className="text-4xl font-bold text-[#0B5394]">
-              ${product.base_price.toFixed(2)}
+              {formatPrice(product.base_price)}
             </span>
             {hasDiscount && (
               <span className="text-2xl text-muted-foreground line-through">
-                ${product.compare_at_price!.toFixed(2)}
+                {formatPrice(product.compare_at_price!)}
               </span>
             )}
           </div>

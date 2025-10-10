@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ShoppingCart } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'
+import { formatPrice } from '@/lib/utils/format'
 import type { Product } from '@/lib/supabase/queries'
 
 interface ProductCardProps {
@@ -88,11 +89,11 @@ export function ProductCard({ product }: ProductCardProps) {
         {/* Price */}
         <div className="flex items-baseline space-x-2 mb-4">
           <span className="text-2xl font-bold text-[#0B5394]">
-            ${product.base_price.toFixed(2)}
+            {formatPrice(product.base_price)}
           </span>
           {hasDiscount && (
             <span className="text-muted-foreground line-through">
-              ${product.compare_at_price!.toFixed(2)}
+              {formatPrice(product.compare_at_price!)}
             </span>
           )}
         </div>

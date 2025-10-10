@@ -61,9 +61,6 @@ export function Header() {
           <div className="flex items-center space-x-2">
             <span className="font-medium">BBB A+ Rating</span>
           </div>
-          <div className="flex items-center space-x-2">
-            <span className="font-medium">Free Shipping Over $500</span>
-          </div>
         </div>
       </div>
     </header>

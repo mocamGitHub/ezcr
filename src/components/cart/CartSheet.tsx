@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
+import { formatPrice } from '@/lib/utils/format'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Minus, Plus, Trash2, ShoppingCart } from 'lucide-react'
@@ -20,8 +21,8 @@ export function CartSheet() {
 
   return (
     <Sheet open={isOpen} onOpenChange={closeCart}>
-      <SheetContent className="flex flex-col w-full sm:max-w-lg">
-        <SheetHeader>
+      <SheetContent className="flex flex-col w-full sm:max-w-lg p-6">
+        <SheetHeader className="mb-6">
           <SheetTitle className="flex items-center gap-2">
             <ShoppingCart className="h-5 w-5" />
             Shopping Cart ({cart.totalItems})
@@ -76,7 +77,7 @@ export function CartSheet() {
                         </p>
                       )}
                       <p className="text-sm font-semibold mt-2">
-                        ${item.price.toFixed(2)}
+                        {formatPrice(item.price)}
                       </p>
 
                       {/* Quantity Controls */}
@@ -122,7 +123,7 @@ export function CartSheet() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>Subtotal</span>
-                  <span>${cart.totalPrice.toFixed(2)}</span>
+                  <span>{formatPrice(cart.totalPrice)}</span>
                 </div>
                 <div className="flex justify-between text-sm text-muted-foreground">
                   <span>Shipping</span>
@@ -136,13 +137,13 @@ export function CartSheet() {
                 </div>
                 {cart.totalPrice < 500 && (
                   <p className="text-xs text-muted-foreground">
-                    Add ${(500 - cart.totalPrice).toFixed(2)} more for free shipping!
+                    Add {formatPrice(500 - cart.totalPrice)} more for free shipping!
                   </p>
                 )}
                 <Separator />
                 <div className="flex justify-between font-semibold text-lg">
                   <span>Total</span>
-                  <span>${cart.totalPrice.toFixed(2)}</span>
+                  <span>{formatPrice(cart.totalPrice)}</span>
                 </div>
               </div>
 

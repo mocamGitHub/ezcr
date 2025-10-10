@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import { formatPrice } from '@/lib/utils/format'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -139,7 +140,7 @@ export default function CheckoutPage() {
               size="lg"
               className="w-full bg-[#0B5394] hover:bg-[#0B5394]/90"
             >
-              Place Order - ${total.toFixed(2)}
+              Place Order - {formatPrice(total)}
             </Button>
           </form>
         </div>
@@ -173,11 +174,11 @@ export default function CheckoutPage() {
                   <div className="flex-1 min-w-0">
                     <p className="font-medium line-clamp-2 text-sm">{item.productName}</p>
                     <p className="text-sm text-muted-foreground">
-                      ${item.price.toFixed(2)}
+                      {formatPrice(item.price)}
                     </p>
                   </div>
                   <div className="font-semibold text-sm">
-                    ${(item.price * item.quantity).toFixed(2)}
+                    {formatPrice(item.price * item.quantity)}
                   </div>
                 </div>
               ))}
@@ -189,7 +190,7 @@ export default function CheckoutPage() {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span>Subtotal</span>
-                <span>${cart.totalPrice.toFixed(2)}</span>
+                <span>{formatPrice(cart.totalPrice)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Shipping</span>
@@ -197,27 +198,27 @@ export default function CheckoutPage() {
                   {shippingCost === 0 ? (
                     <span className="text-green-600 font-medium">FREE</span>
                   ) : (
-                    `$${shippingCost.toFixed(2)}`
+                    formatPrice(shippingCost)
                   )}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span>Tax (estimated)</span>
-                <span>${tax.toFixed(2)}</span>
+                <span>{formatPrice(tax)}</span>
               </div>
 
               <Separator className="my-2" />
 
               <div className="flex justify-between font-semibold text-lg">
                 <span>Total</span>
-                <span>${total.toFixed(2)}</span>
+                <span>{formatPrice(total)}</span>
               </div>
             </div>
 
             {cart.totalPrice < 500 && (
               <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <p className="text-xs text-yellow-800">
-                  Add ${(500 - cart.totalPrice).toFixed(2)} more to get free shipping!
+                  Add {formatPrice(500 - cart.totalPrice)} more to get free shipping!
                 </p>
               </div>
             )}
