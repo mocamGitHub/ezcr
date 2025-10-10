@@ -29,7 +29,8 @@
       "Read(//c/Users/morri/**)",
       "Bash(cat:*)",
       "Bash(find:*)",
-      "Bash(npx supabase:*)"
+      "Bash(npx supabase:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

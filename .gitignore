@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# testing and debugging
+scripts/
+test-*.md
+*.txt
+compose.override.yml
