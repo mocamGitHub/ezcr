@@ -249,52 +249,47 @@ export function Step2Measurements() {
   return (
     <div className="animate-in fade-in duration-300">
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold mb-3">Vehicle Measurements</h2>
-        <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
-          Please provide accurate measurements of your {configData.vehicle}. These will help us recommend the
-          perfect ramp configuration.
-        </p>
+        <h2 className="text-2xl font-medium text-muted-foreground mb-6">
+          Accurate measurements ensure your ramp fits perfectly
+        </h2>
       </div>
 
-      <form onSubmit={handleSubmit} className="max-w-3xl mx-auto space-y-6">
+      <form onSubmit={handleSubmit} className="max-w-5xl mx-auto space-y-8">
         {/* Measurement Guide (for Pickup) */}
         {isPickup && (
-          <div className="bg-card rounded-xl p-6 border border-border mb-6">
-            <h3 className="text-lg font-semibold mb-4">Measurement Guide</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center p-4 bg-secondary/5 rounded-lg">
-                <div className="text-4xl mb-2">📏</div>
-                <p className="text-sm font-medium">Cargo Area (Closed)</p>
-                <p className="text-xs text-muted-foreground mt-1">Measure with tailgate closed</p>
+          <div className="mb-12">
+            <h3 className="text-2xl font-bold mb-6">How to Measure Your Pickup Truck</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="text-center p-8 bg-black/40 rounded-xl border border-border">
+                <div className="text-6xl mb-4">📏</div>
+                <p className="text-base font-semibold mb-2">Measure from bulkhead to end of closed tailgate</p>
               </div>
-              <div className="text-center p-4 bg-secondary/5 rounded-lg">
-                <div className="text-4xl mb-2">📐</div>
-                <p className="text-sm font-medium">Total Length (Open)</p>
-                <p className="text-xs text-muted-foreground mt-1">Measure with tailgate open</p>
+              <div className="text-center p-8 bg-black/40 rounded-xl border border-border">
+                <div className="text-6xl mb-4">📐</div>
+                <p className="text-base font-semibold mb-2">Measure from bulkhead to end of open tailgate</p>
               </div>
-              <div className="text-center p-4 bg-secondary/5 rounded-lg">
-                <div className="text-4xl mb-2">📊</div>
-                <p className="text-sm font-medium">Height from Ground</p>
-                <p className="text-xs text-muted-foreground mt-1">Measure bed height</p>
+              <div className="text-center p-8 bg-black/40 rounded-xl border border-border">
+                <div className="text-6xl mb-4">📊</div>
+                <p className="text-base font-semibold mb-2">Measure ground to top of open tailgate</p>
               </div>
             </div>
           </div>
         )}
 
         {/* Measurement Inputs */}
-        <div className="bg-card rounded-xl p-6 border border-border space-y-5">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {isPickup ? (
             <>
               {/* Bed Length Closed */}
               <div>
                 <Label htmlFor="bedLengthClosed">
-                  Cargo Area - Closed Tailgate ({unitLabel}) <span className="text-destructive">*</span>
+                  Cargo Area (closed tailgate) ({unitLabel}) <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="bedLengthClosed"
                   type="number"
                   step="0.01"
-                  placeholder={`e.g., ${units === 'imperial' ? '72.0' : '182.88'}`}
+                  placeholder={`Min: ${getRange(MEASUREMENT_RANGES.cargoMin, MEASUREMENT_RANGES.cargoMax).min}, Max: ${getRange(MEASUREMENT_RANGES.cargoMin, MEASUREMENT_RANGES.cargoMax).max}`}
                   value={bedLengthClosed || ''}
                   onChange={(e) => handleBedLengthClosedChange(e.target.value)}
                   className={`mt-1.5 ${errors.bedLengthClosed ? 'border-destructive focus-visible:ring-destructive' : ''}`}
@@ -310,13 +305,13 @@ export function Step2Measurements() {
               {/* Bed Length Open */}
               <div>
                 <Label htmlFor="bedLengthOpen">
-                  Total Length - Open Tailgate ({unitLabel}) <span className="text-destructive">*</span>
+                  Total Length (open tailgate) ({unitLabel}) <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="bedLengthOpen"
                   type="number"
                   step="0.01"
-                  placeholder={`e.g., ${units === 'imperial' ? '92.0' : '233.68'}`}
+                  placeholder={`Min: ${getRange(MEASUREMENT_RANGES.totalLengthMin, MEASUREMENT_RANGES.totalLengthMax).min}, Max: ${getRange(MEASUREMENT_RANGES.totalLengthMin, MEASUREMENT_RANGES.totalLengthMax).max}`}
                   value={bedLengthOpen || ''}
                   onChange={(e) => handleBedLengthOpenChange(e.target.value)}
                   className={`mt-1.5 ${errors.bedLengthOpen ? 'border-destructive focus-visible:ring-destructive' : ''}`}
@@ -339,7 +334,7 @@ export function Step2Measurements() {
                 id="cargoLength"
                 type="number"
                 step="0.01"
-                placeholder={`e.g., ${units === 'imperial' ? '72.0' : '182.88'}`}
+                placeholder={`Min: ${getRange(MEASUREMENT_RANGES.cargoMin, MEASUREMENT_RANGES.cargoMax).min}, Max: ${getRange(MEASUREMENT_RANGES.cargoMin, MEASUREMENT_RANGES.cargoMax).max}`}
                 value={cargoLength || ''}
                 onChange={(e) => handleCargoLengthChange(e.target.value)}
                 className={`mt-1.5 ${errors.cargoLength ? 'border-destructive focus-visible:ring-destructive' : ''}`}
@@ -362,7 +357,7 @@ export function Step2Measurements() {
               id="loadHeight"
               type="number"
               step="0.01"
-              placeholder={`e.g., ${units === 'imperial' ? '36.0' : '91.44'}`}
+              placeholder={`Max: ${getRange(0, MEASUREMENT_RANGES.heightMax).max}`}
               value={loadHeight || ''}
               onChange={(e) => handleLoadHeightChange(e.target.value)}
               className={`mt-1.5 ${errors.loadHeight ? 'border-destructive focus-visible:ring-destructive' : ''}`}
