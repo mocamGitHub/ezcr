@@ -118,7 +118,7 @@ function OrderConfirmationContent() {
             </div>
             <div>
               <p className="text-sm text-muted-foreground mb-1">Total</p>
-              <p className="font-semibold text-lg">{formatPrice(Math.round(order.total_amount * 100))}</p>
+              <p className="font-semibold text-lg">{formatPrice(order.total_amount)}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground mb-1">Payment Status</p>
@@ -134,12 +134,16 @@ function OrderConfirmationContent() {
             <h3 className="font-semibold mb-3">Shipping Address</h3>
             <div className="text-sm text-muted-foreground">
               <p>{order.customer_name}</p>
-              {order.shipping_address.line1 && <p>{order.shipping_address.line1}</p>}
-              {order.shipping_address.line2 && <p>{order.shipping_address.line2}</p>}
-              <p>
-                {order.shipping_address.city}, {order.shipping_address.state} {order.shipping_address.postalCode}
-              </p>
-              <p>{order.shipping_address.country}</p>
+              {order.shipping_address?.line1 && <p>{order.shipping_address.line1}</p>}
+              {order.shipping_address?.line2 && <p>{order.shipping_address.line2}</p>}
+              {order.shipping_address?.city && (
+                <p>
+                  {order.shipping_address.city}
+                  {order.shipping_address.state && `, ${order.shipping_address.state}`}
+                  {order.shipping_address.postalCode && ` ${order.shipping_address.postalCode}`}
+                </p>
+              )}
+              {order.shipping_address?.country && <p>{order.shipping_address.country}</p>}
             </div>
           </div>
         </div>

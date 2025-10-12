@@ -54,26 +54,11 @@ export async function POST(request: NextRequest) {
       0
     )
 
-    const shippingCost =
-      subtotal >= STRIPE_CONFIG.freeShippingThreshold
-        ? 0
-        : STRIPE_CONFIG.shippingCost
+    // Always apply shipping cost (no free shipping)
+    const shippingCost = STRIPE_CONFIG.shippingCost
 
     const taxAmount = Math.round(subtotal * STRIPE_CONFIG.taxRate)
     const total = subtotal + shippingCost + taxAmount
-
-    // Debug logging
-    console.log('Checkout calculation:', {
-      subtotal: subtotal / 100,
-      shippingCost: shippingCost / 100,
-      taxAmount: taxAmount / 100,
-      total: total / 100,
-      cartItems: cartItems.map((item: any) => ({
-        name: item.productName,
-        price: item.price,
-        quantity: item.quantity,
-      })),
-    })
 
     // Create line items for Stripe
     const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] =
@@ -90,7 +75,7 @@ export async function POST(request: NextRequest) {
         quantity: item.quantity,
       }))
 
-    // Add shipping as a line item if applicable
+    // Add shipping as a line item
     if (shippingCost > 0) {
       lineItems.push({
         price_data: {
@@ -98,7 +83,7 @@ export async function POST(request: NextRequest) {
           unit_amount: shippingCost,
           product_data: {
             name: 'Shipping',
-            description: `Free shipping on orders over $${STRIPE_CONFIG.freeShippingThreshold / 100}`,
+            description: 'Standard shipping',
           },
         },
         quantity: 1,
@@ -207,8 +192,9 @@ export async function POST(request: NextRequest) {
       },
       success_url: `${request.nextUrl.origin}/order-confirmation?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${request.nextUrl.origin}/checkout?canceled=true`,
-      // Don't collect shipping in Stripe - we already have it from our form
-      // All costs (product + shipping + tax) are included in line_items
+      shipping_address_collection: {
+        allowed_countries: ['US'],
+      },
     })
 
     // Update order with Stripe session ID
