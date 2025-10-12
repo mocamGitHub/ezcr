@@ -36,8 +36,7 @@ export default function CheckoutPage() {
     )
   }
 
-  // Cart prices are in dollars, calculations in dollars
-  const shippingCost = cart.totalPrice >= 500 ? 0 : 50 // $50 shipping, free over $500
+  const shippingCost = 50 // Always $50 shipping
   const tax = cart.totalPrice * 0.08 // 8% tax
   const total = cart.totalPrice + shippingCost + tax
 
@@ -275,13 +274,7 @@ export default function CheckoutPage() {
               </div>
               <div className="flex justify-between">
                 <span>Shipping</span>
-                <span>
-                  {shippingCost === 0 ? (
-                    <span className="text-green-600 font-medium">FREE</span>
-                  ) : (
-                    formatPrice(shippingCost)
-                  )}
-                </span>
+                <span>{formatPrice(shippingCost)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Tax (estimated)</span>
@@ -296,13 +289,6 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {cart.totalPrice < 500 && (
-              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-xs text-yellow-800">
-                  Add {formatPrice(500 - cart.totalPrice)} more to get free shipping!
-                </p>
-              </div>
-            )}
           </div>
         </div>
       </div>

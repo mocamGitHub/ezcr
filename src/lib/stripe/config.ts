@@ -12,6 +12,6 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 export const STRIPE_CONFIG = {
   currency: 'usd',
   shippingCost: 5000, // $50.00 in cents
-  freeShippingThreshold: 50000, // $500.00 in cents (free shipping over $500)
+  freeShippingThreshold: Infinity, // No free shipping
   taxRate: 0.08, // 8%
 } as const
