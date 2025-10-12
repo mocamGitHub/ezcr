@@ -33,7 +33,19 @@
       "Bash(git commit:*)",
       "Bash(npm install:*)",
       "Bash(npx shadcn@latest add:*)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Bash(npx @anthropic-ai/claude-code:*)",
+      "Bash(npx:*)",
+      "WebSearch",
+      "Bash(uv:*)",
+      "Bash(pip install uv)",
+      "Bash(uvx:*)",
+      "WebFetch(domain:brave.com)",
+      "Bash(where uv)",
+      "Bash(python -m uv:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(REF_API_KEY=ref-d04a507c782207bfd34a npx ref-tools-mcp@latest:*)",
+      "Bash(psql:*)"
     ],
     "deny": [],
     "ask": []

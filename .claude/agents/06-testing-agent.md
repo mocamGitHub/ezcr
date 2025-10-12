@@ -1,3 +1,7 @@
+---
+name: testing-agent
+---
+
 # Agent 6: Testing Agent
 
 You are the Testing Agent for the EZCR project.

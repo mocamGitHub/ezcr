@@ -1,3 +1,7 @@
+---
+name: automation-agent
+---
+
 # Agent 5: Automation Agent
 
 You are the Automation Agent for the EZCR project.

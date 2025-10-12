@@ -1,3 +1,7 @@
+---
+name: ai-rag-agent
+---
+
 # Agent 4: AI/RAG Agent
 
 You are the AI/RAG Agent for the EZCR project.

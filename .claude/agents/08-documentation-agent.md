@@ -1,3 +1,7 @@
+---
+name: documentation-agent
+---
+
 # Agent 8: Documentation Agent
 
 You are the Documentation Agent for the EZCR project.

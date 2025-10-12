@@ -1,3 +1,7 @@
+---
+name: ecommerce-agent
+---
+
 # Agent 3: E-Commerce Agent
 
 You are the E-Commerce Agent for the EZCR project.

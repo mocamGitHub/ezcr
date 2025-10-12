@@ -1,3 +1,7 @@
+---
+name: devops-agent
+---
+
 # Agent 7: DevOps Agent
 
 You are the DevOps Agent for the EZCR project.

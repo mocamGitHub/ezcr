@@ -9,11 +9,15 @@ import { formatPrice } from '@/lib/utils/format'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, CreditCard } from 'lucide-react'
+import { ArrowLeft, Loader2 } from 'lucide-react'
+import { useState } from 'react'
+import { getStripe } from '@/lib/stripe/client'
+import { toast } from 'sonner'
 
 export default function CheckoutPage() {
   const { cart, clearCart } = useCart()
   const router = useRouter()
+  const [isProcessing, setIsProcessing] = useState(false)
 
   // Redirect if cart is empty
   if (cart.items.length === 0) {
@@ -32,19 +36,82 @@ export default function CheckoutPage() {
     )
   }
 
-  const shippingCost = cart.totalPrice >= 500 ? 0 : 50
+  // Cart prices are in dollars, calculations in dollars
+  const shippingCost = cart.totalPrice >= 500 ? 0 : 50 // $50 shipping, free over $500
   const tax = cart.totalPrice * 0.08 // 8% tax
   const total = cart.totalPrice + shippingCost + tax
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    setIsProcessing(true)
 
-    // TODO: Integrate with Stripe
-    alert('Checkout functionality will be integrated with Stripe in Phase 3')
+    try {
+      const formData = new FormData(e.currentTarget)
 
-    // For now, just clear the cart and redirect
-    // clearCart()
-    // router.push('/order-confirmation')
+      // Get form values
+      const firstName = formData.get('firstName') as string
+      const lastName = formData.get('lastName') as string
+      const email = formData.get('email') as string
+      const phone = formData.get('phone') as string
+      const address = formData.get('address') as string
+      const address2 = formData.get('address2') as string
+      const city = formData.get('city') as string
+      const state = formData.get('state') as string
+      const zip = formData.get('zip') as string
+      const country = formData.get('country') as string
+
+      // Prepare shipping address
+      const shippingAddress = {
+        firstName,
+        lastName,
+        line1: address,
+        line2: address2 || undefined,
+        city,
+        state,
+        postalCode: zip,
+        country,
+      }
+
+      // Prepare billing address (same as shipping for now)
+      const billingAddress = { ...shippingAddress }
+
+      // Create checkout session
+      const response = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cartItems: cart.items,
+          customerEmail: email,
+          customerName: `${firstName} ${lastName}`,
+          customerPhone: phone,
+          shippingAddress,
+          billingAddress,
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to create checkout session')
+      }
+
+      const { url } = await response.json()
+
+      // Clear cart before redirect
+      clearCart()
+
+      // Redirect to Stripe Checkout using the URL from the session
+      if (url) {
+        window.location.href = url
+      } else {
+        throw new Error('No checkout URL received')
+      }
+    } catch (error) {
+      console.error('Checkout error:', error)
+      toast.error(
+        error instanceof Error ? error.message : 'Something went wrong. Please try again.'
+      )
+      setIsProcessing(false)
+    }
   }
 
   return (
@@ -71,20 +138,20 @@ export default function CheckoutPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="firstName">First Name</Label>
-                    <Input id="firstName" required />
+                    <Input id="firstName" name="firstName" disabled={isProcessing} required />
                   </div>
                   <div>
                     <Label htmlFor="lastName">Last Name</Label>
-                    <Input id="lastName" required />
+                    <Input id="lastName" name="lastName" disabled={isProcessing} required />
                   </div>
                 </div>
                 <div>
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" required />
+                  <Input id="email" name="email" type="email" disabled={isProcessing} required />
                 </div>
                 <div>
                   <Label htmlFor="phone">Phone</Label>
-                  <Input id="phone" type="tel" required />
+                  <Input id="phone" name="phone" type="tel" disabled={isProcessing} required />
                 </div>
               </div>
             </div>
@@ -95,30 +162,36 @@ export default function CheckoutPage() {
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="address">Street Address</Label>
-                  <Input id="address" required />
+                  <Input id="address" name="address" disabled={isProcessing} required />
                 </div>
                 <div>
                   <Label htmlFor="address2">Apartment, suite, etc. (optional)</Label>
-                  <Input id="address2" />
+                  <Input id="address2" name="address2" disabled={isProcessing} />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="city">City</Label>
-                    <Input id="city" required />
+                    <Input id="city" name="city" disabled={isProcessing} required />
                   </div>
                   <div>
                     <Label htmlFor="state">State</Label>
-                    <Input id="state" required />
+                    <Input id="state" name="state" disabled={isProcessing} required />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="zip">ZIP Code</Label>
-                    <Input id="zip" required />
+                    <Input id="zip" name="zip" disabled={isProcessing} required />
                   </div>
                   <div>
                     <Label htmlFor="country">Country</Label>
-                    <Input id="country" defaultValue="United States" required />
+                    <Input
+                      id="country"
+                      name="country"
+                      defaultValue="United States"
+                      disabled={isProcessing}
+                      required
+                    />
                   </div>
                 </div>
               </div>
@@ -127,20 +200,28 @@ export default function CheckoutPage() {
             {/* Payment Method */}
             <div className="bg-background border rounded-lg p-6">
               <h2 className="text-xl font-semibold mb-4">Payment Method</h2>
-              <div className="bg-muted/50 border rounded-lg p-4 text-center">
-                <CreditCard className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">
-                  Stripe integration will be added in Phase 3
-                </p>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M3 10h18v4H3v-4zm0-6h18a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/>
+                </svg>
+                <span>Secure payment powered by Stripe</span>
               </div>
             </div>
 
             <Button
               type="submit"
               size="lg"
+              disabled={isProcessing}
               className="w-full bg-[#0B5394] hover:bg-[#0B5394]/90"
             >
-              Place Order - {formatPrice(total)}
+              {isProcessing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>Proceed to Payment - {formatPrice(total)}</>
+              )}
             </Button>
           </form>
         </div>

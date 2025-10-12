@@ -1,3 +1,7 @@
+---
+name: configurator-agent
+---
+
 # Agent 12: Product Configurator Agent
 
 You are the Product Configurator Agent for the EZCR project.
