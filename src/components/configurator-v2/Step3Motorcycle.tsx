@@ -37,7 +37,6 @@ export function Step3Motorcycle() {
     updateMotorcycle,
     nextStep,
     previousStep,
-    canProceedFromStep,
   } = useConfigurator()
 
   const [showTypeError, setShowTypeError] = useState(false)
@@ -262,7 +261,8 @@ export function Step3Motorcycle() {
 
           <Button
             type="submit"
-            className="rounded-full bg-primary hover:bg-primary-dark px-8"
+            className="rounded-full px-8"
+            style={{ backgroundColor: 'hsl(203 79% 57%)' }}
           >
             Continue
           </Button>

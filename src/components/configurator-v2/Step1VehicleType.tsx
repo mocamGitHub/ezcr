@@ -173,8 +173,9 @@ export function Step1VehicleType() {
 
           <Button
             type="submit"
-            disabled={!canProceedFromStep(1)}
-            className="rounded-full bg-primary hover:bg-primary-dark px-8"
+            disabled={!configData.vehicle}
+            className="rounded-full px-8"
+            style={{ backgroundColor: configData.vehicle ? 'hsl(203 79% 57%)' : undefined }}
           >
             Continue
           </Button>

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useConfigurator } from './ConfiguratorProvider'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,7 +15,6 @@ export function Step2Measurements() {
     updateMeasurements,
     nextStep,
     previousStep,
-    canProceedFromStep,
     convertToInches,
     calculateAC001Extension,
     checkCargoExtension,
@@ -186,7 +185,6 @@ export function Step2Measurements() {
     e.preventDefault()
 
     let isValid = true
-    const newErrors: Record<string, string> = {}
 
     if (isPickup) {
       if (!validateMeasurement(
@@ -428,7 +426,8 @@ export function Step2Measurements() {
 
           <Button
             type="submit"
-            className="rounded-full bg-primary hover:bg-primary-dark px-8"
+            className="rounded-full px-8"
+            style={{ backgroundColor: 'hsl(203 79% 57%)' }}
           >
             Continue
           </Button>

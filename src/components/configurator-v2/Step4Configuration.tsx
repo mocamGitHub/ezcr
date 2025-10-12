@@ -373,7 +373,8 @@ export function Step4Configuration() {
           <Button
             type="button"
             onClick={nextStep}
-            className="rounded-full bg-primary hover:bg-primary-dark px-8"
+            className="rounded-full px-8"
+            style={{ backgroundColor: 'hsl(203 79% 57%)' }}
           >
             Continue to Quote
           </Button>
