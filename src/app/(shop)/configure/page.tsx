@@ -1,6 +1,5 @@
 import { Metadata } from 'next'
-import { ConfiguratorProvider } from '@/contexts/ConfiguratorContext'
-import Configurator from '@/components/configurator/Configurator'
+import Configurator from '@/components/configurator-v2/Configurator'
 
 export const metadata: Metadata = {
   title: 'Configure Your Ramp | EZ Cycle Ramp',
@@ -8,9 +7,5 @@ export const metadata: Metadata = {
 }
 
 export default function ConfigurePage() {
-  return (
-    <ConfiguratorProvider>
-      <Configurator />
-    </ConfiguratorProvider>
-  )
+  return <Configurator />
 }

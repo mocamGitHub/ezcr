@@ -18,7 +18,7 @@ const config: Config = {
         'brand-blue': '#0B5394',      // Primary
         'brand-orange': '#F78309', // Secondary/Accent
         'brand-gray': '#CCCCCC',      // Tertiary
-        
+
         // ShadCN defaults
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -28,10 +28,12 @@ const config: Config = {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          dark: "hsl(var(--primary-dark))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
           foreground: "hsl(var(--secondary-foreground))",
+          dark: "hsl(var(--secondary-dark))",
         },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
@@ -52,6 +54,10 @@ const config: Config = {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+        },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          dark: "hsl(var(--success-dark))",
         },
       },
       borderRadius: {
