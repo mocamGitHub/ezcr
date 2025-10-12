@@ -6,7 +6,6 @@ import {
   VehicleType,
   BikeType,
   UnitSystem,
-  Theme,
   AC001Extension,
   CONVERSION_FACTORS,
   PRICING,
@@ -19,7 +18,6 @@ interface ConfiguratorContextType {
   currentStep: number
   completedSteps: number[]
   units: UnitSystem
-  theme: Theme
   configData: ConfigData
   pendingAction: 'cart' | 'email' | 'print' | null
   showContactModal: boolean
@@ -29,8 +27,7 @@ interface ConfiguratorContextType {
   nextStep: () => void
   previousStep: () => void
 
-  // Theme & Units
-  toggleTheme: () => void
+  // Units
   toggleUnits: () => void
 
   // Contact
@@ -86,7 +83,6 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
   const [currentStep, setCurrentStep] = useState(1)
   const [completedSteps, setCompletedSteps] = useState<number[]>([])
   const [units, setUnits] = useState<UnitSystem>('imperial')
-  const [theme, setTheme] = useState<Theme>('dark')
   const [showContactModal, setShowContactModal] = useState(false)
   const [pendingAction, setPendingAction] = useState<'cart' | 'email' | 'print' | null>(null)
 
@@ -143,19 +139,6 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
     },
   })
 
-  // Load theme from localStorage on mount
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as Theme
-    if (savedTheme) {
-      setTheme(savedTheme)
-    }
-  }, [])
-
-  // Save theme to localStorage
-  useEffect(() => {
-    localStorage.setItem('theme', theme)
-    document.documentElement.classList.toggle('dark', theme === 'dark')
-  }, [theme])
 
   // Conversion helpers
   const convertToInches = (value: number): number => {
@@ -172,11 +155,6 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
 
   const convertToKg = (value: number): number => {
     return units === 'imperial' ? value * CONVERSION_FACTORS.lbsToKg : value
-  }
-
-  // Theme toggle
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'))
   }
 
   // Unit toggle with conversion
@@ -418,14 +396,12 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
     currentStep,
     completedSteps,
     units,
-    theme,
     configData,
     pendingAction,
     showContactModal,
     goToStep,
     nextStep,
     previousStep,
-    toggleTheme,
     toggleUnits,
     updateContact,
     setShowContactModal,
