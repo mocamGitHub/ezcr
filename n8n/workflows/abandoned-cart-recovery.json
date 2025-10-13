@@ -1,0 +1,311 @@
+{
+  "name": "Abandoned Cart Recovery - EZCR",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 2
+            }
+          ]
+        }
+      },
+      "name": "Schedule Every 2 Hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n  sc.id as cart_id,\n  sc.session_id,\n  sc.user_id,\n  sc.created_at,\n  sc.configuration,\n  COALESCE(u.email, sc.configuration->>'contactEmail') as customer_email,\n  COALESCE(u.first_name, sc.configuration->>'contactName') as customer_name,\n  sc.configuration->>'vehicle' as vehicle_type,\n  EXTRACT(EPOCH FROM (NOW() - sc.created_at))/3600 as hours_abandoned\nFROM shopping_cart sc\nLEFT JOIN user_profiles u ON sc.user_id = u.id\nWHERE \n  sc.tenant_id = (SELECT id FROM tenants WHERE slug = 'ezcr-01')\n  AND sc.created_at >= NOW() - INTERVAL '7 days'\n  AND sc.created_at <= NOW() - INTERVAL '2 hours'\n  AND NOT EXISTS (\n    SELECT 1 FROM orders o \n    WHERE o.user_id = sc.user_id \n    AND o.created_at > sc.created_at\n  )\n  AND (sc.configuration->>'contactEmail') IS NOT NULL\nORDER BY sc.created_at DESC\nLIMIT 50;",
+        "additionalFields": {}
+      },
+      "name": "Query Abandoned Carts",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [450, 300],
+      "credentials": {
+        "postgres": {
+          "id": "1",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{$json[\"hours_abandoned\"]}}",
+              "operation": "smallerEqual",
+              "value2": 3
+            }
+          ]
+        }
+      },
+      "name": "2 Hour Email",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [650, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{$json[\"hours_abandoned\"]}}",
+              "operation": "largerEqual",
+              "value2": 24
+            },
+            {
+              "value1": "={{$json[\"hours_abandoned\"]}}",
+              "operation": "smallerEqual",
+              "value2": 25
+            }
+          ]
+        }
+      },
+      "name": "24 Hour Email",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [650, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{$json[\"hours_abandoned\"]}}",
+              "operation": "largerEqual",
+              "value2": 72
+            },
+            {
+              "value1": "={{$json[\"hours_abandoned\"]}}",
+              "operation": "smallerEqual",
+              "value2": 73
+            }
+          ]
+        }
+      },
+      "name": "72 Hour Email",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [650, 600]
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@ezcycleramp.com",
+        "toEmail": "={{$json[\"customer_email\"]}}",
+        "subject": "Your Custom Ramp Configuration is Waiting",
+        "emailType": "html",
+        "message": "<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }\n    .container { max-width: 600px; margin: 0 auto; padding: 20px; }\n    .header { background: #005696; color: white; padding: 20px; text-align: center; }\n    .content { padding: 30px; background: #f8f9fa; }\n    .button { display: inline-block; padding: 12px 30px; background: #ff8c00; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }\n    .footer { text-align: center; padding: 20px; font-size: 12px; color: #666; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h1>Still Interested in Your Custom Ramp?</h1>\n    </div>\n    <div class=\"content\">\n      <p>Hi {{$json[\"customer_name\"]}},</p>\n      <p>We noticed you started configuring a custom motorcycle loading ramp for your <strong>{{$json[\"vehicle_type\"]}}</strong> but didn't complete your order.</p>\n      <p>We've saved your configuration! You can pick up right where you left off.</p>\n      <p style=\"text-align: center;\">\n        <a href=\"https://ezcycleramp.com/configure?session={{$json[\"session_id\"]}}\" class=\"button\">\n          Continue Configuration\n        </a>\n      </p>\n      <p>Need help? Our team is here to assist you:<br>\n      📞 <strong>800-687-4410</strong></p>\n      <p>Best regards,<br>The EZ Cycle Ramp Team</p>\n    </div>\n    <div class=\"footer\">\n      <p>EZ Cycle Ramp | 800-687-4410<br>\n      <a href=\"https://ezcycleramp.com\">ezcycleramp.com</a></p>\n    </div>\n  </div>\n</body>\n</html>"
+      },
+      "name": "Send 2hr Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [850, 200],
+      "credentials": {
+        "smtp": {
+          "id": "2",
+          "name": "Resend SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@ezcycleramp.com",
+        "toEmail": "={{$json[\"customer_email\"]}}",
+        "subject": "Don't Miss Out - Your Custom Ramp Awaits!",
+        "emailType": "html",
+        "message": "<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }\n    .container { max-width: 600px; margin: 0 auto; padding: 20px; }\n    .header { background: #005696; color: white; padding: 20px; text-align: center; }\n    .content { padding: 30px; background: #f8f9fa; }\n    .urgency { background: #fff3cd; border-left: 4px solid #ff8c00; padding: 15px; margin: 20px 0; }\n    .button { display: inline-block; padding: 12px 30px; background: #ff8c00; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }\n    .footer { text-align: center; padding: 20px; font-size: 12px; color: #666; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h1>Your Configuration Expires Soon</h1>\n    </div>\n    <div class=\"content\">\n      <p>Hi {{$json[\"customer_name\"]}},</p>\n      <div class=\"urgency\">\n        <strong>⚠️ Popular ramps are selling out quickly!</strong><br>\n        Your saved configuration may not be available much longer.\n      </div>\n      <p>The custom ramp you configured for your <strong>{{$json[\"vehicle_type\"]}}</strong> is still waiting for you.</p>\n      <ul>\n        <li>✓ Configured specifically for your vehicle</li>\n        <li>✓ Perfect measurements calculated</li>\n        <li>✓ All extensions selected</li>\n        <li>✓ Ready to order</li>\n      </ul>\n      <p style=\"text-align: center;\">\n        <a href=\"https://ezcycleramp.com/configure?session={{$json[\"session_id\"]}}\" class=\"button\">\n          Complete Your Order Now\n        </a>\n      </p>\n      <p>Questions? Call us: <strong>800-687-4410</strong></p>\n      <p>Best regards,<br>The EZ Cycle Ramp Team</p>\n    </div>\n    <div class=\"footer\">\n      <p>EZ Cycle Ramp | 800-687-4410<br>\n      <a href=\"https://ezcycleramp.com\">ezcycleramp.com</a></p>\n    </div>\n  </div>\n</body>\n</html>"
+      },
+      "name": "Send 24hr Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [850, 400],
+      "credentials": {
+        "smtp": {
+          "id": "2",
+          "name": "Resend SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@ezcycleramp.com",
+        "toEmail": "={{$json[\"customer_email\"]}}",
+        "subject": "Last Chance: 10% Off Your Custom Ramp!",
+        "emailType": "html",
+        "message": "<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }\n    .container { max-width: 600px; margin: 0 auto; padding: 20px; }\n    .header { background: #005696; color: white; padding: 20px; text-align: center; }\n    .content { padding: 30px; background: #f8f9fa; }\n    .discount { background: #d4af37; color: white; padding: 20px; text-align: center; font-size: 24px; font-weight: bold; margin: 20px 0; border-radius: 5px; }\n    .button { display: inline-block; padding: 15px 40px; background: #ff8c00; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; font-size: 18px; }\n    .footer { text-align: center; padding: 20px; font-size: 12px; color: #666; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h1>🎁 Special Offer Just For You!</h1>\n    </div>\n    <div class=\"content\">\n      <p>Hi {{$json[\"customer_name\"]}},</p>\n      <p>We'd really love to help you get your motorcycle ramp!</p>\n      <div class=\"discount\">\n        10% OFF YOUR ORDER<br>\n        <span style=\"font-size: 16px;\">Use code: SAVE10</span>\n      </div>\n      <p><strong>This is our final reminder.</strong> Your configuration for the <strong>{{$json[\"vehicle_type\"]}}</strong> is still saved, but this discount expires in 48 hours.</p>\n      <p style=\"text-align: center;\">\n        <a href=\"https://ezcycleramp.com/configure?session={{$json[\"session_id\"]}}&discount=SAVE10\" class=\"button\">\n          Claim Your 10% Discount\n        </a>\n      </p>\n      <p><strong>Why customers love our ramps:</strong></p>\n      <ul>\n        <li>⭐ Custom-configured for perfect fit</li>\n        <li>⭐ 2,500 lb weight capacity</li>\n        <li>⭐ Made in USA</li>\n        <li>⭐ Lifetime warranty</li>\n      </ul>\n      <p>Questions? We're here to help:<br>\n      📞 <strong>800-687-4410</strong></p>\n      <p>Best regards,<br>The EZ Cycle Ramp Team</p>\n    </div>\n    <div class=\"footer\">\n      <p>EZ Cycle Ramp | 800-687-4410<br>\n      <a href=\"https://ezcycleramp.com\">ezcycleramp.com</a></p>\n      <p style=\"font-size: 10px; margin-top: 10px;\">\n        Don't want these emails? <a href=\"https://ezcycleramp.com/unsubscribe\">Unsubscribe</a>\n      </p>\n    </div>\n  </div>\n</body>\n</html>"
+      },
+      "name": "Send 72hr Email with Discount",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [850, 600],
+      "credentials": {
+        "smtp": {
+          "id": "2",
+          "name": "Resend SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE shopping_cart \nSET configuration = jsonb_set(\n  configuration, \n  '{recovery_emails_sent}', \n  to_jsonb(COALESCE((configuration->>'recovery_emails_sent')::int, 0) + 1)\n)\nWHERE id = '{{$json[\"cart_id\"]}}';"
+      },
+      "name": "Update Email Count",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [1050, 400],
+      "credentials": {
+        "postgres": {
+          "id": "1",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "channel": "#ezcr-sales",
+        "text": "🔔 Abandoned cart recovery email sent\n\n*Customer:* {{$json[\"customer_name\"]}}\n*Email Type:* {{$json[\"email_type\"]}}\n*Hours Abandoned:* {{$json[\"hours_abandoned\"]}}\n*Vehicle:* {{$json[\"vehicle_type\"]}}\n\n<https://ezcycleramp.com/admin/carts/{{$json[\"cart_id\"]}}|View Cart Details>"
+      },
+      "name": "Notify Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [1050, 200],
+      "credentials": {
+        "slackApi": {
+          "id": "3",
+          "name": "Slack"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Every 2 Hours": {
+      "main": [
+        [
+          {
+            "node": "Query Abandoned Carts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Abandoned Carts": {
+      "main": [
+        [
+          {
+            "node": "2 Hour Email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "24 Hour Email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "72 Hour Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2 Hour Email": {
+      "main": [
+        [
+          {
+            "node": "Send 2hr Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "24 Hour Email": {
+      "main": [
+        [
+          {
+            "node": "Send 24hr Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "72 Hour Email": {
+      "main": [
+        [
+          {
+            "node": "Send 72hr Email with Discount",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send 2hr Email": {
+      "main": [
+        [
+          {
+            "node": "Update Email Count",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Notify Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send 24hr Email": {
+      "main": [
+        [
+          {
+            "node": "Update Email Count",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Notify Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send 72hr Email with Discount": {
+      "main": [
+        [
+          {
+            "node": "Update Email Count",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Notify Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2025-10-13T00:00:00.000Z",
+  "versionId": "1"
+}

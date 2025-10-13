@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { ConfiguratorProvider, useConfigurator } from './ConfiguratorProvider'
+import { ConfiguratorSettingsProvider } from './ConfiguratorSettingsProvider'
 import { ConfiguratorHeader } from './ConfiguratorHeader'
 import { ProgressBar } from './ProgressBar'
 import { Step1VehicleType } from './Step1VehicleType'
@@ -10,6 +11,7 @@ import { Step3Motorcycle } from './Step3Motorcycle'
 import { Step4Configuration } from './Step4Configuration'
 import { Step5Quote } from './Step5Quote'
 import { ContactModal } from './ContactModal'
+import { ChatWidget } from './ChatWidget'
 
 function ConfiguratorContent() {
   const { currentStep } = useConfigurator()
@@ -31,14 +33,17 @@ function ConfiguratorContent() {
       </main>
 
       <ContactModal />
+      <ChatWidget />
     </div>
   )
 }
 
 export default function Configurator() {
   return (
-    <ConfiguratorProvider>
-      <ConfiguratorContent />
-    </ConfiguratorProvider>
+    <ConfiguratorSettingsProvider>
+      <ConfiguratorProvider>
+        <ConfiguratorContent />
+      </ConfiguratorProvider>
+    </ConfiguratorSettingsProvider>
   )
 }
