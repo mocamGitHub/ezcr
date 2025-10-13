@@ -1,0 +1,357 @@
+{
+  "name": "Chat Analytics Daily Report",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Schedule Daily at 6 AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Get yesterday's chat session stats\nSELECT\n  COUNT(DISTINCT id) as total_sessions,\n  COUNT(DISTINCT CASE WHEN status = 'active' THEN id END) as active_sessions,\n  COUNT(DISTINCT CASE WHEN status = 'completed' THEN id END) as completed_sessions,\n  AVG(EXTRACT(EPOCH FROM (updated_at - created_at)) / 60)::numeric(10,2) as avg_duration_minutes,\n  COUNT(DISTINCT user_id) as unique_users,\n  COUNT(DISTINCT CASE WHEN metadata->>'converted' = 'true' THEN id END) as conversions,\n  (COUNT(DISTINCT CASE WHEN metadata->>'converted' = 'true' THEN id END)::float / NULLIF(COUNT(DISTINCT id), 0) * 100)::numeric(10,2) as conversion_rate\nFROM chat_sessions\nWHERE DATE(created_at) = CURRENT_DATE - INTERVAL '1 day'\n  AND tenant_id = (SELECT id FROM tenants WHERE slug = 'ezcr-01')",
+        "options": {}
+      },
+      "id": "get-session-stats",
+      "name": "Get Session Stats",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [450, 300],
+      "credentials": {
+        "postgres": {
+          "id": "supabase-postgres",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Get yesterday's message stats\nSELECT\n  COUNT(*) as total_messages,\n  COUNT(CASE WHEN role = 'user' THEN 1 END) as user_messages,\n  COUNT(CASE WHEN role = 'assistant' THEN 1 END) as assistant_messages,\n  AVG(CASE WHEN role = 'user' THEN LENGTH(content) END)::numeric(10,2) as avg_user_msg_length,\n  AVG(CASE WHEN role = 'assistant' THEN LENGTH(content) END)::numeric(10,2) as avg_assistant_msg_length,\n  (COUNT(*)::float / NULLIF(COUNT(DISTINCT session_id), 0))::numeric(10,2) as avg_messages_per_session\nFROM chat_messages cm\nJOIN chat_sessions cs ON cm.session_id = cs.id\nWHERE DATE(cm.created_at) = CURRENT_DATE - INTERVAL '1 day'\n  AND cs.tenant_id = (SELECT id FROM tenants WHERE slug = 'ezcr-01')",
+        "options": {}
+      },
+      "id": "get-message-stats",
+      "name": "Get Message Stats",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [450, 450],
+      "credentials": {
+        "postgres": {
+          "id": "supabase-postgres",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Get top knowledge base articles used\nSELECT\n  kb.title,\n  kb.category,\n  COUNT(*) as usage_count,\n  AVG(mrs.similarity)::numeric(10,4) as avg_similarity\nFROM message_rag_sources mrs\nJOIN knowledge_base kb ON mrs.source_id = kb.id\nJOIN chat_messages cm ON mrs.message_id = cm.id\nJOIN chat_sessions cs ON cm.session_id = cs.id\nWHERE DATE(cm.created_at) = CURRENT_DATE - INTERVAL '1 day'\n  AND cs.tenant_id = (SELECT id FROM tenants WHERE slug = 'ezcr-01')\nGROUP BY kb.id, kb.title, kb.category\nORDER BY usage_count DESC\nLIMIT 10",
+        "options": {}
+      },
+      "id": "get-top-articles",
+      "name": "Get Top KB Articles",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [450, 600],
+      "credentials": {
+        "postgres": {
+          "id": "supabase-postgres",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Get common user questions (first message in sessions)\nSELECT\n  LEFT(cm.content, 100) as question_preview,\n  COUNT(*) as frequency\nFROM chat_messages cm\nJOIN chat_sessions cs ON cm.session_id = cs.id\nWHERE DATE(cm.created_at) = CURRENT_DATE - INTERVAL '1 day'\n  AND cs.tenant_id = (SELECT id FROM tenants WHERE slug = 'ezcr-01')\n  AND cm.role = 'user'\n  AND cm.id IN (\n    SELECT MIN(id)\n    FROM chat_messages\n    WHERE session_id = cm.session_id\n    GROUP BY session_id\n  )\nGROUP BY LEFT(cm.content, 100)\nORDER BY frequency DESC\nLIMIT 10",
+        "options": {}
+      },
+      "id": "get-common-questions",
+      "name": "Get Common Questions",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [450, 750],
+      "credentials": {
+        "postgres": {
+          "id": "supabase-postgres",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Get function calling stats\nSELECT\n  cm.metadata->>'function_name' as function_name,\n  COUNT(*) as call_count,\n  COUNT(CASE WHEN cm.metadata->>'function_success' = 'true' THEN 1 END) as successful_calls,\n  (COUNT(CASE WHEN cm.metadata->>'function_success' = 'true' THEN 1 END)::float / NULLIF(COUNT(*), 0) * 100)::numeric(10,2) as success_rate\nFROM chat_messages cm\nJOIN chat_sessions cs ON cm.session_id = cs.id\nWHERE DATE(cm.created_at) = CURRENT_DATE - INTERVAL '1 day'\n  AND cs.tenant_id = (SELECT id FROM tenants WHERE slug = 'ezcr-01')\n  AND cm.metadata->>'function_name' IS NOT NULL\nGROUP BY cm.metadata->>'function_name'\nORDER BY call_count DESC",
+        "options": {}
+      },
+      "id": "get-function-stats",
+      "name": "Get Function Calling Stats",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [450, 900],
+      "credentials": {
+        "postgres": {
+          "id": "supabase-postgres",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Get sessions with no knowledge base matches (potential gaps)\nSELECT\n  cs.id as session_id,\n  COUNT(cm.id) as message_count,\n  STRING_AGG(LEFT(cm.content, 80), ' | ') as sample_messages\nFROM chat_sessions cs\nJOIN chat_messages cm ON cs.id = cm.session_id\nLEFT JOIN message_rag_sources mrs ON cm.id = mrs.message_id\nWHERE DATE(cs.created_at) = CURRENT_DATE - INTERVAL '1 day'\n  AND cs.tenant_id = (SELECT id FROM tenants WHERE slug = 'ezcr-01')\n  AND cm.role = 'user'\n  AND mrs.id IS NULL\nGROUP BY cs.id\nHAVING COUNT(cm.id) >= 2\nLIMIT 5",
+        "options": {}
+      },
+      "id": "get-knowledge-gaps",
+      "name": "Get Knowledge Gaps",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [450, 1050],
+      "credentials": {
+        "postgres": {
+          "id": "supabase-postgres",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge all data into a single report object\nconst sessionStats = $input.item(0).json;\nconst messageStats = $input.item(1).json;\nconst topArticles = $input.item(2).json;\nconst commonQuestions = $input.item(3).json;\nconst functionStats = $input.item(4).json;\nconst knowledgeGaps = $input.item(5).json;\n\nconst yesterday = new Date();\nyesterday.setDate(yesterday.getDate() - 1);\nconst dateStr = yesterday.toISOString().split('T')[0];\n\n// Calculate trends (if available)\nconst trend = {\n  sessions: sessionStats.total_sessions,\n  messages: messageStats.total_messages,\n  conversion_rate: parseFloat(sessionStats.conversion_rate || 0),\n  avg_duration: parseFloat(sessionStats.avg_duration_minutes || 0)\n};\n\nreturn {\n  json: {\n    date: dateStr,\n    session_stats: sessionStats,\n    message_stats: messageStats,\n    top_articles: Array.isArray(topArticles) ? topArticles : [topArticles],\n    common_questions: Array.isArray(commonQuestions) ? commonQuestions : [commonQuestions],\n    function_stats: Array.isArray(functionStats) ? functionStats : [functionStats],\n    knowledge_gaps: Array.isArray(knowledgeGaps) ? knowledgeGaps : [knowledgeGaps],\n    trend: trend\n  }\n};"
+      },
+      "id": "merge-data",
+      "name": "Merge Analytics Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 600]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Store analytics snapshot\nINSERT INTO analytics_snapshots (\n  tenant_id,\n  snapshot_date,\n  snapshot_type,\n  data\n) VALUES (\n  (SELECT id FROM tenants WHERE slug = 'ezcr-01'),\n  '{{ $json.date }}'::date,\n  'chat_daily',\n  '{{ JSON.stringify($json) }}'::jsonb\n)\nON CONFLICT (tenant_id, snapshot_date, snapshot_type)\nDO UPDATE SET\n  data = EXCLUDED.data,\n  updated_at = NOW()\nRETURNING id",
+        "options": {}
+      },
+      "id": "store-analytics",
+      "name": "Store Analytics Snapshot",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [850, 600],
+      "credentials": {
+        "postgres": {
+          "id": "supabase-postgres",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Format Slack message with rich data\nconst data = $input.first().json;\n\n// Format numbers\nconst formatNum = (num) => num?.toLocaleString() || '0';\nconst formatPct = (num) => `${parseFloat(num || 0).toFixed(1)}%`;\nconst formatDuration = (mins) => {\n  const m = parseFloat(mins || 0);\n  if (m < 60) return `${m.toFixed(1)} min`;\n  const hours = Math.floor(m / 60);\n  const minutes = Math.floor(m % 60);\n  return `${hours}h ${minutes}m`;\n};\n\n// Build top articles list\nconst topArticlesList = (data.top_articles || [])\n  .slice(0, 5)\n  .map((article, idx) => \n    `${idx + 1}. ${article.title} (${article.usage_count} uses, ${(article.avg_similarity * 100).toFixed(1)}% similarity)`\n  )\n  .join('\\n') || 'No data';\n\n// Build common questions list\nconst commonQuestionsList = (data.common_questions || [])\n  .slice(0, 5)\n  .map((q, idx) => \n    `${idx + 1}. \"${q.question_preview}${q.question_preview?.length >= 100 ? '...' : ''}\" (${q.frequency}x)`\n  )\n  .join('\\n') || 'No data';\n\n// Build function stats\nconst functionStatsList = (data.function_stats || [])\n  .map(f => \n    `• ${f.function_name}: ${f.call_count} calls (${formatPct(f.success_rate)} success)`\n  )\n  .join('\\n') || 'No functions called';\n\n// Knowledge gaps alert\nconst knowledgeGapCount = data.knowledge_gaps?.length || 0;\nconst gapsEmoji = knowledgeGapCount > 0 ? '⚠️' : '✅';\n\nconst slackMessage = {\n  text: `📊 Chat Analytics Report - ${data.date}`,\n  blocks: [\n    {\n      type: 'header',\n      text: {\n        type: 'plain_text',\n        text: `📊 Daily Chat Analytics - ${data.date}`\n      }\n    },\n    {\n      type: 'section',\n      fields: [\n        {\n          type: 'mrkdwn',\n          text: `*Total Sessions:*\\n${formatNum(data.session_stats.total_sessions)}`\n        },\n        {\n          type: 'mrkdwn',\n          text: `*Unique Users:*\\n${formatNum(data.session_stats.unique_users)}`\n        },\n        {\n          type: 'mrkdwn',\n          text: `*Total Messages:*\\n${formatNum(data.message_stats.total_messages)}`\n        },\n        {\n          type: 'mrkdwn',\n          text: `*Avg Duration:*\\n${formatDuration(data.session_stats.avg_duration_minutes)}`\n        },\n        {\n          type: 'mrkdwn',\n          text: `*Conversion Rate:*\\n${formatPct(data.session_stats.conversion_rate)}`\n        },\n        {\n          type: 'mrkdwn',\n          text: `*Conversions:*\\n${formatNum(data.session_stats.conversions)}`\n        }\n      ]\n    },\n    {\n      type: 'divider'\n    },\n    {\n      type: 'section',\n      text: {\n        type: 'mrkdwn',\n        text: `*📈 Message Breakdown*\\n• User messages: ${formatNum(data.message_stats.user_messages)}\\n• Assistant messages: ${formatNum(data.message_stats.assistant_messages)}\\n• Avg messages/session: ${data.message_stats.avg_messages_per_session || 0}`\n      }\n    },\n    {\n      type: 'divider'\n    },\n    {\n      type: 'section',\n      text: {\n        type: 'mrkdwn',\n        text: `*📚 Top Knowledge Base Articles*\\n${topArticlesList}`\n      }\n    },\n    {\n      type: 'divider'\n    },\n    {\n      type: 'section',\n      text: {\n        type: 'mrkdwn',\n        text: `*❓ Most Common Questions*\\n${commonQuestionsList}`\n      }\n    },\n    {\n      type: 'divider'\n    },\n    {\n      type: 'section',\n      text: {\n        type: 'mrkdwn',\n        text: `*🔧 Function Calling Stats*\\n${functionStatsList}`\n      }\n    },\n    {\n      type: 'divider'\n    },\n    {\n      type: 'section',\n      text: {\n        type: 'mrkdwn',\n        text: `*${gapsEmoji} Knowledge Gaps Detected*\\n${knowledgeGapCount} sessions had no KB matches${knowledgeGapCount > 0 ? ' (review recommended)' : ''}`\n      }\n    }\n  ]\n};\n\nreturn { json: slackMessage };"
+      },
+      "id": "format-slack-message",
+      "name": "Format Slack Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1050, 600]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SLACK_WEBHOOK_URL }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "send-slack-report",
+      "name": "Send to Slack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1250, 600]
+    },
+    {
+      "parameters": {
+        "fromEmail": "analytics@ezcycleramp.com",
+        "toEmail": "team@ezcycleramp.com",
+        "subject": "📊 Daily Chat Analytics - {{ $('Merge Analytics Data').item.json.date }}",
+        "emailType": "html",
+        "message": "=<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n  <style>\n    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; }\n    .container { max-width: 800px; margin: 20px auto; }\n    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }\n    .content { background: white; padding: 30px; border: 1px solid #e0e0e0; border-top: none; }\n    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin: 20px 0; }\n    .stat-card { background: #f7fafc; border: 2px solid #e2e8f0; border-radius: 8px; padding: 20px; text-align: center; }\n    .stat-value { font-size: 32px; font-weight: bold; color: #667eea; margin: 10px 0; }\n    .stat-label { font-size: 14px; color: #666; text-transform: uppercase; letter-spacing: 1px; }\n    .section { margin: 30px 0; }\n    .section-title { font-size: 20px; font-weight: bold; color: #333; margin-bottom: 15px; border-bottom: 2px solid #667eea; padding-bottom: 10px; }\n    .list-item { background: #f7fafc; padding: 12px; margin: 8px 0; border-radius: 6px; border-left: 4px solid #667eea; }\n    .alert-box { background: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px; padding: 20px; margin: 20px 0; }\n    .footer { text-align: center; margin-top: 30px; padding: 20px; background: #f7fafc; border-radius: 0 0 8px 8px; color: #666; font-size: 12px; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h1 style=\"margin: 0;\">📊 Daily Chat Analytics</h1>\n      <p style=\"margin: 10px 0 0 0; opacity: 0.9;\">{{ $('Merge Analytics Data').item.json.date }}</p>\n    </div>\n    <div class=\"content\">\n      \n      <div class=\"stats-grid\">\n        <div class=\"stat-card\">\n          <div class=\"stat-label\">Total Sessions</div>\n          <div class=\"stat-value\">{{ $('Merge Analytics Data').item.json.session_stats.total_sessions }}</div>\n        </div>\n        <div class=\"stat-card\">\n          <div class=\"stat-label\">Total Messages</div>\n          <div class=\"stat-value\">{{ $('Merge Analytics Data').item.json.message_stats.total_messages }}</div>\n        </div>\n        <div class=\"stat-card\">\n          <div class=\"stat-label\">Conversion Rate</div>\n          <div class=\"stat-value\">{{ $('Merge Analytics Data').item.json.session_stats.conversion_rate }}%</div>\n        </div>\n      </div>\n\n      <div class=\"section\">\n        <div class=\"section-title\">📈 Session Metrics</div>\n        <ul style=\"list-style: none; padding: 0;\">\n          <li class=\"list-item\">Unique Users: <strong>{{ $('Merge Analytics Data').item.json.session_stats.unique_users }}</strong></li>\n          <li class=\"list-item\">Avg Duration: <strong>{{ $('Merge Analytics Data').item.json.session_stats.avg_duration_minutes }} minutes</strong></li>\n          <li class=\"list-item\">Conversions: <strong>{{ $('Merge Analytics Data').item.json.session_stats.conversions }}</strong></li>\n          <li class=\"list-item\">Avg Messages/Session: <strong>{{ $('Merge Analytics Data').item.json.message_stats.avg_messages_per_session }}</strong></li>\n        </ul>\n      </div>\n\n      <div class=\"section\">\n        <div class=\"section-title\">📚 Top Knowledge Base Articles</div>\n        {{ $('Merge Analytics Data').item.json.top_articles.map((article, idx) => `\n          <div class=\"list-item\">\n            <strong>${idx + 1}. ${article.title}</strong><br>\n            <small>${article.category} | ${article.usage_count} uses | ${(article.avg_similarity * 100).toFixed(1)}% avg similarity</small>\n          </div>\n        `).join('') }}\n      </div>\n\n      <div class=\"section\">\n        <div class=\"section-title\">❓ Most Common Questions</div>\n        {{ $('Merge Analytics Data').item.json.common_questions.map((q, idx) => `\n          <div class=\"list-item\">\n            <strong>${idx + 1}.</strong> \"${q.question_preview}${q.question_preview?.length >= 100 ? '...' : ''}\"<br>\n            <small>Asked ${q.frequency} times</small>\n          </div>\n        `).join('') }}\n      </div>\n\n      <div class=\"section\">\n        <div class=\"section-title\">🔧 Function Calling Stats</div>\n        {{ $('Merge Analytics Data').item.json.function_stats.map(f => `\n          <div class=\"list-item\">\n            <strong>${f.function_name}</strong>: ${f.call_count} calls | ${f.success_rate}% success rate\n          </div>\n        `).join('') }}\n      </div>\n\n      {{ $('Merge Analytics Data').item.json.knowledge_gaps.length > 0 ? `\n        <div class=\"alert-box\">\n          <strong>⚠️ Knowledge Gaps Detected</strong><br>\n          ${$('Merge Analytics Data').item.json.knowledge_gaps.length} sessions had no knowledge base matches. Consider reviewing these conversations to identify content gaps.\n        </div>\n      ` : '' }}\n\n    </div>\n    <div class=\"footer\">\n      <p>This is an automated daily report generated by n8n.</p>\n      <p>EZ Cycle Ramp Analytics System</p>\n    </div>\n  </div>\n</body>\n</html>",
+        "options": {}
+      },
+      "id": "send-email-report",
+      "name": "Send Email Report (Optional)",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1250, 750],
+      "credentials": {
+        "resendApi": {
+          "id": "resend-api",
+          "name": "Resend API"
+        }
+      },
+      "disabled": true
+    }
+  ],
+  "connections": {
+    "Schedule Daily at 6 AM": {
+      "main": [
+        [
+          {
+            "node": "Get Session Stats",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Message Stats",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Top KB Articles",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Common Questions",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Function Calling Stats",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Knowledge Gaps",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Session Stats": {
+      "main": [
+        [
+          {
+            "node": "Merge Analytics Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Message Stats": {
+      "main": [
+        [
+          {
+            "node": "Merge Analytics Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Get Top KB Articles": {
+      "main": [
+        [
+          {
+            "node": "Merge Analytics Data",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Get Common Questions": {
+      "main": [
+        [
+          {
+            "node": "Merge Analytics Data",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Get Function Calling Stats": {
+      "main": [
+        [
+          {
+            "node": "Merge Analytics Data",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "Get Knowledge Gaps": {
+      "main": [
+        [
+          {
+            "node": "Merge Analytics Data",
+            "type": "main",
+            "index": 5
+          }
+        ]
+      ]
+    },
+    "Merge Analytics Data": {
+      "main": [
+        [
+          {
+            "node": "Store Analytics Snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Analytics Snapshot": {
+      "main": [
+        [
+          {
+            "node": "Format Slack Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Slack Message": {
+      "main": [
+        [
+          {
+            "node": "Send to Slack",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Email Report (Optional)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2025-10-13T00:00:00.000Z",
+  "versionId": "1"
+}

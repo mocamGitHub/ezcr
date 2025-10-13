@@ -1,0 +1,422 @@
+{
+  "name": "Order Inquiry Handler",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "order-inquiry",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook - Order Inquiry",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "order-inquiry-webhook"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "options": {}
+      },
+      "id": "webhook-response",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n  o.*,\n  t.name as tenant_name,\n  array_agg(json_build_object(\n    'product_id', oi.product_id,\n    'product_name', p.name,\n    'quantity', oi.quantity,\n    'price', oi.price\n  )) as items\nFROM orders o\nLEFT JOIN tenants t ON o.tenant_id = t.id\nLEFT JOIN order_items oi ON o.id = oi.order_id\nLEFT JOIN products p ON oi.product_id = p.id\nWHERE o.order_number = '{{ $json.body.order_number }}'\n  AND o.customer_email = '{{ $json.body.customer_email }}'\nGROUP BY o.id, t.name"
+      },
+      "id": "get-order-details",
+      "name": "Get Full Order Details",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [650, 300],
+      "credentials": {
+        "postgres": {
+          "id": "supabase-postgres",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "status-delayed",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "delayed",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "status-pending-long",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "pending",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "check-if-delayed",
+      "name": "Check if Order Delayed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SLACK_WEBHOOK_URL }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": \"⚠️ Customer Order Inquiry - Potential Issue\",\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": {\n        \"type\": \"plain_text\",\n        \"text\": \"⚠️ Customer Checked Delayed Order\"\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"fields\": [\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Customer:*\\n{{ $json.customer_name || 'N/A' }}\"\n        },\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Order:*\\n{{ $json.order_number }}\"\n        },\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Status:*\\n{{ $json.status }}\"\n        },\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Expected:*\\n{{ $json.expected_delivery_date }}\"\n        }\n      ]\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"📧 *Contact:*\\n{{ $json.customer_email }}\\n{{ $json.customer_phone || 'No phone' }}\"\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*Action Needed:* Customer inquired about delayed order. Consider proactive outreach.\"\n      }\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "notify-support-delayed",
+      "name": "Notify Support Team (Delayed)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1050, 150]
+    },
+    {
+      "parameters": {
+        "fromEmail": "support@ezcycleramp.com",
+        "toEmail": "={{ $json.customer_email }}",
+        "subject": "Update on Your Order {{ $json.order_number }}",
+        "emailType": "html",
+        "message": "=<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n  <style>\n    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #333; }\n    .container { max-width: 600px; margin: 0 auto; padding: 20px; }\n    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }\n    .content { background: white; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px; }\n    .button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; }\n    .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h1 style=\"margin: 0;\">We're Working on Your Order</h1>\n    </div>\n    <div class=\"content\">\n      <p>Hi {{ $json.customer_name || 'there' }},</p>\n      \n      <p>We noticed you checked on your order <strong>{{ $json.order_number }}</strong>. We want to keep you informed about its status.</p>\n      \n      <p><strong>Current Status:</strong> {{ $json.status }}</p>\n      <p><strong>Expected Delivery:</strong> {{ $json.expected_delivery_date || 'TBD' }}</p>\n      \n      <p>We understand waiting can be frustrating. Our team is actively working to get your order to you as quickly as possible. If you have any questions or concerns, please don't hesitate to reach out.</p>\n      \n      <a href=\"https://ezcycleramp.com/support\" class=\"button\">Contact Support</a>\n      \n      <p>We appreciate your patience and business!</p>\n      \n      <p>Best regards,<br>The EZ Cycle Ramp Team</p>\n    </div>\n    <div class=\"footer\">\n      <p>EZ Cycle Ramp | 800-687-4410 | support@ezcycleramp.com</p>\n    </div>\n  </div>\n</body>\n</html>",
+        "options": {}
+      },
+      "id": "send-proactive-email",
+      "name": "Send Proactive Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1050, 300],
+      "credentials": {
+        "resendApi": {
+          "id": "resend-api",
+          "name": "Resend API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "recently-shipped",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "shipped",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "in-transit",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "in_transit",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "check-if-shipped",
+      "name": "Check if Recently Shipped",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [850, 500]
+    },
+    {
+      "parameters": {
+        "fromEmail": "support@ezcycleramp.com",
+        "toEmail": "={{ $json.customer_email }}",
+        "subject": "Your Order is On Its Way! Tracking Tips",
+        "emailType": "html",
+        "message": "=<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n  <style>\n    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #333; }\n    .container { max-width: 600px; margin: 0 auto; padding: 20px; }\n    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }\n    .content { background: white; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px; }\n    .tracking-box { background: #f7fafc; border: 2px solid #667eea; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center; }\n    .tip-box { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 15px; margin: 15px 0; }\n    .button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 10px 0; }\n    .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h1 style=\"margin: 0;\">🚚 Your Order is En Route!</h1>\n    </div>\n    <div class=\"content\">\n      <p>Hi {{ $json.customer_name || 'there' }},</p>\n      \n      <p>Great news! Your order <strong>{{ $json.order_number }}</strong> is on its way to you.</p>\n      \n      <div class=\"tracking-box\">\n        <h3 style=\"margin-top: 0;\">📦 Tracking Number</h3>\n        <p style=\"font-size: 18px; font-weight: bold; color: #667eea;\">{{ $json.tracking_number || 'Available soon' }}</p>\n        {{ $json.tracking_number ? '<a href=\"https://www.fedex.com/fedextrack/?tracknumbers=' + $json.tracking_number + '\" class=\"button\">Track Your Package</a>' : '<p style=\"color: #666;\">Tracking will be available within 24 hours</p>' }}\n      </div>\n      \n      <p><strong>Expected Delivery:</strong> {{ $json.expected_delivery_date }}</p>\n      \n      <div class=\"tip-box\">\n        <strong>💡 Tracking Tips:</strong>\n        <ul style=\"margin: 10px 0;\">\n          <li>Tracking updates may take 24-48 hours to show movement</li>\n          <li>Save the tracking number for easy access</li>\n          <li>You'll receive delivery notifications from the carrier</li>\n        </ul>\n      </div>\n      \n      <h3>Getting Ready for Delivery</h3>\n      <p>To ensure a smooth delivery:</p>\n      <ul>\n        <li>Someone 18+ should be available to sign for the package</li>\n        <li>Clear space near your delivery area</li>\n        <li>Have installation location ready (if applicable)</li>\n      </ul>\n      \n      <p>Questions about your order? We're here to help!</p>\n      \n      <a href=\"https://ezcycleramp.com/support\" class=\"button\">Contact Support</a>\n      \n      <p>Thank you for choosing EZ Cycle Ramp!</p>\n      \n      <p>Best regards,<br>The EZ Cycle Ramp Team</p>\n    </div>\n    <div class=\"footer\">\n      <p>EZ Cycle Ramp | 800-687-4410 | support@ezcycleramp.com</p>\n    </div>\n  </div>\n</body>\n</html>",
+        "options": {}
+      },
+      "id": "send-tracking-tips",
+      "name": "Send Tracking Tips Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1050, 500],
+      "credentials": {
+        "resendApi": {
+          "id": "resend-api",
+          "name": "Resend API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "status-delivered",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "delivered",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "check-if-delivered",
+      "name": "Check if Delivered",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [850, 700]
+    },
+    {
+      "parameters": {
+        "amount": 48,
+        "unit": "hours"
+      },
+      "id": "wait-48hr",
+      "name": "Wait 48 Hours",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1050, 700],
+      "webhookId": "wait-48hr-delivered"
+    },
+    {
+      "parameters": {
+        "fromEmail": "support@ezcycleramp.com",
+        "toEmail": "={{ $json.customer_email }}",
+        "subject": "How's Your EZ Cycle Ramp Experience?",
+        "emailType": "html",
+        "message": "=<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n  <style>\n    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #333; }\n    .container { max-width: 600px; margin: 0 auto; padding: 20px; }\n    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }\n    .content { background: white; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px; }\n    .button { display: inline-block; background: #667eea; color: white; padding: 14px 40px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-size: 16px; }\n    .stars { font-size: 32px; text-align: center; margin: 20px 0; }\n    .incentive-box { background: #fef3c7; border: 2px dashed #f59e0b; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center; }\n    .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h1 style=\"margin: 0;\">⭐ How Are We Doing?</h1>\n    </div>\n    <div class=\"content\">\n      <p>Hi {{ $json.customer_name || 'there' }},</p>\n      \n      <p>We hope you're enjoying your EZ Cycle Ramp! Your feedback helps us serve you better.</p>\n      \n      <div class=\"stars\">⭐⭐⭐⭐⭐</div>\n      \n      <p style=\"text-align: center; font-size: 18px;\">Would you take 2 minutes to share your experience?</p>\n      \n      <div style=\"text-align: center;\">\n        <a href=\"https://forms.google.com/satisfaction-survey?order={{ $json.order_number }}\" class=\"button\">Take Quick Survey</a>\n      </div>\n      \n      <div class=\"incentive-box\">\n        <strong>🎁 Say Thank You!</strong>\n        <p style=\"margin: 10px 0;\">Complete our survey to be entered into our monthly drawing for a <strong>$100 Amazon gift card</strong>!</p>\n        <p style=\"font-size: 12px; color: #666; margin: 5px 0;\">One winner chosen monthly. No purchase necessary.</p>\n      </div>\n      \n      <h3>Love Your Ramp? Share Your Experience!</h3>\n      <p>Your review helps other customers make informed decisions:</p>\n      \n      <div style=\"text-align: center; margin: 20px 0;\">\n        <a href=\"https://g.page/r/YOUR_GOOGLE_REVIEW_LINK\" style=\"margin: 0 10px; color: #667eea; text-decoration: none; font-weight: bold;\">⭐ Google</a>\n        <a href=\"https://www.bbb.org/YOUR_BBB_PAGE\" style=\"margin: 0 10px; color: #667eea; text-decoration: none; font-weight: bold;\">⭐ BBB</a>\n        <a href=\"https://www.trustpilot.com/YOUR_PAGE\" style=\"margin: 0 10px; color: #667eea; text-decoration: none; font-weight: bold;\">⭐ Trustpilot</a>\n      </div>\n      \n      <p>Having issues? We're here to help!</p>\n      \n      <p style=\"text-align: center;\">\n        <a href=\"https://ezcycleramp.com/support\" style=\"color: #667eea; text-decoration: none;\">Contact Support →</a>\n      </p>\n      \n      <p>Thank you for choosing EZ Cycle Ramp!</p>\n      \n      <p>Best regards,<br>The EZ Cycle Ramp Team</p>\n    </div>\n    <div class=\"footer\">\n      <p>EZ Cycle Ramp | 800-687-4410 | support@ezcycleramp.com</p>\n    </div>\n  </div>\n</body>\n</html>",
+        "options": {}
+      },
+      "id": "send-satisfaction-survey",
+      "name": "Send Satisfaction Survey",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1250, 700],
+      "credentials": {
+        "resendApi": {
+          "id": "resend-api",
+          "name": "Resend API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE orders\nSET \n  metadata = COALESCE(metadata, '{}'::jsonb) || \n    jsonb_build_object(\n      'order_inquiry_handled', true,\n      'inquiry_timestamp', '{{ $json.body.timestamp }}',\n      'inquiry_status', '{{ $json.status }}',\n      'automated_followup_sent', true\n    )\nWHERE order_number = '{{ $json.body.order_number }}'\nRETURNING id, order_number, metadata",
+        "options": {}
+      },
+      "id": "log-inquiry",
+      "name": "Log Inquiry to Database",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [1250, 300],
+      "credentials": {
+        "postgres": {
+          "id": "supabase-postgres",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SLACK_WEBHOOK_URL }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": \"📊 Order Inquiry Summary\",\n  \"blocks\": [\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*Order Inquiry:* {{ $json.order_number }}\\n*Status:* {{ $json.status }}\\n*Customer:* {{ $json.customer_email }}\\n*Automated followup sent* ✅\"\n      }\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "notify-slack-summary",
+      "name": "Notify Slack (Summary)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1450, 300]
+    }
+  ],
+  "connections": {
+    "Webhook - Order Inquiry": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Full Order Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Full Order Details": {
+      "main": [
+        [
+          {
+            "node": "Check if Order Delayed",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Check if Recently Shipped",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Check if Delivered",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if Order Delayed": {
+      "main": [
+        [
+          {
+            "node": "Notify Support Team (Delayed)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Proactive Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if Recently Shipped": {
+      "main": [
+        [
+          {
+            "node": "Send Tracking Tips Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if Delivered": {
+      "main": [
+        [
+          {
+            "node": "Wait 48 Hours",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 48 Hours": {
+      "main": [
+        [
+          {
+            "node": "Send Satisfaction Survey",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Proactive Email": {
+      "main": [
+        [
+          {
+            "node": "Log Inquiry to Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Tracking Tips Email": {
+      "main": [
+        [
+          {
+            "node": "Log Inquiry to Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Satisfaction Survey": {
+      "main": [
+        [
+          {
+            "node": "Log Inquiry to Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Support Team (Delayed)": {
+      "main": [
+        []
+      ]
+    },
+    "Log Inquiry to Database": {
+      "main": [
+        [
+          {
+            "node": "Notify Slack (Summary)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2025-10-13T00:00:00.000Z",
+  "versionId": "1"
+}

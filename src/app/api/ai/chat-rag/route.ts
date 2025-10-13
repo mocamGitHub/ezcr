@@ -204,8 +204,18 @@ export async function POST(request: Request) {
         let functionResult
         if (functionName === 'get_order_status') {
           functionResult = await getOrderStatus(supabase, tenantId, functionArgs)
+          
+          // Trigger n8n order inquiry handler (non-blocking)
+          if (functionResult.success) {
+            triggerOrderInquiryWebhook(functionArgs, functionResult).catch(console.error)
+          }
         } else if (functionName === 'schedule_appointment') {
           functionResult = await scheduleAppointment(supabase, tenantId, functionArgs)
+          
+          // Trigger n8n appointment automation (non-blocking)
+          if (functionResult.success) {
+            triggerAppointmentWebhook(functionArgs, functionResult).catch(console.error)
+          }
         }
 
         functionResults.push({
@@ -466,6 +476,63 @@ async function scheduleAppointment(
       success: false,
       message: 'An error occurred while scheduling your appointment. Please contact support.',
     }
+  }
+}
+
+/**
+ * Trigger n8n appointment automation webhook (non-blocking)
+ */
+async function triggerAppointmentWebhook(args: any, functionResult: any) {
+  try {
+    const webhookUrl = process.env.N8N_APPOINTMENT_WEBHOOK
+    if (!webhookUrl) {
+      console.warn('N8N_APPOINTMENT_WEBHOOK not configured')
+      return
+    }
+
+    await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        order_number: args.order_number,
+        customer_email: args.email,
+        appointment_date: functionResult.appointment?.date || args.preferred_date,
+        appointment_time_slot: functionResult.appointment?.time_slot || args.preferred_time || 'morning',
+        action: args.action,
+        timestamp: new Date().toISOString(),
+      }),
+    })
+  } catch (error) {
+    // Log but don't fail - user already got confirmation
+    console.error('Failed to trigger appointment automation:', error)
+  }
+}
+
+/**
+ * Trigger n8n order inquiry handler webhook (non-blocking)
+ */
+async function triggerOrderInquiryWebhook(args: any, functionResult: any) {
+  try {
+    const webhookUrl = process.env.N8N_ORDER_INQUIRY_WEBHOOK
+    if (!webhookUrl) {
+      console.warn('N8N_ORDER_INQUIRY_WEBHOOK not configured')
+      return
+    }
+
+    await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        order_number: args.order_number,
+        customer_email: args.email,
+        status: functionResult.order?.status || 'unknown',
+        inquiry_type: 'status_check',
+        timestamp: new Date().toISOString(),
+      }),
+    })
+  } catch (error) {
+    // Log but don't fail - user already got their answer
+    console.error('Failed to trigger order inquiry handler:', error)
   }
 }
 

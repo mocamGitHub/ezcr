@@ -1,0 +1,392 @@
+{
+  "name": "Appointment Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "appointment-scheduled",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook - Appointment Scheduled",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "appointment-scheduled"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": true, \"message\": \"Appointment automation triggered\" } }}"
+      },
+      "id": "webhook-response",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n  o.id,\n  o.order_number,\n  o.customer_name,\n  o.customer_email,\n  o.customer_phone,\n  o.appointment_date,\n  o.appointment_time_slot,\n  o.shipping_address,\n  o.total_amount,\n  array_agg(\n    json_build_object(\n      'product_name', p.name,\n      'quantity', oi.quantity,\n      'sku', p.sku\n    )\n  ) as items\nFROM orders o\nLEFT JOIN order_items oi ON o.id = oi.order_id\nLEFT JOIN products p ON oi.product_id = p.id\nWHERE o.order_number = '{{ $json.order_number }}'\n  AND o.customer_email = '{{ $json.customer_email }}'\nGROUP BY o.id",
+        "additionalFields": {}
+      },
+      "id": "get-order-details",
+      "name": "Get Order Details",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [650, 300],
+      "credentials": {
+        "postgres": {
+          "id": "supabase",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@ezcycleramp.com",
+        "toEmail": "={{ $json.customer_email }}",
+        "subject": "Appointment Confirmed - {{ $json.appointment_date }}",
+        "emailType": "html",
+        "message": "<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Appointment Confirmation</title>\n</head>\n<body style=\"font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;\">\n  <div style=\"background: linear-gradient(135deg, #1a1a1a 0%, #333 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;\">\n    <h1 style=\"margin: 0; font-size: 28px;\">✅ Appointment Confirmed!</h1>\n  </div>\n  \n  <div style=\"background: #f9f9f9; padding: 30px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 10px 10px;\">\n    <p style=\"font-size: 16px; margin-bottom: 20px;\">Hi {{ $json.customer_name || 'there' }},</p>\n    \n    <p style=\"font-size: 16px;\">Great news! Your installation/delivery appointment has been confirmed.</p>\n    \n    <div style=\"background: white; padding: 20px; border-left: 4px solid #ff6b35; margin: 20px 0; border-radius: 5px;\">\n      <h2 style=\"margin-top: 0; color: #1a1a1a; font-size: 20px;\">📅 Appointment Details</h2>\n      <p style=\"margin: 10px 0;\"><strong>Date:</strong> {{ $json.appointment_date }}</p>\n      <p style=\"margin: 10px 0;\"><strong>Time:</strong> {{ $json.appointment_time_slot === 'morning' ? '8:00 AM - 12:00 PM' : ($json.appointment_time_slot === 'afternoon' ? '1:00 PM - 5:00 PM' : '5:00 PM - 8:00 PM') }}</p>\n      <p style=\"margin: 10px 0;\"><strong>Order:</strong> {{ $json.order_number }}</p>\n      <p style=\"margin: 10px 0;\"><strong>Address:</strong> {{ $json.shipping_address?.street }}, {{ $json.shipping_address?.city }}, {{ $json.shipping_address?.state }} {{ $json.shipping_address?.zip }}</p>\n    </div>\n    \n    <div style=\"background: white; padding: 20px; margin: 20px 0; border-radius: 5px; border: 1px solid #ddd;\">\n      <h3 style=\"margin-top: 0; color: #1a1a1a; font-size: 18px;\">📦 What We're Installing</h3>\n      {{ $json.items.map(item => `<p style=\"margin: 5px 0;\">• ${item.product_name} (Qty: ${item.quantity})</p>`).join('') }}\n    </div>\n    \n    <div style=\"background: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 20px 0; border-radius: 5px;\">\n      <h3 style=\"margin-top: 0; color: #856404; font-size: 16px;\">⚠️ Important Reminders</h3>\n      <ul style=\"margin: 10px 0; padding-left: 20px; color: #856404;\">\n        <li>Please ensure someone 18+ is present during installation</li>\n        <li>Clear the installation area of any obstacles</li>\n        <li>Have your vehicle ready and accessible</li>\n        <li>Our team will bring all necessary tools</li>\n      </ul>\n    </div>\n    \n    <div style=\"background: white; padding: 20px; margin: 20px 0; border-radius: 5px; border: 1px solid #ddd;\">\n      <h3 style=\"margin-top: 0; color: #1a1a1a; font-size: 18px;\">📞 Need to Reschedule?</h3>\n      <p style=\"margin: 10px 0;\">No problem! Just:</p>\n      <ul style=\"margin: 10px 0; padding-left: 20px;\">\n        <li>Reply to this email</li>\n        <li>Call us at <strong>800-687-4410</strong></li>\n        <li>Chat with us on our website</li>\n      </ul>\n      <p style=\"margin: 10px 0; font-size: 14px; color: #666;\">We recommend giving us at least 24 hours notice if you need to reschedule.</p>\n    </div>\n    \n    <div style=\"text-align: center; margin: 30px 0;\">\n      <p style=\"font-size: 14px; color: #666;\">You'll receive SMS reminders 24 hours and 2 hours before your appointment.</p>\n    </div>\n    \n    <hr style=\"border: none; border-top: 1px solid #ddd; margin: 30px 0;\">\n    \n    <div style=\"text-align: center; color: #666; font-size: 14px;\">\n      <p><strong>EZ Cycle Ramp</strong></p>\n      <p>Premium Motorcycle Loading Ramps</p>\n      <p>📞 800-687-4410 | 📧 support@ezcycleramp.com</p>\n      <p style=\"margin-top: 15px;\">\n        <span style=\"color: #ff6b35;\">🇺🇸</span> Veteran Owned | \n        <span style=\"color: #ff6b35;\">⭐</span> BBB A+ Rating | \n        <span style=\"color: #ff6b35;\">✓</span> Lifetime Warranty\n      </p>\n    </div>\n  </div>\n</body>\n</html>",
+        "options": {}
+      },
+      "id": "send-confirmation-email",
+      "name": "Send Confirmation Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [850, 200],
+      "credentials": {
+        "resend": {
+          "id": "resend",
+          "name": "Resend API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": "primary",
+        "start": "={{ $json.appointment_date + ' ' + ($json.appointment_time_slot === 'morning' ? '08:00:00' : ($json.appointment_time_slot === 'afternoon' ? '13:00:00' : '17:00:00')) }}",
+        "end": "={{ $json.appointment_date + ' ' + ($json.appointment_time_slot === 'morning' ? '12:00:00' : ($json.appointment_time_slot === 'afternoon' ? '17:00:00' : '20:00:00')) }}",
+        "summary": "Installation - {{ $json.customer_name }} - {{ $json.order_number }}",
+        "description": "**Customer**: {{ $json.customer_name }}\n**Email**: {{ $json.customer_email }}\n**Phone**: {{ $json.customer_phone }}\n**Order**: {{ $json.order_number }}\n\n**Address**:\n{{ $json.shipping_address?.street }}\n{{ $json.shipping_address?.city }}, {{ $json.shipping_address?.state }} {{ $json.shipping_address?.zip }}\n\n**Products**:\n{{ $json.items.map(item => `• ${item.product_name} (${item.sku}) - Qty: ${item.quantity}`).join('\\n') }}\n\n**Total**: ${{ $json.total_amount }}",
+        "location": "={{ $json.shipping_address?.street + ', ' + $json.shipping_address?.city + ', ' + $json.shipping_address?.state + ' ' + $json.shipping_address?.zip }}",
+        "sendUpdates": "all",
+        "additionalFields": {
+          "attendees": [
+            "={{ $json.customer_email }}"
+          ],
+          "colorId": "9",
+          "conferenceDataVersion": 0,
+          "maxAttendees": 5,
+          "showAsBusy": true
+        }
+      },
+      "id": "create-calendar-event",
+      "name": "Create Google Calendar Event",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1,
+      "position": [850, 400],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "google-calendar",
+          "name": "Google Calendar"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SLACK_WEBHOOK_URL }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": {\n        \"type\": \"plain_text\",\n        \"text\": \"✅ New Appointment Scheduled\",\n        \"emoji\": true\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"fields\": [\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Customer:*\\n{{ $json.customer_name }}\"\n        },\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Order:*\\n{{ $json.order_number }}\"\n        },\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Date:*\\n{{ $json.appointment_date }}\"\n        },\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Time:*\\n{{ $json.appointment_time_slot === 'morning' ? '8 AM - 12 PM' : ($json.appointment_time_slot === 'afternoon' ? '1 PM - 5 PM' : '5 PM - 8 PM') }}\"\n        }\n      ]\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*📍 Location:*\\n{{ $json.shipping_address?.street }}, {{ $json.shipping_address?.city }}, {{ $json.shipping_address?.state }} {{ $json.shipping_address?.zip }}\"\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*📦 Products:*\\n{{ $json.items.map(item => `• ${item.product_name} (Qty: ${item.quantity})`).join('\\n') }}\"\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*📞 Contact:*\\n{{ $json.customer_phone || 'No phone provided' }} | {{ $json.customer_email }}\"\n      }\n    },\n    {\n      \"type\": \"divider\"\n    },\n    {\n      \"type\": \"context\",\n      \"elements\": [\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"✉️ Confirmation email sent | 📅 Calendar event created | 📱 SMS reminders scheduled\"\n        }\n      ]\n    }\n  ]\n} }}",
+        "options": {}
+      },
+      "id": "notify-slack",
+      "name": "Notify Installation Team (Slack)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [850, 600]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "id": "schedule-24hr-reminder",
+      "name": "Wait Until 24hr Before",
+      "type": "n8n-nodes-base.schedule",
+      "typeVersion": 1,
+      "position": [1050, 300],
+      "disabled": false,
+      "notes": "This would be replaced with a proper date-based trigger in production"
+    },
+    {
+      "parameters": {
+        "fromNumber": "={{ $env.TWILIO_PHONE_NUMBER }}",
+        "toNumber": "={{ $json.customer_phone }}",
+        "message": "Hi {{ $json.customer_name }}! Reminder: Your EZ Cycle Ramp installation is scheduled for tomorrow ({{ $json.appointment_date }}) between {{ $json.appointment_time_slot === 'morning' ? '8 AM - 12 PM' : ($json.appointment_time_slot === 'afternoon' ? '1 PM - 5 PM' : '5 PM - 8 PM') }}. Please ensure someone 18+ is present. Questions? Call 800-687-4410. See you tomorrow!",
+        "options": {}
+      },
+      "id": "send-24hr-sms",
+      "name": "Send 24hr SMS Reminder",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [1250, 200],
+      "credentials": {
+        "twilioApi": {
+          "id": "twilio",
+          "name": "Twilio"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 6
+            }
+          ]
+        }
+      },
+      "id": "schedule-2hr-reminder",
+      "name": "Wait Until 2hr Before",
+      "type": "n8n-nodes-base.schedule",
+      "typeVersion": 1,
+      "position": [1050, 500],
+      "disabled": false,
+      "notes": "This would be replaced with a proper date-based trigger in production"
+    },
+    {
+      "parameters": {
+        "fromNumber": "={{ $env.TWILIO_PHONE_NUMBER }}",
+        "toNumber": "={{ $json.customer_phone }}",
+        "message": "🔔 EZ Cycle Ramp: Your installation appointment is in 2 hours! We're on our way. Time: {{ $json.appointment_time_slot === 'morning' ? '8 AM - 12 PM' : ($json.appointment_time_slot === 'afternoon' ? '1 PM - 5 PM' : '5 PM - 8 PM') }}. Address: {{ $json.shipping_address?.street }}, {{ $json.shipping_address?.city }}. Ready for us? 👍",
+        "options": {}
+      },
+      "id": "send-2hr-sms",
+      "name": "Send 2hr SMS Reminder",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [1250, 400],
+      "credentials": {
+        "twilioApi": {
+          "id": "twilio",
+          "name": "Twilio"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtDay": 2
+            }
+          ]
+        }
+      },
+      "id": "schedule-followup",
+      "name": "Wait 48hr After Appointment",
+      "type": "n8n-nodes-base.schedule",
+      "typeVersion": 1,
+      "position": [1050, 700],
+      "disabled": false,
+      "notes": "This would be replaced with a proper date-based trigger in production"
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@ezcycleramp.com",
+        "toEmail": "={{ $json.customer_email }}",
+        "subject": "How was your installation experience?",
+        "emailType": "html",
+        "message": "<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <title>We'd Love Your Feedback</title>\n</head>\n<body style=\"font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;\">\n  <div style=\"background: #ff6b35; color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;\">\n    <h1 style=\"margin: 0; font-size: 28px;\">How Did We Do? 🌟</h1>\n  </div>\n  \n  <div style=\"background: #f9f9f9; padding: 30px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 10px 10px;\">\n    <p style=\"font-size: 16px;\">Hi {{ $json.customer_name }},</p>\n    \n    <p style=\"font-size: 16px;\">Thank you for choosing EZ Cycle Ramp! We hope your installation went smoothly on {{ $json.appointment_date }}.</p>\n    \n    <p style=\"font-size: 16px;\">We'd really appreciate if you could take 2 minutes to share your experience:</p>\n    \n    <div style=\"text-align: center; margin: 30px 0;\">\n      <a href=\"https://forms.gle/your-survey-link\" style=\"display: inline-block; background: #ff6b35; color: white; padding: 15px 40px; text-decoration: none; border-radius: 5px; font-size: 18px; font-weight: bold;\">Share Your Feedback</a>\n    </div>\n    \n    <div style=\"background: white; padding: 20px; margin: 20px 0; border-radius: 5px; border: 1px solid #ddd;\">\n      <p style=\"margin: 0; font-size: 16px; text-align: center;\"><strong>Your feedback helps us improve!</strong></p>\n      <p style=\"margin: 10px 0 0 0; font-size: 14px; text-align: center; color: #666;\">Plus, all survey respondents are entered to win a $100 Amazon gift card 🎁</p>\n    </div>\n    \n    <hr style=\"border: none; border-top: 1px solid #ddd; margin: 30px 0;\">\n    \n    <div style=\"background: #e8f5e9; padding: 20px; border-left: 4px solid #4caf50; margin: 20px 0; border-radius: 5px;\">\n      <h3 style=\"margin-top: 0; color: #2e7d32; font-size: 18px;\">❤️ Love Your Ramp?</h3>\n      <p style=\"margin: 10px 0;\">Please consider leaving us a review:</p>\n      <p style=\"margin: 10px 0;\">\n        ⭐ <a href=\"https://www.google.com/business/your-link\" style=\"color: #ff6b35;\">Google Reviews</a><br>\n        ⭐ <a href=\"https://www.bbb.org/your-link\" style=\"color: #ff6b35;\">BBB</a><br>\n        ⭐ <a href=\"https://www.trustpilot.com/your-link\" style=\"color: #ff6b35;\">Trustpilot</a>\n      </p>\n    </div>\n    \n    <p style=\"font-size: 16px; margin-top: 30px;\">Need help with anything?</p>\n    <ul style=\"font-size: 16px;\">\n      <li>📞 Call: 800-687-4410</li>\n      <li>📧 Email: support@ezcycleramp.com</li>\n      <li>💬 Chat: <a href=\"https://ezcycleramp.com\" style=\"color: #ff6b35;\">ezcycleramp.com</a></li>\n    </ul>\n    \n    <p style=\"font-size: 16px;\">Thank you for your business!</p>\n    <p style=\"font-size: 16px;\"><strong>The EZ Cycle Ramp Team</strong></p>\n    \n    <hr style=\"border: none; border-top: 1px solid #ddd; margin: 30px 0;\">\n    \n    <div style=\"text-align: center; color: #666; font-size: 14px;\">\n      <p><strong>EZ Cycle Ramp</strong></p>\n      <p>🇺🇸 Veteran Owned | ⭐ BBB A+ Rating | ✓ Lifetime Warranty</p>\n    </div>\n  </div>\n</body>\n</html>",
+        "options": {}
+      },
+      "id": "send-survey",
+      "name": "Send Satisfaction Survey",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1250, 600],
+      "credentials": {
+        "resend": {
+          "id": "resend",
+          "name": "Resend API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE orders\nSET metadata = jsonb_set(\n  COALESCE(metadata, '{}'::jsonb),\n  '{appointment_automation}',\n  json_build_object(\n    'confirmation_sent', NOW(),\n    'calendar_created', true,\n    'slack_notified', true,\n    'reminders_scheduled', true\n  )::jsonb\n)\nWHERE order_number = '{{ $json.order_number }}'",
+        "additionalFields": {}
+      },
+      "id": "log-automation",
+      "name": "Log Automation Complete",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [1450, 400],
+      "credentials": {
+        "postgres": {
+          "id": "supabase",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook - Appointment Scheduled": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Order Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Order Details": {
+      "main": [
+        [
+          {
+            "node": "Send Confirmation Email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Create Google Calendar Event",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Notify Installation Team (Slack)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Confirmation Email": {
+      "main": [
+        [
+          {
+            "node": "Wait Until 24hr Before",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Google Calendar Event": {
+      "main": [
+        [
+          {
+            "node": "Wait Until 2hr Before",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Installation Team (Slack)": {
+      "main": [
+        [
+          {
+            "node": "Wait 48hr After Appointment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Until 24hr Before": {
+      "main": [
+        [
+          {
+            "node": "Send 24hr SMS Reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Until 2hr Before": {
+      "main": [
+        [
+          {
+            "node": "Send 2hr SMS Reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 48hr After Appointment": {
+      "main": [
+        [
+          {
+            "node": "Send Satisfaction Survey",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send 24hr SMS Reminder": {
+      "main": [
+        [
+          {
+            "node": "Log Automation Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send 2hr SMS Reminder": {
+      "main": [
+        [
+          {
+            "node": "Log Automation Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Satisfaction Survey": {
+      "main": [
+        [
+          {
+            "node": "Log Automation Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2025-10-13T00:00:00.000Z",
+  "versionId": "1"
+}
