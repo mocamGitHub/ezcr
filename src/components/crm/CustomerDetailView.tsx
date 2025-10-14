@@ -69,7 +69,7 @@ export function CustomerDetailView({ customer }: CustomerDetailViewProps) {
   const tabs = [
     { id: 'timeline' as const, label: 'Activity Timeline', count: activities.length },
     { id: 'notes' as const, label: 'Notes', count: notes.length },
-    { id: 'tasks' as const, label: 'Tasks', count: tasks.filter(t => !t.completed).length },
+    { id: 'tasks' as const, label: 'Tasks', count: tasks.filter(t => t.status !== 'completed').length },
     { id: 'orders' as const, label: 'Orders', count: orders.length },
   ]
 

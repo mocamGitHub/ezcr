@@ -2,13 +2,11 @@ import { formatCurrency } from '@/lib/utils'
 
 interface CRMStatsProps {
   stats: {
-    total_customers: number
-    total_ltv: number
-    avg_ltv: number
-    avg_order_count: number
-    active_customers_30d: number
-    new_customers_30d: number
-    at_risk_customers: number
+    totalCustomers: number
+    newCustomers: number
+    atRiskCustomers: number
+    customersWithTasks: number
+    avgLTV: number
   }
 }
 
@@ -16,41 +14,31 @@ export function CRMStats({ stats }: CRMStatsProps) {
   const statCards = [
     {
       label: 'Total Customers',
-      value: stats.total_customers.toLocaleString(),
+      value: stats.totalCustomers.toLocaleString(),
       icon: '👥',
     },
     {
-      label: 'Total Lifetime Value',
-      value: formatCurrency(stats.total_ltv),
-      icon: '💰',
-    },
-    {
       label: 'Avg. Customer Value',
-      value: formatCurrency(stats.avg_ltv),
+      value: formatCurrency(stats.avgLTV),
       icon: '📊',
     },
     {
-      label: 'Avg. Orders per Customer',
-      value: stats.avg_order_count.toFixed(1),
-      icon: '📦',
-    },
-    {
-      label: 'Active (30 days)',
-      value: stats.active_customers_30d.toLocaleString(),
-      icon: '✅',
-      highlight: true,
-    },
-    {
       label: 'New (30 days)',
-      value: stats.new_customers_30d.toLocaleString(),
+      value: stats.newCustomers.toLocaleString(),
       icon: '🆕',
       highlight: true,
     },
     {
       label: 'At Risk',
-      value: stats.at_risk_customers.toLocaleString(),
+      value: stats.atRiskCustomers.toLocaleString(),
       icon: '⚠️',
-      alert: stats.at_risk_customers > 0,
+      alert: stats.atRiskCustomers > 0,
+    },
+    {
+      label: 'With Open Tasks',
+      value: stats.customersWithTasks.toLocaleString(),
+      icon: '📋',
+      highlight: true,
     },
   ]
 

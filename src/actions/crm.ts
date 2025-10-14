@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import type {
   CustomerProfile,
   CustomerListFilters,
@@ -16,7 +16,7 @@ import type {
  * Get tenant ID from slug (default: ezcr-01)
  */
 async function getTenantId(slug: string = 'ezcr-01'): Promise<string> {
-  const supabase = await createClient()
+  const supabase = createServiceClient()
   const { data, error } = await supabase
     .from('tenants')
     .select('id')
@@ -40,7 +40,7 @@ export async function getCustomers(
   pageSize: number = 50
 ) {
   try {
-    const supabase = await createClient()
+    const supabase = createServiceClient()
     const tenantId = await getTenantId()
 
     let query = supabase
@@ -123,7 +123,7 @@ export async function getCustomers(
  */
 export async function getCustomerProfile(email: string): Promise<CustomerProfile | null> {
   try {
-    const supabase = await createClient()
+    const supabase = createServiceClient()
     const tenantId = await getTenantId()
 
     const { data, error } = await supabase
@@ -150,7 +150,7 @@ export async function getCustomerActivities(
   limit: number = 100
 ): Promise<CRMActivity[]> {
   try {
-    const supabase = await createClient()
+    const supabase = createServiceClient()
     const tenantId = await getTenantId()
 
     const { data, error } = await supabase
@@ -175,7 +175,7 @@ export async function getCustomerActivities(
  */
 export async function getCustomerOrders(email: string) {
   try {
-    const supabase = await createClient()
+    const supabase = createServiceClient()
     const tenantId = await getTenantId()
 
     const { data, error } = await supabase
@@ -205,7 +205,7 @@ export async function getCustomerOrders(email: string) {
  */
 export async function getCustomerNotes(email: string): Promise<CustomerNote[]> {
   try {
-    const supabase = await createClient()
+    const supabase = createServiceClient()
     const tenantId = await getTenantId()
 
     const { data, error } = await supabase
@@ -236,7 +236,7 @@ export async function getCustomerNotes(email: string): Promise<CustomerNote[]> {
  */
 export async function addCustomerNote(email: string, note: string, isPinned: boolean = false) {
   try {
-    const supabase = await createClient()
+    const supabase = createServiceClient()
     const tenantId = await getTenantId()
 
     const { data: { user } } = await supabase.auth.getUser()
@@ -271,7 +271,7 @@ export async function addCustomerNote(email: string, note: string, isPinned: boo
  */
 export async function updateCustomerNote(noteId: string, note: string, isPinned: boolean) {
   try {
-    const supabase = await createClient()
+    const supabase = createServiceClient()
 
     const { data, error } = await supabase
       .from('customer_notes')
@@ -294,7 +294,7 @@ export async function updateCustomerNote(noteId: string, note: string, isPinned:
  */
 export async function deleteCustomerNote(noteId: string) {
   try {
-    const supabase = await createClient()
+    const supabase = createServiceClient()
 
     const { error } = await supabase
       .from('customer_notes')
@@ -315,7 +315,7 @@ export async function deleteCustomerNote(noteId: string) {
  */
 export async function getCustomerTasks(email: string): Promise<CustomerTask[]> {
   try {
-    const supabase = await createClient()
+    const supabase = createServiceClient()
     const tenantId = await getTenantId()
 
     const { data, error } = await supabase
@@ -353,7 +353,7 @@ export async function createCustomerTask(
   assignedTo?: string
 ) {
   try {
-    const supabase = await createClient()
+    const supabase = createServiceClient()
     const tenantId = await getTenantId()
 
     const { data: { user } } = await supabase.auth.getUser()
@@ -395,7 +395,7 @@ export async function updateCustomerTask(
   updates: Partial<CustomerTask>
 ) {
   try {
-    const supabase = await createClient()
+    const supabase = createServiceClient()
 
     // If marking as completed, set completed_at
     if (updates.status === 'completed') {
@@ -428,7 +428,7 @@ export async function updateCustomerTask(
  */
 export async function deleteCustomerTask(taskId: string) {
   try {
-    const supabase = await createClient()
+    const supabase = createServiceClient()
 
     const { error } = await supabase
       .from('customer_tasks')
@@ -449,7 +449,7 @@ export async function deleteCustomerTask(taskId: string) {
  */
 export async function getCustomerTags(): Promise<CustomerTag[]> {
   try {
-    const supabase = await createClient()
+    const supabase = createServiceClient()
     const tenantId = await getTenantId()
 
     const { data, error } = await supabase
@@ -472,7 +472,7 @@ export async function getCustomerTags(): Promise<CustomerTag[]> {
  */
 export async function getCustomerTagsForCustomer(email: string): Promise<CustomerTag[]> {
   try {
-    const supabase = await createClient()
+    const supabase = createServiceClient()
     const tenantId = await getTenantId()
 
     const { data, error } = await supabase
@@ -495,7 +495,7 @@ export async function getCustomerTagsForCustomer(email: string): Promise<Custome
  */
 export async function addTagToCustomer(email: string, tagId: string) {
   try {
-    const supabase = await createClient()
+    const supabase = createServiceClient()
     const tenantId = await getTenantId()
 
     const { data: { user } } = await supabase.auth.getUser()
@@ -540,7 +540,7 @@ export async function addTagToCustomer(email: string, tagId: string) {
  */
 export async function removeTagFromCustomer(email: string, tagId: string) {
   try {
-    const supabase = await createClient()
+    const supabase = createServiceClient()
     const tenantId = await getTenantId()
 
     // Get tag name before deleting
@@ -574,7 +574,7 @@ export async function removeTagFromCustomer(email: string, tagId: string) {
  */
 export async function calculateHealthScore(email: string): Promise<number> {
   try {
-    const supabase = await createClient()
+    const supabase = createServiceClient()
     const tenantId = await getTenantId()
 
     const { data, error } = await supabase.rpc('calculate_customer_health_score', {
@@ -596,7 +596,7 @@ export async function calculateHealthScore(email: string): Promise<number> {
  */
 export async function getCustomerHealthScore(email: string): Promise<CustomerHealthScore | null> {
   try {
-    const supabase = await createClient()
+    const supabase = createServiceClient()
     const tenantId = await getTenantId()
 
     const { data, error } = await supabase
@@ -640,7 +640,7 @@ async function logActivity(
   relatedEntityId?: string
 ) {
   try {
-    const supabase = await createClient()
+    const supabase = createServiceClient()
     const tenantId = await getTenantId()
 
     const { data: { user } } = await supabase.auth.getUser()
@@ -665,7 +665,7 @@ async function logActivity(
  */
 export async function getCRMDashboardStats() {
   try {
-    const supabase = await createClient()
+    const supabase = createServiceClient()
     const tenantId = await getTenantId()
 
     // Get customer count

@@ -8,10 +8,7 @@ interface CustomerSegmentTabsProps {
 }
 
 export function CustomerSegmentTabs({ activeSegment, onSegmentChange }: CustomerSegmentTabsProps) {
-  const allSegments = [
-    { id: 'all', name: 'All Customers', description: 'View all customers' },
-    ...DEFAULT_SEGMENTS,
-  ]
+  const allSegments = DEFAULT_SEGMENTS
 
   return (
     <div className="border-b">

@@ -45,7 +45,7 @@ export function CustomerList() {
       
       const result = await getCustomers(
         filters,
-        { sortBy, sortOrder },
+        { field: sortBy, direction: sortOrder },
         page,
         50
       )

@@ -239,7 +239,6 @@ SELECT
   COALESCE(SUM(o.total_amount), 0) as lifetime_value,
   MAX(o.created_at) as last_order_date,
   MIN(o.created_at) as first_order_date,
-  MAX(o.appointment_date) as last_appointment_date,
   COUNT(DISTINCT CASE WHEN o.status = 'completed' THEN o.id END) as completed_orders,
   COUNT(DISTINCT CASE WHEN o.status = 'pending' THEN o.id END) as pending_orders,
   (
