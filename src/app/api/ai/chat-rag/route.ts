@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getCurrentTenant } from '@/lib/tenant'
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
@@ -31,16 +32,17 @@ export async function POST(request: Request) {
 
     const supabase = await createClient()
 
-    // Get tenant ID
+    // Get tenant ID from environment-aware configuration
+    const tenantSlug = getCurrentTenant()
     const { data: tenant } = await supabase
       .from('tenants')
       .select('id')
-      .eq('slug', 'ezcr-01')
+      .eq('slug', tenantSlug)
       .single()
 
     if (!tenant) {
       return NextResponse.json(
-        { error: 'Tenant not found' },
+        { error: `Tenant not found: ${tenantSlug}` },
         { status: 404 }
       )
     }

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getCurrentTenant } from '@/lib/tenant'
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
@@ -12,12 +13,12 @@ export async function GET() {
   try {
     const supabase = await createClient()
 
-    // Get tenant ID (in multi-tenant setup, this would come from subdomain/context)
-    // For now, we'll get the EZCR tenant
+    // Get tenant ID from environment-aware configuration
+    const tenantSlug = getCurrentTenant()
     const { data: tenant } = await supabase
       .from('tenants')
       .select('id')
-      .eq('slug', 'ezcr-01')
+      .eq('slug', tenantSlug)
       .single()
 
     if (!tenant) {

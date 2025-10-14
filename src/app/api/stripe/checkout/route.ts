@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { stripe, STRIPE_CONFIG } from '@/lib/stripe/config'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { getCurrentTenant } from '@/lib/tenant'
 import Stripe from 'stripe'
 
 export async function POST(request: NextRequest) {
@@ -15,11 +16,12 @@ export async function POST(request: NextRequest) {
       billingAddress,
     } = body
 
-    // Get tenant ID from database (for multi-tenant support)
+    // Get tenant ID from environment-aware configuration
+    const tenantSlug = getCurrentTenant()
     const { data: tenant, error: tenantError } = await supabaseAdmin
       .from('tenants')
       .select('id')
-      .eq('slug', 'ezcr')
+      .eq('slug', tenantSlug)
       .single()
 
     if (tenantError || !tenant) {

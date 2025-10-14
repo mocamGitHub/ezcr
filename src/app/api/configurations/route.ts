@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { getCurrentTenant } from '@/lib/tenant'
 import type { ConfiguratorData } from '@/types/configurator'
 
 export async function POST(request: NextRequest) {
@@ -10,11 +11,12 @@ export async function POST(request: NextRequest) {
       calculatedPrice: number
     }
 
-    // Get tenant ID
+    // Get tenant ID from environment-aware configuration
+    const tenantSlug = getCurrentTenant()
     const { data: tenant, error: tenantError } = await supabaseAdmin
       .from('tenants')
       .select('id')
-      .eq('slug', 'ezcr')
+      .eq('slug', tenantSlug)
       .single()
 
     if (tenantError || !tenant) {
@@ -87,11 +89,12 @@ export async function GET(request: NextRequest) {
     const session_id = searchParams.get('session_id')
     const user_id = searchParams.get('user_id')
 
-    // Get tenant ID
+    // Get tenant ID from environment-aware configuration
+    const tenantSlug = getCurrentTenant()
     const { data: tenant, error: tenantError } = await supabaseAdmin
       .from('tenants')
       .select('id')
-      .eq('slug', 'ezcr')
+      .eq('slug', tenantSlug)
       .single()
 
     if (tenantError || !tenant) {

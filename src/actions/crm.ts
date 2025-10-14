@@ -1,6 +1,7 @@
 'use server'
 
 import { createServiceClient } from '@/lib/supabase/server'
+import { getTenantId as getEnvironmentTenantId } from '@/lib/tenant'
 import type {
   CustomerProfile,
   CustomerListFilters,
@@ -13,21 +14,11 @@ import type {
 } from '@/types/crm'
 
 /**
- * Get tenant ID from slug (default: ezcr-01)
+ * Get tenant ID using environment-aware configuration
+ * Uses the tenant utility which automatically detects dev vs prod
  */
-async function getTenantId(slug: string = 'ezcr-01'): Promise<string> {
-  const supabase = createServiceClient()
-  const { data, error } = await supabase
-    .from('tenants')
-    .select('id')
-    .eq('slug', slug)
-    .single()
-
-  if (error || !data) {
-    throw new Error(`Tenant not found: ${slug}`)
-  }
-
-  return data.id
+async function getTenantId(): Promise<string> {
+  return await getEnvironmentTenantId()
 }
 
 /**
