@@ -53,8 +53,8 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/50 px-4">
-      <div className="w-full max-w-md space-y-8">
+    <div className="min-h-screen flex items-center justify-center bg-muted/50 px-4 py-12">
+      <div className="w-full max-w-md space-y-8 mt-[-20vh]">
         <div className="text-center">
           <h1 className="text-3xl font-bold">Sign In</h1>
           <p className="text-muted-foreground mt-2">

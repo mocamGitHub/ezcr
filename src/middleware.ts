@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -11,7 +12,7 @@ export async function middleware(request: NextRequest) {
     },
   })
 
-  // Create a Supabase client
+  // Create a Supabase client for authentication (uses anon key)
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -35,6 +36,18 @@ export async function middleware(request: NextRequest) {
     }
   )
 
+  // Create a service client for database queries (bypasses RLS)
+  const serviceClient = createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_KEY!,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    }
+  )
+
   // Refresh session if needed
   const {
     data: { session },
@@ -50,8 +63,8 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(url)
     }
 
-    // Check if user has admin access
-    const { data: profile } = await supabase
+    // Check if user has admin access (use service client to bypass RLS)
+    const { data: profile } = await serviceClient
       .from('user_profiles')
       .select('role, is_active')
       .eq('id', session.user.id)

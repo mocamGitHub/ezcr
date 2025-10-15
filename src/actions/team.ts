@@ -1,6 +1,6 @@
 'use server'
 
-import { createServiceClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { getTenantId as getEnvironmentTenantId } from '@/lib/tenant'
 
 /**
@@ -46,7 +46,8 @@ async function getTenantId(): Promise<string> {
  * Check if current user is an owner
  */
 async function requireOwner() {
-  const supabase = createServiceClient()
+  // Use user client to check authentication (reads cookies)
+  const supabase = await createClient()
   const tenantId = await getTenantId()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -55,7 +56,9 @@ async function requireOwner() {
     throw new Error('Not authenticated')
   }
 
-  const { data: profile, error } = await supabase
+  // Use service client for database operations
+  const serviceClient = createServiceClient()
+  const { data: profile, error } = await serviceClient
     .from('user_profiles')
     .select('role')
     .eq('id', user.id)
@@ -73,7 +76,8 @@ async function requireOwner() {
  * Check if current user is an owner or admin
  */
 async function requireOwnerOrAdmin() {
-  const supabase = createServiceClient()
+  // Use user client to check authentication (reads cookies)
+  const supabase = await createClient()
   const tenantId = await getTenantId()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -82,7 +86,9 @@ async function requireOwnerOrAdmin() {
     throw new Error('Not authenticated')
   }
 
-  const { data: profile, error } = await supabase
+  // Use service client for database operations
+  const serviceClient = createServiceClient()
+  const { data: profile, error } = await serviceClient
     .from('user_profiles')
     .select('role')
     .eq('id', user.id)

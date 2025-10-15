@@ -24,15 +24,13 @@ interface ThemeProviderProps {
 }
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>('dark')
-
-  // Load theme from localStorage on mount
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('site-theme') as Theme
-    if (savedTheme) {
-      setTheme(savedTheme)
+  // Initialize from localStorage immediately (before hydration)
+  const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('site-theme') as Theme) || 'dark'
     }
-  }, [])
+    return 'dark'
+  })
 
   // Apply theme to document and save to localStorage
   useEffect(() => {

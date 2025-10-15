@@ -38,16 +38,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchProfile = async (userId: string) => {
     try {
+      // Ensure we have a valid session before querying
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        setProfile(null)
+        return
+      }
+
       const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('id', userId)
         .single()
 
-      if (error) throw error
+      if (error) {
+        // RLS might prevent access - this is handled by middleware
+        // Just log a warning and continue
+        if (error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+          console.warn('Could not fetch profile:', error.message)
+        }
+        setProfile(null)
+        return
+      }
       setProfile(data)
-    } catch (error) {
-      console.error('Error fetching profile:', error)
+    } catch (error: any) {
+      // Silently fail - profile fetch is not critical
       setProfile(null)
     }
   }

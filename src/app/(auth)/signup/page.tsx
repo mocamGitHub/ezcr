@@ -73,8 +73,8 @@ export default function SignupPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-muted/50 px-4">
-        <div className="w-full max-w-md">
+      <div className="min-h-screen flex items-center justify-center bg-muted/50 px-4 py-12">
+        <div className="w-full max-w-md mt-[-20vh]">
           <div className="bg-card border rounded-lg p-8 shadow-sm text-center space-y-4">
             <div className="flex justify-center">
               <div className="w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
@@ -107,8 +107,8 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/50 px-4">
-      <div className="w-full max-w-md space-y-8">
+    <div className="min-h-screen flex items-center justify-center bg-muted/50 px-4 py-12">
+      <div className="w-full max-w-md space-y-8 mt-[-20vh]">
         <div className="text-center">
           <h1 className="text-3xl font-bold">Create Account</h1>
           <p className="text-muted-foreground mt-2">
