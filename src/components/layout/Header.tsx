@@ -2,14 +2,26 @@
 'use client'
 
 import Link from 'next/link'
-import { Search, Menu, User, Sun, Moon } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Search, Menu, User, Sun, Moon, LogOut, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { CartButton } from '@/components/cart/CartButton'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useAuth } from '@/contexts/AuthContext'
 import Image from 'next/image'
+import { useState } from 'react'
 
 export function Header() {
   const { theme, toggleTheme } = useTheme()
+  const { user, profile, signOut } = useAuth()
+  const router = useRouter()
+  const [showUserMenu, setShowUserMenu] = useState(false)
+
+  const handleSignOut = async () => {
+    await signOut()
+    router.push('/')
+    setShowUserMenu(false)
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -68,9 +80,69 @@ export function Header() {
             </span>
           </button>
 
-          <Button variant="ghost" size="icon" aria-label="Account">
-            <User className="h-5 w-5" />
-          </Button>
+          {/* User Account */}
+          {user && profile ? (
+            <div className="relative">
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Account"
+                onClick={() => setShowUserMenu(!showUserMenu)}
+              >
+                <User className="h-5 w-5" />
+              </Button>
+
+              {showUserMenu && (
+                <>
+                  {/* Backdrop */}
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowUserMenu(false)}
+                  />
+
+                  {/* Dropdown Menu */}
+                  <div className="absolute right-0 mt-2 w-56 bg-card border rounded-lg shadow-lg z-50">
+                    <div className="px-4 py-3 border-b">
+                      <p className="text-sm font-medium">
+                        {profile.first_name} {profile.last_name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{profile.email}</p>
+                      <p className="text-xs text-muted-foreground capitalize mt-1">
+                        Role: {profile.role.replace('_', ' ')}
+                      </p>
+                    </div>
+
+                    <div className="py-2">
+                      {['owner', 'admin', 'customer_service', 'viewer'].includes(profile.role) && (
+                        <Link
+                          href="/admin/team"
+                          className="flex items-center px-4 py-2 text-sm hover:bg-muted transition-colors"
+                          onClick={() => setShowUserMenu(false)}
+                        >
+                          <Settings className="h-4 w-4 mr-2" />
+                          Admin Panel
+                        </Link>
+                      )}
+
+                      <button
+                        onClick={handleSignOut}
+                        className="flex items-center w-full px-4 py-2 text-sm hover:bg-muted transition-colors text-left"
+                      >
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Sign Out
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          ) : (
+            <Link href="/login">
+              <Button variant="ghost" size="icon" aria-label="Sign In">
+                <User className="h-5 w-5" />
+              </Button>
+            </Link>
+          )}
           <CartButton />
           <Button variant="ghost" size="icon" className="md:hidden" aria-label="Menu">
             <Menu className="h-5 w-5" />

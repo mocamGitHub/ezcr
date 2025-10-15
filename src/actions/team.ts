@@ -51,11 +51,8 @@ async function requireOwner() {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // TODO: Remove this bypass once authentication is implemented
-  // For now, allow access without auth for development/testing
   if (!user) {
-    console.warn('WARN: Team management owner action accessed without authentication (dev mode)')
-    return 'dev-bypass'
+    throw new Error('Not authenticated')
   }
 
   const { data: profile, error } = await supabase
@@ -81,11 +78,8 @@ async function requireOwnerOrAdmin() {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // TODO: Remove this bypass once authentication is implemented
-  // For now, allow access without auth for development/testing
   if (!user) {
-    console.warn('WARN: Team management accessed without authentication (dev mode)')
-    return 'dev-bypass'
+    throw new Error('Not authenticated')
   }
 
   const { data: profile, error } = await supabase
