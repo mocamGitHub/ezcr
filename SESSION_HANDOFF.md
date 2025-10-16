@@ -1,145 +1,221 @@
 # Session Handoff Document
 **Date:** 2025-01-15 (October in dev environment)
 **Time:** Session End
-**Git Commit:** `e5f3d5c` - feat: Complete authentication system with RLS and password reset
-**Previous Commit:** `2afd9fb` - docs: Update handoff with git push and resume instructions
+**Git Commit:** `689e7c5` - feat: Fix configurator + add migrations and SMTP setup
+**Previous Commit:** `e5f3d5c` - feat: Complete authentication system with RLS and password reset
 
 ---
 
-## 🎯 Current Session (2025-01-15) - AUTHENTICATION + RLS COMPLETE
+## 🎯 Current Session (2025-01-15) - CONFIGURATOR FIXED + SMTP READY
 
-### ✅ Authentication System - FULLY TESTED
-Completed comprehensive authentication testing:
+### ✅ Configurator Database - FULLY FIXED
 
-#### 1. Login Flow ✅
-- Successfully tested login with morris@mocampbell.com / password123
-- Redirect to /admin/team working correctly
-- Last login timestamp updating properly
-- Session persistence working
+Successfully resolved the "Failed to fetch configurator settings" error:
 
-#### 2. User Dropdown Menu ✅
-- Displays user profile (Morris McCampbell)
-- Shows email and role (owner)
-- Admin Panel link functional
-- Sign Out button working
+#### 1. Root Cause Identified ✅
+- Configurator tables existed but were empty for `ezcr-dev` tenant
+- Original seed migration (00009) targeted `ezcr-01` tenant, not `ezcr-dev`
+- Tables created but no data populated
 
-#### 3. Protected Routes ✅
-- Middleware redirects unauthenticated users to /login
-- Authenticated users can access /admin/* routes
-- Redirect parameter preserved (?redirect=/admin/team)
+#### 2. Database Migrations Applied ✅
+- **Migration 00016:** Added foreign key constraints
+  - `user_profiles.id` → `auth.users.id` (CASCADE)
+  - `user_profiles.tenant_id` → `tenants.id` (CASCADE)
+  - Performance index on `tenant_id`
 
-#### 4. Password Reset Flow ✅
-- Forgot password page created (/forgot-password)
-- Reset password page created (/reset-password)
-- Email verification and password update forms complete
-- Success/error states implemented
-- Auto-redirect after successful reset
+- **Migration 00017:** Seeded configurator data for ezcr-dev
+  - 12 measurement ranges (cargo limits, AC001 ranges)
+  - 17 pricing items (2 models, 4 extensions, delivery, services, accessories)
+  - 8 business rules (AC001, cargo, incompatibility, recommendations)
+  - 4 general settings (fees, contact, conversions, colors)
 
-### ✅ Row Level Security (RLS) - ENABLED
-Successfully enabled and tested RLS:
+#### 3. Configurator API Working ✅
+- Endpoint: `/api/configurator/settings`
+- Returns: All measurement ranges, pricing, rules, and settings
+- Format: Structured JSON ready for frontend consumption
+- Status: HTTP 200, no errors
 
-#### 1. RLS Migration Applied ✅
-- Created migration: `supabase/migrations/00015_enable_rls.sql`
-- Applied to database: `ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;`
-- Verified: `rowsecurity = true` in pg_tables
-- Documentation created: `apply-rls-migration.md`
+#### 4. Configurator Page Verified ✅
+- URL: http://localhost:3002/configure
+- Status: Loading successfully
+- Fixed: Removed "Previous" button from Step 1 (better UX)
+- Component: Uses `Configurator.tsx` from configurator-v2
 
-#### 2. Server Actions Fixed ✅
-- Updated `src/actions/team.ts`:
-  - `requireOwner()` uses createClient() for auth checks
-  - `requireOwnerOrAdmin()` uses createClient() for auth checks
-  - Database operations use createServiceClient() (bypasses RLS)
-- All team management functions working correctly
+### ✅ Infrastructure Discovery - COOLIFY SETUP
 
-#### 3. Middleware Updated ✅
-- Added service client for profile checks
-- Bypasses RLS for authorization queries
-- User client validates sessions
-- Service client reads profiles
-- No redirect loops
+Successfully identified the server infrastructure:
 
-#### 4. AuthContext Enhanced ✅
-- Gracefully handles RLS errors
-- Session validation before profile fetch
-- Warning-level logging (not errors)
-- App functions correctly even if profile fetch fails
+#### 1. Server Details ✅
+- **IP Address:** 5.161.84.153
+- **Platform:** Coolify (self-hosted PaaS)
+- **Auth Container:** `supabase-auth-ok0kw088ss4swwo4wc84gg0w`
+- **Image:** supabase/gotrue:v2.174.0
+- **Management:** Coolify web dashboard
 
-### ✅ UI/UX Improvements
+#### 2. SMTP Variables Discovered ✅
+- SMTP environment variables exist in auth container
+- Currently empty/unconfigured:
+  - `GOTRUE_SMTP_HOST` (empty)
+  - `GOTRUE_SMTP_USER` (empty)
+  - `GOTRUE_SMTP_PASS` (empty)
+  - `GOTRUE_SMTP_ADMIN_EMAIL` (empty)
+- Default port: 587 (TLS)
 
-#### 1. Auth Pages Styling ✅
-- Improved vertical positioning (mt-[-20vh])
-- Better visual balance on login/signup/forgot-password/reset-password
-- Added py-12 padding for mobile responsiveness
-- All auth pages consistently styled
+### 📚 Comprehensive Documentation Created
 
-#### 2. Dark Mode Flash Fix ✅
-- Added blocking script in layout.tsx
-- Reads theme from localStorage before page render
-- No more FOUC (Flash of Unstyled Content)
-- Smooth theme loading on all pages
+#### Migration Scripts
+1. **`supabase/migrations/00016_add_foreign_keys.sql`**
+   - Adds FK constraints for data integrity
+   - Includes rollback instructions
 
-### 📊 System Status
+2. **`supabase/migrations/00017_seed_dev_configurator.sql`**
+   - Seeds all configurator data for ezcr-dev tenant
+   - Includes verification queries
 
+3. **`COMPLETE_CONFIGURATOR_FIX.sql`**
+   - Combined migration (00008 + 00017)
+   - Single-run fix for missing tables and data
+
+4. **`ADD_MISSING_RULES.sql`**
+   - Fixes missing business rules (6→8)
+   - Verification queries included
+
+#### SMTP Setup Guides
+1. **`SMTP_CONFIGURATION_GUIDE.md`**
+   - General SMTP setup guide
+   - Covers Resend, Gmail, SendGrid, Mailgun
+   - Cost comparisons and recommendations
+
+2. **`SMTP_SELF_HOSTED_SETUP.md`**
+   - Docker/self-hosted Supabase configuration
+   - Environment variable reference
+   - Troubleshooting section
+
+3. **`SMTP_COOLIFY_SETUP.md`**
+   - Coolify-specific configuration
+   - Dashboard navigation instructions
+   - Alternative command-line setup
+
+4. **`COOLIFY_SMTP_STEPS.md`** (MOST IMPORTANT)
+   - Visual step-by-step guide
+   - Exact button clicks and screenshots descriptions
+   - Quick reference card with all variables
+   - Troubleshooting common issues
+
+#### Helper Scripts
+1. **`apply-foreign-keys.md`**
+   - Manual FK application via Supabase SQL Editor
+   - Verification queries
+
+2. **`APPLY_MIGRATIONS_MANUAL.md`**
+   - Complete manual migration guide
+   - Copy-paste SQL for all migrations
+
+3. **`find-supabase-config.sh`**
+   - Server script to locate configuration files
+   - Container inspection commands
+
+---
+
+## 📊 System Status
+
+### Development Environment
 - **Dev Server:** Running on port 3002 ✅
 - **Database:** Connected and operational ✅
-- **Authentication:** Fully functional with session management ✅
-- **RLS:** Enabled on user_profiles table ✅
-- **Protected Routes:** Middleware active and working ✅
-- **Login Page:** http://localhost:3002/login ✅
-- **Team Page:** http://localhost:3002/admin/team (requires login) 🔒
-- **Password Reset:** http://localhost:3002/forgot-password ✅
-- **Team Members:** 4 total (Morris, John, Sarah, Test Viewer) ✅
-- **Dark Mode:** No flash, instant theme application ✅
+- **Git Branch:** main ✅
+- **Latest Commit:** 689e7c5 (pushed to GitHub) ✅
+
+### Authentication System
+- **Login:** Fully functional ✅
+- **Protected Routes:** Middleware active ✅
+- **Password Reset:** Pages created, waiting for SMTP ⏳
+- **RLS:** Enabled on user_profiles ✅
+- **Team Management:** 4 members active ✅
+
+### Configurator System
+- **Database Tables:** 4 tables created ✅
+  - configurator_measurement_ranges
+  - configurator_pricing
+  - configurator_rules
+  - configurator_settings
+- **Data Populated:** 12 ranges, 17 prices, 8 rules, 4 settings ✅
+- **RLS Policies:** Public read access enabled ✅
+- **API Endpoint:** Working perfectly ✅
+- **Frontend Page:** Loading at /configure ✅
+
+### Infrastructure
+- **Server IP:** 5.161.84.153 (saved in .env.local) ✅
+- **Platform:** Coolify managed ✅
+- **Auth Container:** supabase-auth-ok0kw088ss4swwo4wc84gg0w ✅
+- **SMTP Status:** Ready to configure ⏳
 
 ---
 
-## 🎯 Previous Session Completed Work
+## 🔄 Next Recommended Actions
 
-### ✅ Team Management System - FULLY IMPLEMENTED
-Built complete role-based access control system:
+### Immediate Priority (Before Next Session)
 
-#### Database Layer
-- Migration: `00014_add_user_roles_clean.sql`
-- Added `is_active` and `last_login` columns
-- Created RLS policies (now enabled!)
-- Added `has_role()` function for hierarchical checks
-- Performance indexes
+1. **🔐 Get Gmail App Password** (5 min)
+   - Go to: https://myaccount.google.com/apppasswords
+   - Enable 2FA if needed
+   - Create "EZCR Supabase" app password
+   - Save the 16-character code
 
-#### Server Actions
-- Complete CRUD operations for team members
-- Role-based permission checks
-- Invite, update, activate/deactivate functionality
-- Tenant-isolated queries
+2. **📧 Configure SMTP in Coolify** (15-20 min)
+   - Follow: `COOLIFY_SMTP_STEPS.md` (step-by-step guide)
+   - Access Coolify dashboard
+   - Navigate to: Services → Supabase → Auth component
+   - Add 6 environment variables:
+     ```
+     GOTRUE_SMTP_HOST=smtp.gmail.com
+     GOTRUE_SMTP_PORT=587
+     GOTRUE_SMTP_USER=your-email@gmail.com
+     GOTRUE_SMTP_PASS=[16-char password]
+     GOTRUE_SMTP_ADMIN_EMAIL=your-email@gmail.com
+     GOTRUE_SMTP_SENDER_NAME=EZ Cycle Ramp
+     ```
+   - Restart Auth service
+   - Test at: http://localhost:3002/forgot-password
 
-#### UI Components
-- Team management dashboard
-- Statistics display
-- Invite modal with role selection
-- Responsive design
+3. **✉️ Test Password Reset Flow** (5 min)
+   - Go to: http://localhost:3002/forgot-password
+   - Enter: morris@mocampbell.com
+   - Check email (including spam folder)
+   - Click reset link
+   - Verify new password works
 
----
+### Short Term (Optional)
 
-## 🐛 Known Issues
+4. **🎨 Customize Email Templates** (30 min)
+   - Access Coolify or Supabase dashboard
+   - Customize password reset email template
+   - Add EZ Cycle Ramp branding
+   - Test email appearance
 
-### 1. Configurator Page Error
-**Issue:** Configurator page shows "Failed to fetch configurator settings"
-**Cause:** Configurator database tables are empty (separate feature from team management)
-**Impact:** Configurator page doesn't work, but doesn't affect authentication or team management
-**Status:** Not related to current session's work - was already broken
-**Priority:** Low - different feature area
-**Fix:** Needs configurator data populated in these tables:
-  - `configurator_measurement_ranges`
-  - `configurator_pricing`
-  - `configurator_rules`
-  - `configurator_settings`
+5. **📊 Test Configurator Flow** (15 min)
+   - Go to: http://localhost:3002/configure
+   - Walk through all 5 steps
+   - Test vehicle selection, measurements, quote generation
+   - Verify pricing calculations
 
-### 2. SMTP Not Configured
-**Issue:** Password reset emails won't actually send
-**Cause:** SMTP not configured in Supabase
-**Impact:** Users can't receive password reset emails
-**Status:** Expected - SMTP setup deferred
-**Priority:** Medium
-**Fix:** Configure SMTP in Supabase dashboard (see next steps)
+### Future Enhancements
+
+6. **📧 Switch to Resend** (Production)
+   - Sign up: https://resend.com (free 3,000 emails/month)
+   - Get API key
+   - Update SMTP settings in Coolify
+   - Better deliverability for production
+
+7. **🔒 Add Domain Verification** (Production)
+   - Verify nexcyte.com with email provider
+   - Set up SPF, DKIM, DMARC records
+   - Improve email deliverability
+
+8. **🧪 Test Team Invitations** (After SMTP)
+   - Go to: http://localhost:3002/admin/team
+   - Invite a test user
+   - Verify invitation email arrives
+   - Test invite acceptance flow
 
 ---
 
@@ -147,173 +223,139 @@ Built complete role-based access control system:
 
 ### Modified Files
 ```
-src/actions/team.ts                    # Fixed auth checks for RLS
-src/middleware.ts                      # Added service client for RLS bypass
-src/contexts/AuthContext.tsx           # Graceful RLS error handling
-src/contexts/ThemeContext.tsx          # Theme initialization fix
-src/app/layout.tsx                     # Blocking script for theme
-src/app/(auth)/login/page.tsx          # Better vertical positioning
-src/app/(auth)/signup/page.tsx         # Better vertical positioning
+.env.local                                 # Added server IP and container name
+src/components/configurator-v2/Step1VehicleType.tsx  # Removed Previous button
 ```
 
 ### New Files Created
 ```
-src/app/(auth)/forgot-password/page.tsx    # Password reset request page
-src/app/(auth)/reset-password/page.tsx     # New password form page
-supabase/migrations/00015_enable_rls.sql   # RLS migration
-apply-rls-migration.md                      # RLS documentation
+supabase/migrations/00016_add_foreign_keys.sql        # FK constraints
+supabase/migrations/00017_seed_dev_configurator.sql   # Configurator data
+
+COMPLETE_CONFIGURATOR_FIX.sql         # Combined migration
+ADD_MISSING_RULES.sql                 # Rule fixes
+APPLY_MIGRATIONS_MANUAL.md            # Manual migration guide
+apply-foreign-keys.md                 # FK documentation
+apply-migrations.js                   # Node.js migration script
+apply-migrations.sh                   # Bash migration script
+find-supabase-config.sh              # Server config finder
+
+SMTP_CONFIGURATION_GUIDE.md          # General SMTP guide
+SMTP_SELF_HOSTED_SETUP.md           # Docker/self-hosted guide
+SMTP_COOLIFY_SETUP.md               # Coolify-specific guide
+COOLIFY_SMTP_STEPS.md               # Visual step-by-step (USE THIS!)
 ```
 
 ### File Statistics
-- **Modified:** 7 files
-- **Created:** 4 files
-- **Total Changes:** +531 lines, -25 lines
+- **Modified:** 2 files
+- **Created:** 13 files
+- **Total Changes:** +2,558 lines, -345 lines
 
 ---
 
-## 🔄 Next Recommended Actions
+## 🚀 How to Resume Work After Reboot
 
-### Immediate Priority (Optional)
+### Step 1: Start Dev Server
 
-1. **🧪 Test Full Authentication Flow** (5-10 min)
-   - Log out if currently logged in
-   - Test login, navigation, and logout
-   - Verify team page loads correctly
-   - Test user dropdown functionality
-
-2. **📧 Configure Email Invitations** (30-45 min)
-   - Access Supabase dashboard: https://supabase.nexcyte.com
-   - Navigate to Authentication → Email Templates
-   - Configure SMTP settings (host, port, credentials)
-   - Test password reset email flow
-   - Customize email templates for branding
-
-3. **🧪 Test Password Reset with Email** (10-15 min)
-   - After SMTP configured, test forgot password flow
-   - Request password reset for test account
-   - Check email arrives
-   - Follow link and reset password
-   - Verify can login with new password
-
-### Short Term
-
-4. **📝 Add Foreign Key Constraints** (15-20 min)
-   - See `FOREIGN_KEY_NOTE.md` for SQL
-   - Apply constraints via migration
-   - Ensures referential integrity
-
-5. **🧪 Test RLS Policies Thoroughly** (20-30 min)
-   - Try to access other tenant's data
-   - Verify policies enforce boundaries
-   - Test with different user roles
-   - Confirm service client bypasses RLS correctly
-
-### Future Enhancements
-
-6. **🔧 Fix Configurator Page** (2-3 hours)
-   - Populate configurator database tables
-   - Test configurator settings API
-   - Verify configurator UI works
-
-7. **📊 Audit Logging** (1-2 hours)
-   - Track team member changes
-   - Log role changes and invitations
-   - Display audit trail in admin panel
-
-8. **📤 Bulk Operations** (1-2 hours)
-   - Bulk invite functionality
-   - Export team member list
-   - Batch status updates
-
----
-
-## 🚀 How to Resume Work After /clear
-
-### Step 1: Read This Document
 ```bash
-cat SESSION_HANDOFF.md
+cd C:\Users\morri\Dropbox\Websites\ezcr
+npm run dev
 ```
 
-### Step 2: Check Git Status
+Server will be available at: http://localhost:3002
+
+### Step 2: Verify System Status
+
+**Check Git:**
 ```bash
 git status
 git log --oneline -5
-# Should show: e5f3d5c feat: Complete authentication system with RLS and password reset
+# Should show: 689e7c5 feat: Fix configurator + add migrations and SMTP setup
 ```
 
-### Step 3: Check Dev Server
+**Check Dev Server:**
+- Visit: http://localhost:3002
+- Login: morris@mocampbell.com / password123
+- Team page: http://localhost:3002/admin/team
+- Configurator: http://localhost:3002/configure
+
+**Check Configurator API:**
 ```bash
-# Check if server is running
-curl http://localhost:3002
-
-# If not running, check for processes
-netstat -ano | grep -E ':(3000|3001|3002)'
-
-# If needed, start dev server
-npm run dev
-# Server will be available at http://localhost:3002
+curl http://localhost:3002/api/configurator/settings | head -100
+# Should return JSON with pricing, ranges, rules, settings
 ```
 
-### Step 4: Verify System Status
+### Step 3: Configure SMTP (If Not Done)
+
+**Follow this guide:** `COOLIFY_SMTP_STEPS.md`
+
+Quick reference:
+1. Get Gmail app password: https://myaccount.google.com/apppasswords
+2. Access Coolify dashboard
+3. Navigate: Services → Supabase → Auth
+4. Add environment variables (see guide for exact values)
+5. Restart Auth service
+6. Test: http://localhost:3002/forgot-password
+
+### Step 4: Verify Everything Works
 
 **Test Authentication:**
-1. Open http://localhost:3002/login
-2. Login with: morris@mocampbell.com / password123
-3. Verify redirect to /admin/team
-4. Check team page shows 4 members
-5. Test user dropdown and sign out
+- Login page: http://localhost:3002/login
+- Team page: http://localhost:3002/admin/team
+- User dropdown and sign out
+- Protected routes redirect to login
 
-**Verify RLS is Active:**
-```sql
--- In Supabase SQL Editor (https://supabase.nexcyte.com)
-SELECT tablename, rowsecurity
-FROM pg_tables
-WHERE schemaname = 'public'
-AND tablename = 'user_profiles';
--- Should show: rowsecurity = true
-```
+**Test Configurator:**
+- Page loads: http://localhost:3002/configure
+- API returns data: http://localhost:3002/api/configurator/settings
+- All pricing and rules present
 
-### Step 5: Review Key Files
+**Test SMTP (After Configuration):**
+- Forgot password: http://localhost:3002/forgot-password
+- Email arrives in inbox
+- Reset link works
 
-**Authentication:**
-```bash
-# Review auth pages
-cat src/app/(auth)/login/page.tsx
-cat src/app/(auth)/forgot-password/page.tsx
-cat src/app/(auth)/reset-password/page.tsx
+---
 
-# Review auth context
-cat src/contexts/AuthContext.tsx
+## 🐛 Known Issues
 
-# Review middleware
-cat src/middleware.ts
+### 1. SMTP Not Configured (Expected)
+**Issue:** Password reset emails don't send
+**Cause:** SMTP environment variables empty in Coolify
+**Impact:** Password reset page exists but emails don't deliver
+**Status:** Ready to configure (see COOLIFY_SMTP_STEPS.md)
+**Priority:** High - Required for production
+**Fix:** Follow step-by-step guide to add SMTP settings
 
-# Review team actions with RLS fixes
-cat src/actions/team.ts
-```
-
-**RLS Documentation:**
-```bash
-cat apply-rls-migration.md
-cat supabase/migrations/00015_enable_rls.sql
-```
+### 2. Configurator Page - No Configurator Issue (Previously Fixed)
+**Issue:** ~~"Failed to fetch configurator settings"~~ FIXED ✅
+**Cause:** ~~Empty configurator tables for ezcr-dev tenant~~ RESOLVED ✅
+**Status:** **FIXED** - Migration 00017 applied successfully
+**Verification:** API returns full data, page loads correctly
 
 ---
 
 ## 📝 Important Notes
 
-### Authentication
-- **Login Credentials:** morris@mocampbell.com / password123
-- **Service Key:** Used in middleware and server actions (bypasses RLS)
-- **Anon Key:** Used in client-side auth checks (respects RLS)
-- **Session Management:** Handled by Supabase Auth with cookies
+### Server Infrastructure
+- **Platform:** Coolify (self-hosted PaaS)
+- **Server IP:** 5.161.84.153 (use this for SSH, not domain)
+- **SSH Access:** `ssh root@5.161.84.153` (IP works better than domain)
+- **Auth Container:** `supabase-auth-ok0kw088ss4swwo4wc84gg0w`
+- **Management:** Coolify web dashboard (check bookmarks)
 
-### Row Level Security (RLS)
-- **Status:** ENABLED on user_profiles table ✅
-- **Policies:** Defined in migration 00014, active after enabling RLS
-- **Service Client:** Bypasses RLS for admin operations
-- **User Client:** Respects RLS policies
-- **Tenant Isolation:** Enforced at database level
+### SMTP Configuration
+- **Method:** Via Coolify dashboard (not Supabase dashboard)
+- **Location:** Coolify → Services → Supabase → Auth → Environment Variables
+- **Guide:** Use `COOLIFY_SMTP_STEPS.md` (most detailed)
+- **Quick Setup:** Gmail (fast), Resend (production-ready)
+- **Variables:** 6 required (GOTRUE_SMTP_*)
+
+### Database Migrations
+- **Status:** All applied via Supabase SQL Editor
+- **Foreign Keys:** Active and enforcing
+- **Configurator Data:** Complete and verified
+- **RLS:** Enabled on all relevant tables
 
 ### Environment
 - **Tenant:** ezcr-dev (development)
@@ -321,43 +363,44 @@ cat supabase/migrations/00015_enable_rls.sql
 - **Database:** Self-hosted Supabase at supabase.nexcyte.com
 - **Dev Server:** Port 3002 (port 3000 in use)
 
-### Known Limitations
-- **SMTP:** Not configured - password reset emails won't send
-- **Configurator:** Empty database tables - page shows error
-- **Foreign Keys:** Not applied - see FOREIGN_KEY_NOTE.md
-
 ---
 
 ## 🎯 Session Summary
 
 **What We Accomplished:**
-- ✅ Fixed authentication to work with RLS
-- ✅ Enabled Row Level Security on user_profiles table
-- ✅ Updated middleware for RLS compatibility
-- ✅ Enhanced AuthContext for graceful error handling
-- ✅ Created complete password reset flow
-- ✅ Improved auth page styling
-- ✅ Fixed dark mode flash on page load
-- ✅ Tested all authentication features
-- ✅ Verified RLS is active and working
+- ✅ Fixed configurator database (tables + seed data)
+- ✅ Applied foreign key constraints for data integrity
+- ✅ Verified configurator API working perfectly
+- ✅ Fixed configurator UI (removed Previous button from Step 1)
+- ✅ Discovered Coolify infrastructure setup
+- ✅ Identified SMTP configuration requirements
+- ✅ Created comprehensive SMTP setup guides
+- ✅ Committed and pushed all changes to GitHub
 
 **What Works:**
-- Complete authentication system (login/logout/password reset)
+- Complete authentication system (login/logout/password reset pages)
 - Team management with 4 active members
 - Protected routes with middleware
 - Row Level Security enabled
 - Dark mode without flash
-- User dropdown and navigation
+- Configurator with full data (12 ranges, 17 prices, 8 rules, 4 settings)
+- Configurator API endpoint returning all data
+- Configurator page loading at /configure
+
+**What's Ready to Configure:**
+- SMTP for email functionality
+- Complete guides available
+- All prerequisites documented
 
 **What's Next:**
-- Configure SMTP for email invitations
-- Test password reset with actual emails
-- Consider adding foreign key constraints
-- Fix configurator page (separate feature)
+1. Configure SMTP via Coolify (15-20 min)
+2. Test password reset email flow (5 min)
+3. Test team invitation emails (optional)
 
-**Time Investment:** Full session - Authentication + RLS + Testing + UI improvements
+**Time Investment:** Full session - Configurator fix + Infrastructure discovery + Documentation
 
 ---
 
 **End of Session Handoff**
-Ready to `/clear` and resume with these instructions.
+System ready for SMTP configuration and final testing.
+Ready to reboot and resume with COOLIFY_SMTP_STEPS.md guide.
