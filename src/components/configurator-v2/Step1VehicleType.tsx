@@ -161,16 +161,7 @@ export function Step1VehicleType() {
         </div>
 
         {/* Navigation */}
-        <div className="flex justify-between items-center pt-6">
-          <Button
-            type="button"
-            variant="outline"
-            disabled
-            className="rounded-full"
-          >
-            Previous
-          </Button>
-
+        <div className="flex justify-end items-center pt-6">
           <Button
             type="submit"
             disabled={!configData.vehicle}
