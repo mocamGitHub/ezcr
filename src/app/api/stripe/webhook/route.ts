@@ -66,8 +66,39 @@ export async function POST(request: NextRequest) {
 
         console.log(`✅ Payment successful for order ${orderNumber} (${orderId})`)
 
+        // Deduct inventory for order items
+        const { data: orderItems, error: itemsError } = await supabaseAdmin
+          .from('order_items')
+          .select('id, product_id, variant_id, quantity, tenant_id')
+          .eq('order_id', orderId)
+
+        if (itemsError) {
+          console.error('Error fetching order items:', itemsError)
+        } else if (orderItems) {
+          // Process each item
+          for (const item of orderItems) {
+            try {
+              await supabaseAdmin.rpc('log_inventory_transaction', {
+                p_tenant_id: item.tenant_id,
+                p_product_id: item.product_id,
+                p_variant_id: item.variant_id,
+                p_order_id: orderId,
+                p_transaction_type: 'sale',
+                p_quantity_change: -item.quantity, // Negative for deduction
+                p_reason: `Order ${orderNumber} completed`,
+                p_reference_id: orderNumber,
+                p_created_by: null, // System transaction
+              })
+              console.log(`  ✅ Deducted ${item.quantity} from product ${item.product_id}`)
+            } catch (invError) {
+              console.error(`  ❌ Failed to deduct inventory for product ${item.product_id}:`, invError)
+              // Don't fail the webhook, but log the error
+              // Admin will need to reconcile manually
+            }
+          }
+        }
+
         // TODO: Send order confirmation email
-        // TODO: Update inventory
         // TODO: Trigger fulfillment workflow
 
         break
@@ -136,6 +167,36 @@ export async function POST(request: NextRequest) {
             .eq('id', order.id)
 
           console.log(`💰 Refund processed for order ${order.order_number}`)
+
+          // Restore inventory for refunded items
+          const { data: orderItems, error: itemsError } = await supabaseAdmin
+            .from('order_items')
+            .select('id, product_id, variant_id, quantity, tenant_id')
+            .eq('order_id', order.id)
+
+          if (itemsError) {
+            console.error('Error fetching order items for refund:', itemsError)
+          } else if (orderItems) {
+            // Restore each item's inventory
+            for (const item of orderItems) {
+              try {
+                await supabaseAdmin.rpc('log_inventory_transaction', {
+                  p_tenant_id: item.tenant_id,
+                  p_product_id: item.product_id,
+                  p_variant_id: item.variant_id,
+                  p_order_id: order.id,
+                  p_transaction_type: 'refund',
+                  p_quantity_change: item.quantity, // Positive for restoration
+                  p_reason: `Order ${order.order_number} refunded`,
+                  p_reference_id: order.order_number,
+                  p_created_by: null, // System transaction
+                })
+                console.log(`  ✅ Restored ${item.quantity} to product ${item.product_id}`)
+              } catch (invError) {
+                console.error(`  ❌ Failed to restore inventory for product ${item.product_id}:`, invError)
+              }
+            }
+          }
         }
         break
       }

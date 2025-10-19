@@ -49,6 +49,41 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validate inventory availability for all cart items
+    const inventoryCheckErrors: string[] = []
+
+    for (const item of cartItems) {
+      const { data: product, error: productError } = await supabaseAdmin
+        .from('products')
+        .select('id, name, inventory_count, sku')
+        .eq('id', item.productId)
+        .single()
+
+      if (productError || !product) {
+        inventoryCheckErrors.push(`Product not found: ${item.productName}`)
+        continue
+      }
+
+      // Check if sufficient inventory available
+      if (product.inventory_count < item.quantity) {
+        inventoryCheckErrors.push(
+          `Insufficient stock for ${product.name} (SKU: ${product.sku}). ` +
+          `Available: ${product.inventory_count}, Requested: ${item.quantity}`
+        )
+      }
+    }
+
+    // If any inventory issues, return error
+    if (inventoryCheckErrors.length > 0) {
+      return NextResponse.json(
+        {
+          error: 'Inventory validation failed',
+          details: inventoryCheckErrors
+        },
+        { status: 400 }
+      )
+    }
+
     // Calculate totals (convert dollars to cents for Stripe)
     // Cart stores prices in dollars, Stripe needs cents
     const subtotal = cartItems.reduce(
