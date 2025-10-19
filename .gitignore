@@ -45,3 +45,6 @@ scripts/
 test-*.md
 *.txt
 compose.override.yml
+
+# supabase
+supabase/.temp/
