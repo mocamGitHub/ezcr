@@ -1,8 +1,6 @@
 # Supabase Configuration for EZCR
 # Self-hosted instance at supabase.nexcyte.com
-
-[project]
-id = "ezcr"
+# Note: For self-hosted instances, use --db-url flag instead of config
 
 [api]
 enabled = true
@@ -18,7 +16,6 @@ major_version = 15
 [studio]
 enabled = true
 port = 54323
-api_url = "https://supabase.nexcyte.com"
 
 [inbucket]
 enabled = true

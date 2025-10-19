@@ -2,65 +2,155 @@
 
 This project uses a **self-hosted Supabase instance** at `https://supabase.nexcyte.com`.
 
-## Setup (One-Time)
+## ⚠️ Important: Self-Hosted Instance Limitations
+
+Your Supabase instance is **self-hosted via Coolify** on a VPS. For security reasons, the PostgreSQL database port (5432) is **NOT exposed** to external connections. This is the correct security configuration.
+
+**This means:**
+- ❌ Direct database connections from your local machine won't work
+- ❌ `npx supabase db push` won't work from local environment
+- ✅ Use Supabase Dashboard SQL Editor instead (recommended)
+- ✅ Or use SSH tunneling (advanced)
+
+---
+
+## Recommended Method: Supabase Dashboard
+
+### Apply Migrations via Dashboard (Easy & Secure)
+
+1. **Go to Supabase Dashboard**
+   - URL: https://supabase.nexcyte.com
+   - Navigate to: **SQL Editor**
+
+2. **Open Migration File**
+   - Browse to: `supabase/migrations/00021_testimonials.sql` (or latest migration)
+   - Copy the entire SQL content
+
+3. **Paste and Run**
+   - Paste into SQL Editor
+   - Click **Run** or **Execute**
+   - Verify success in the output
+
+4. **Done!** ✅
+
+This is the **easiest and most secure** method for self-hosted instances.
+
+---
+
+## Alternative Method: SSH Tunnel (Advanced)
+
+If you prefer CLI access, you can set up an SSH tunnel:
+
+### 1. Create SSH Tunnel
+
+```bash
+# On your local machine
+ssh -L 5433:localhost:5432 root@5.161.84.153
+```
+
+This forwards local port 5433 to the remote PostgreSQL port 5432.
+
+### 2. Update DATABASE_URL
+
+```bash
+# In .env.local (temporary, for tunnel use)
+DATABASE_URL=postgresql://postgres:wuX8wn5yzmXvGMesb48bA0lWY0tPsUE1@localhost:5433/postgres
+```
+
+### 3. Apply Migrations
+
+```bash
+npx supabase db push --db-url "postgresql://postgres:wuX8wn5yzmXvGMesb48bA0lWY0tPsUE1@localhost:5433/postgres"
+```
+
+### 4. Close Tunnel
+
+```bash
+# Press Ctrl+C in the SSH tunnel terminal
+```
+
+⚠️ **Note:** You must keep the SSH tunnel open while running migrations.
+
+---
+
+## Alternative Method: Run on VPS (Advanced)
+
+You can also run migrations directly on your VPS:
+
+### 1. SSH into VPS
+
+```bash
+ssh root@5.161.84.153
+```
+
+### 2. Navigate to Supabase Directory
+
+```bash
+cd /path/to/supabase  # Find with: docker ps | grep postgres
+```
+
+### 3. Run Migration via Docker
+
+```bash
+docker exec -i supabase-db psql -U postgres -d postgres < /path/to/migration.sql
+```
+
+---
+
+## Setup (For Documentation)
 
 ### 1. Get Your Database Connection String
 
-Contact your VPS administrator or check your Supabase dashboard for the PostgreSQL connection URL.
+The connection string is stored in your `.env.local`:
 
 **Format:**
 ```
 postgresql://postgres:[PASSWORD]@[HOST]:[PORT]/postgres
 ```
 
-**Example:**
+**Your Configuration:**
 ```
-postgresql://postgres:your-secure-password@5.161.84.153:5432/postgres
-```
-
-### 2. Add to .env.local
-
-Open `.env.local` and add your database URL:
-
-```bash
-# SUPABASE DATABASE URL (for CLI migrations)
-DATABASE_URL=postgresql://postgres:your-password@5.161.84.153:5432/postgres
+DATABASE_URL=postgresql://postgres:wuX8wn5yzmXvGMesb48bA0lWY0tPsUE1@5.161.84.153:5432/postgres
 ```
 
-⚠️ **Important:** Never commit this to git! It contains your database password.
+⚠️ **Important:**
+- This is already configured in your `.env.local`
+- Never commit this to git! It contains your database password
+- Direct connections won't work (port not exposed)
 
 ---
 
 ## Usage
 
-### Apply All Pending Migrations
+### ✅ Recommended: Apply Migrations via Dashboard
+
+**Steps:**
+1. Go to https://supabase.nexcyte.com → SQL Editor
+2. Copy migration SQL from `supabase/migrations/`
+3. Paste and click "Run"
+
+**Advantages:**
+- ✅ No setup required
+- ✅ Works from anywhere
+- ✅ Secure (uses HTTPS)
+- ✅ Visual feedback
+
+### ⚠️ Advanced: Apply via SSH Tunnel
 
 ```bash
+# Terminal 1: Create tunnel
+ssh -L 5433:localhost:5432 root@5.161.84.153
+
+# Terminal 2: Run migration
+npx supabase db push --db-url "postgresql://postgres:wuX8wn5yzmXvGMesb48bA0lWY0tPsUE1@localhost:5433/postgres"
+```
+
+### ❌ Won't Work: Direct Connection
+
+```bash
+# This will timeout - port not exposed
 npm run db:push
 ```
-
-This runs all migrations in `supabase/migrations/` that haven't been applied yet.
-
-### Check What Would Be Applied (Dry Run)
-
-```bash
-npx supabase db push --db-url "$DATABASE_URL" --dry-run
-```
-
-### View Differences Between Local and Remote
-
-```bash
-npm run db:diff
-```
-
-### Alternative: Manual Method
-
-If you prefer, you can still apply migrations manually:
-
-1. Go to Supabase Dashboard → SQL Editor
-2. Open the migration file from `supabase/migrations/`
-3. Copy and paste the SQL
-4. Click "Run"
 
 ---
 
