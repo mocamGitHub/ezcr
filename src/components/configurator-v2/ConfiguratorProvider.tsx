@@ -21,6 +21,7 @@ interface ConfiguratorContextType {
   configData: ConfigData
   pendingAction: 'cart' | 'email' | 'print' | null
   showContactModal: boolean
+  savedConfigId: string | null
 
   // Navigation
   goToStep: (step: number) => void
@@ -58,6 +59,10 @@ interface ConfiguratorContextType {
   // Validation
   canProceedFromStep: (step: number) => boolean
 
+  // Save/Load
+  saveConfiguration: (isComplete?: boolean) => Promise<{ success: boolean; id?: string; message: string }>
+  loadConfiguration: (id: string) => Promise<boolean>
+
   // Conversion helpers
   convertToInches: (value: number) => number
   convertToCm: (value: number) => number
@@ -85,6 +90,7 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
   const [units, setUnits] = useState<UnitSystem>('imperial')
   const [showContactModal, setShowContactModal] = useState(false)
   const [pendingAction, setPendingAction] = useState<'cart' | 'email' | 'print' | null>(null)
+  const [savedConfigId, setSavedConfigId] = useState<string | null>(null)
 
   const [configData, setConfigData] = useState<ConfigData>({
     vehicle: null,
@@ -392,6 +398,83 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
     }
   }
 
+  // Save/Load Configuration
+  const saveConfiguration = async (isComplete = false): Promise<{ success: boolean; id?: string; message: string }> => {
+    try {
+      // Calculate total for saving
+      const subtotal =
+        configData.selectedModel.price +
+        configData.extension.price +
+        configData.boltlessKit.price +
+        configData.tiedown.price +
+        configData.service.price +
+        configData.delivery.price
+
+      const salesTax = subtotal * 0.089
+      const processingFee = subtotal * 0.03
+      const total = subtotal + salesTax + processingFee
+
+      const response = await fetch('/api/configurator/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          configuration: {
+            ...configData,
+            currentStep,
+            completedSteps,
+            isComplete,
+          },
+          total,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to save configuration')
+      }
+
+      const data = await response.json()
+      setSavedConfigId(data.configuration.id)
+
+      return {
+        success: true,
+        id: data.configuration.id,
+        message: isComplete ? 'Configuration saved successfully!' : 'Progress saved! You can resume later.',
+      }
+    } catch (error) {
+      console.error('Error saving configuration:', error)
+      return {
+        success: false,
+        message: 'Failed to save configuration. Please try again.',
+      }
+    }
+  }
+
+  const loadConfiguration = async (id: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`/api/configurator/load/${id}`)
+
+      if (!response.ok) {
+        throw new Error('Failed to load configuration')
+      }
+
+      const data = await response.json()
+      const loaded = data.configuration
+
+      // Restore configuration data
+      setConfigData(loaded.configuration)
+      setCurrentStep(loaded.configuration.currentStep || 1)
+      setCompletedSteps(loaded.configuration.completedSteps || [])
+      setSavedConfigId(id)
+
+      return true
+    } catch (error) {
+      console.error('Error loading configuration:', error)
+      return false
+    }
+  }
+
   const value: ConfiguratorContextType = {
     currentStep,
     completedSteps,
@@ -399,6 +482,7 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
     configData,
     pendingAction,
     showContactModal,
+    savedConfigId,
     goToStep,
     nextStep,
     previousStep,
@@ -419,6 +503,8 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
     selectBoltlessKit,
     selectTiedown,
     canProceedFromStep,
+    saveConfiguration,
+    loadConfiguration,
     convertToInches,
     convertToCm,
     convertToLbs,

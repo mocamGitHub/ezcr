@@ -1,14 +1,29 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import Link from 'next/link'
 import { useConfigurator } from './ConfiguratorProvider'
 import { Button } from '@/components/ui/button'
 import { CONTACT } from '@/types/configurator-v2'
-import { X } from 'lucide-react'
+import { X, Save, Check } from 'lucide-react'
 
 export function ConfiguratorHeader() {
-  const { units, toggleUnits } = useConfigurator()
+  const { units, toggleUnits, saveConfiguration, savedConfigId } = useConfigurator()
+  const [isSaving, setIsSaving] = useState(false)
+  const [showSaved, setShowSaved] = useState(false)
+
+  const handleSave = async () => {
+    setIsSaving(true)
+    const result = await saveConfiguration(false) // false = incomplete/save for later
+    setIsSaving(false)
+
+    if (result.success) {
+      setShowSaved(true)
+      setTimeout(() => setShowSaved(false), 3000)
+    } else {
+      alert(result.message)
+    }
+  }
 
   return (
     <header className="w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -45,6 +60,26 @@ export function ConfiguratorHeader() {
               </button>
             </div>
 
+            {/* Save for Later Button */}
+            <Button
+              onClick={handleSave}
+              disabled={isSaving}
+              variant="outline"
+              className="rounded-full gap-2"
+            >
+              {showSaved ? (
+                <>
+                  <Check className="h-4 w-4" />
+                  Saved!
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  {isSaving ? 'Saving...' : 'Save for Later'}
+                </>
+              )}
+            </Button>
+
             {/* Exit Button */}
             <Link href={CONTACT.exitUrl}>
               <Button
@@ -52,7 +87,7 @@ export function ConfiguratorHeader() {
                 className="rounded-full gap-2"
               >
                 <X className="h-4 w-4" />
-                Exit Configurator
+                Exit
               </Button>
             </Link>
           </div>

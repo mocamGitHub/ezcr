@@ -1,13 +1,19 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import { useConfigurator } from './ConfiguratorProvider'
+import { useCart } from '@/contexts/CartContext'
 import { Button } from '@/components/ui/button'
 import { FEES, CONTACT } from '@/types/configurator-v2'
-import { ShoppingCart, Phone, Mail, Printer } from 'lucide-react'
+import { ShoppingCart, Phone, Mail, Printer, Share2, Check, Copy } from 'lucide-react'
+import { generateQuotePDF } from '@/lib/utils/pdf-quote'
 
 export function Step5Quote() {
-  const { configData, units, previousStep, setShowContactModal, setPendingAction } = useConfigurator()
+  const { configData, units, previousStep, setShowContactModal, setPendingAction, saveConfiguration, savedConfigId } = useConfigurator()
+  const { addItem } = useCart()
+  const [showShareDialog, setShowShareDialog] = useState(false)
+  const [shareLink, setShareLink] = useState('')
+  const [copied, setCopied] = useState(false)
 
   const weightUnit = units === 'imperial' ? 'lbs' : 'kg'
   const lengthUnit = units === 'imperial' ? 'inches' : 'cm'
@@ -33,23 +39,100 @@ export function Step5Quote() {
   )
 
   // Handle actions
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!hasContactInfo) {
       setPendingAction('cart')
       setShowContactModal(true)
       return
     }
-    // TODO: Implement actual cart functionality
-    alert('✓ Configuration added to cart!')
+
+    // Build configuration description for cart
+    const configItems = [
+      configData.selectedModel.name,
+      configData.extension.price > 0 ? configData.extension.name : null,
+      configData.boltlessKit.price > 0 ? configData.boltlessKit.name : null,
+      configData.tiedown.price > 0 ? configData.tiedown.name : null,
+      configData.service.price > 0 ? configData.service.name : null,
+      configData.delivery.price > 0 ? configData.delivery.name : null,
+    ].filter(Boolean)
+
+    const productName = `Custom Configuration - ${configData.selectedModel.name}`
+    const productDescription = configItems.join(' + ')
+
+    // Save configuration to database
+    try {
+      await fetch('/api/configurator/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          configuration: configData,
+          total,
+        }),
+      })
+    } catch (error) {
+      console.error('Error saving configuration:', error)
+      // Don't block cart addition if save fails
+    }
+
+    // Add configured product to cart
+    addItem({
+      productId: `config-${Date.now()}`, // Unique ID for custom configuration
+      productName,
+      productSlug: 'custom-configuration',
+      productImage: null,
+      price: total,
+      sku: `CONFIG-${configData.selectedModel.id}-${configData.vehicle?.toUpperCase() || 'UNKNOWN'}`,
+    })
+
+    // Show success message
+    alert(`✓ Configuration added to cart!\n\n${productDescription}\n\nTotal: $${total.toFixed(2)}`)
   }
 
-  const handleEmailQuote = () => {
+  const handleEmailQuote = async () => {
     if (!hasContactInfo) {
       setPendingAction('email')
       setShowContactModal(true)
       return
     }
-    alert(`Quote will be emailed to ${configData.contact.email}`)
+
+    try {
+      const response = await fetch('/api/quote/email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: configData.contact.email,
+          firstName: configData.contact.firstName,
+          lastName: configData.contact.lastName,
+          vehicle: configData.vehicle,
+          measurements: configData.measurements,
+          motorcycle: configData.motorcycle,
+          selectedModel: configData.selectedModel,
+          extension: configData.extension,
+          boltlessKit: configData.boltlessKit,
+          tiedown: configData.tiedown,
+          service: configData.service,
+          delivery: configData.delivery,
+          subtotal,
+          salesTax,
+          processingFee,
+          total,
+        }),
+      })
+
+      if (response.ok) {
+        alert(`✓ Quote successfully sent to ${configData.contact.email}!\n\nPlease check your inbox.`)
+      } else {
+        const error = await response.json()
+        alert(`✗ Failed to send email: ${error.error || 'Unknown error'}`)
+      }
+    } catch (error) {
+      console.error('Error sending email:', error)
+      alert('✗ Failed to send email. Please try again or call us at 800-687-4410.')
+    }
   }
 
   const handlePrintQuote = () => {
@@ -58,7 +141,64 @@ export function Step5Quote() {
       setShowContactModal(true)
       return
     }
-    window.print()
+
+    try {
+      generateQuotePDF({
+        contact: {
+          firstName: configData.contact.firstName || '',
+          lastName: configData.contact.lastName || '',
+          email: configData.contact.email || '',
+          phone: configData.contact.phone,
+        },
+        vehicle: configData.vehicle || '',
+        measurements: configData.measurements,
+        motorcycle: configData.motorcycle,
+        selectedModel: configData.selectedModel,
+        extension: configData.extension,
+        boltlessKit: configData.boltlessKit,
+        tiedown: configData.tiedown,
+        service: configData.service,
+        delivery: configData.delivery,
+        subtotal,
+        salesTax,
+        processingFee,
+        total,
+      })
+      alert('✓ PDF quote generated successfully!\n\nCheck your downloads folder.')
+    } catch (error) {
+      console.error('Error generating PDF:', error)
+      alert('✗ Failed to generate PDF. Please try again or email us for a quote.')
+    }
+  }
+
+  const handleShare = async () => {
+    try {
+      // Save configuration first if not already saved
+      let configId = savedConfigId
+      if (!configId) {
+        const result = await saveConfiguration(true)
+        if (!result.success || !result.id) {
+          alert('Failed to generate share link')
+          return
+        }
+        configId = result.id
+      }
+
+      // Generate share link
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
+      const link = `${baseUrl}/configure?load=${configId}`
+      setShareLink(link)
+      setShowShareDialog(true)
+    } catch (error) {
+      console.error('Error generating share link:', error)
+      alert('Failed to generate share link')
+    }
+  }
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(shareLink)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   return (
@@ -246,22 +386,30 @@ export function Step5Quote() {
                   Call {CONTACT.phone}
                 </Button>
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <Button
                     onClick={handleEmailQuote}
                     variant="secondary"
-                    className="gap-2"
+                    className="gap-1 text-xs"
                   >
-                    <Mail className="w-4 h-4" />
+                    <Mail className="w-3 h-3" />
                     Email
                   </Button>
                   <Button
                     onClick={handlePrintQuote}
                     variant="secondary"
-                    className="gap-2"
+                    className="gap-1 text-xs"
                   >
-                    <Printer className="w-4 h-4" />
+                    <Printer className="w-3 h-3" />
                     Print
+                  </Button>
+                  <Button
+                    onClick={handleShare}
+                    variant="secondary"
+                    className="gap-1 text-xs"
+                  >
+                    <Share2 className="w-3 h-3" />
+                    Share
                   </Button>
                 </div>
               </div>
@@ -274,6 +422,50 @@ export function Step5Quote() {
             </div>
           </div>
         </div>
+
+        {/* Share Dialog */}
+        {showShareDialog && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-card rounded-xl p-6 max-w-md w-full border border-border">
+              <h3 className="text-xl font-semibold mb-4">Share Configuration</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Copy this link to share your configuration with others:
+              </p>
+
+              <div className="flex gap-2 mb-6">
+                <input
+                  type="text"
+                  value={shareLink}
+                  readOnly
+                  className="flex-1 px-3 py-2 bg-muted rounded border border-border text-sm"
+                  onClick={(e) => e.currentTarget.select()}
+                />
+                <Button onClick={handleCopyLink} className="gap-2">
+                  {copied ? (
+                    <>
+                      <Check className="h-4 w-4" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4" />
+                      Copy
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button
+                  onClick={() => setShowShareDialog(false)}
+                  variant="outline"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Navigation */}
         <div className="flex justify-between items-center pt-8">
