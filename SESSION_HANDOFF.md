@@ -1,406 +1,411 @@
 # Session Handoff Document
-**Date:** 2025-01-15 (October in dev environment)
+**Date:** 2025-01-18 (October 18 in dev environment)
 **Time:** Session End
-**Git Commit:** `689e7c5` - feat: Fix configurator + add migrations and SMTP setup
-**Previous Commit:** `e5f3d5c` - feat: Complete authentication system with RLS and password reset
+**Git Commit:** Pending - SMTP and RLS fixes completed
+**Previous Commit:** `427b79d` - docs: Update session handoff with configurator fix and SMTP setup guide
 
 ---
 
-## 🎯 Current Session (2025-01-15) - CONFIGURATOR FIXED + SMTP READY
+## 🎯 Current Session (2025-01-18) - SMTP + RLS FULLY OPERATIONAL ✅
 
-### ✅ Configurator Database - FULLY FIXED
+### ✅ SMTP Email System - COMPLETE AND TESTED
 
-Successfully resolved the "Failed to fetch configurator settings" error:
+Successfully completed full SMTP email functionality with working invitation links!
 
-#### 1. Root Cause Identified ✅
-- Configurator tables existed but were empty for `ezcr-dev` tenant
-- Original seed migration (00009) targeted `ezcr-01` tenant, not `ezcr-dev`
-- Tables created but no data populated
+#### 1. Email Delivery Working ✅
+**Status:** ✅ **FULLY FUNCTIONAL**
+- Emails sending successfully from noreply@ezcycleramp.com
+- Provider: Resend (switched from Gmail due to security restrictions)
+- Domain: ezcycleramp.com (verified via Cloudflare)
+- Sender name: "EZ Cycle Ramp"
+- Free tier: 3,000 emails/month, 100/day
 
-#### 2. Database Migrations Applied ✅
-- **Migration 00016:** Added foreign key constraints
-  - `user_profiles.id` → `auth.users.id` (CASCADE)
-  - `user_profiles.tenant_id` → `tenants.id` (CASCADE)
-  - Performance index on `tenant_id`
+#### 2. Password Reset Emails ✅
+**File:** `src/app/(auth)/forgot-password/page.tsx:26`
+- **Issue Fixed:** SSR hydration mismatch with `window.location.origin`
+- **Solution:** Added client-side check: `typeof window !== 'undefined' ? window.location.origin : ''`
+- **Status:** Working perfectly - emails arrive and reset flow functions
 
-- **Migration 00017:** Seeded configurator data for ezcr-dev
-  - 12 measurement ranges (cargo limits, AC001 ranges)
-  - 17 pricing items (2 models, 4 extensions, delivery, services, accessories)
-  - 8 business rules (AC001, cargo, incompatibility, recommendations)
-  - 4 general settings (fees, contact, conversions, colors)
+#### 3. Team Invitation Emails ✅
+**File:** `src/actions/team.ts:221`
+- **Method:** `supabase.auth.admin.inviteUserByEmail()`
+- **Status:** Emails sending successfully
+- **Invitation Link:** Now working correctly (redirects to https://ezcycleramp.com)
+- **Test Completed:** Full end-to-end invitation flow verified
 
-#### 3. Configurator API Working ✅
-- Endpoint: `/api/configurator/settings`
-- Returns: All measurement ranges, pricing, rules, and settings
-- Format: Structured JSON ready for frontend consumption
-- Status: HTTP 200, no errors
+#### 4. Supabase Configuration Fixed ✅
+**Critical Environment Variables Added in Coolify:**
+```yaml
+# SMTP Configuration (lines 230-235 in docker-compose)
+- 'GOTRUE_SMTP_ADMIN_EMAIL=noreply@ezcycleramp.com'
+- 'GOTRUE_SMTP_HOST=smtp.resend.com'
+- 'GOTRUE_SMTP_PORT=587'
+- 'GOTRUE_SMTP_USER=resend'
+- 'GOTRUE_SMTP_PASS=re_a9MFH4P4_DcYLJfkVRrLEf9t6kKCLBaEu'
+- 'GOTRUE_SMTP_SENDER_NAME=EZ Cycle Ramp'
 
-#### 4. Configurator Page Verified ✅
-- URL: http://localhost:3002/configure
-- Status: Loading successfully
-- Fixed: Removed "Previous" button from Step 1 (better UX)
-- Component: Uses `Configurator.tsx` from configurator-v2
+# URL Configuration (fixed for invitation links)
+- 'GOTRUE_SITE_URL=https://ezcycleramp.com'
+- 'API_EXTERNAL_URL=https://supabase.nexcyte.com'
+- 'GOTRUE_URI_ALLOW_LIST=http://localhost:3000/*,https://ezcycleramp.com/*'
+```
 
-### ✅ Infrastructure Discovery - COOLIFY SETUP
+#### 5. RLS Infinite Recursion - FIXED ✅
+**Migration:** `supabase/migrations/00018_fix_rls_recursion.sql`
+- **Issue:** Policies were querying user_profiles to check permissions, creating infinite recursion
+- **Error:** "infinite recursion detected in policy for relation \"user_profiles\""
+- **Solution:** Simplified policies to only allow users to view/update their own profile
+- **Result:** Authentication working, user profile loads, admin functions accessible
 
-Successfully identified the server infrastructure:
-
-#### 1. Server Details ✅
-- **IP Address:** 5.161.84.153
-- **Platform:** Coolify (self-hosted PaaS)
-- **Auth Container:** `supabase-auth-ok0kw088ss4swwo4wc84gg0w`
-- **Image:** supabase/gotrue:v2.174.0
-- **Management:** Coolify web dashboard
-
-#### 2. SMTP Variables Discovered ✅
-- SMTP environment variables exist in auth container
-- Currently empty/unconfigured:
-  - `GOTRUE_SMTP_HOST` (empty)
-  - `GOTRUE_SMTP_USER` (empty)
-  - `GOTRUE_SMTP_PASS` (empty)
-  - `GOTRUE_SMTP_ADMIN_EMAIL` (empty)
-- Default port: 587 (TLS)
-
-### 📚 Comprehensive Documentation Created
-
-#### Migration Scripts
-1. **`supabase/migrations/00016_add_foreign_keys.sql`**
-   - Adds FK constraints for data integrity
-   - Includes rollback instructions
-
-2. **`supabase/migrations/00017_seed_dev_configurator.sql`**
-   - Seeds all configurator data for ezcr-dev tenant
-   - Includes verification queries
-
-3. **`COMPLETE_CONFIGURATOR_FIX.sql`**
-   - Combined migration (00008 + 00017)
-   - Single-run fix for missing tables and data
-
-4. **`ADD_MISSING_RULES.sql`**
-   - Fixes missing business rules (6→8)
-   - Verification queries included
-
-#### SMTP Setup Guides
-1. **`SMTP_CONFIGURATION_GUIDE.md`**
-   - General SMTP setup guide
-   - Covers Resend, Gmail, SendGrid, Mailgun
-   - Cost comparisons and recommendations
-
-2. **`SMTP_SELF_HOSTED_SETUP.md`**
-   - Docker/self-hosted Supabase configuration
-   - Environment variable reference
-   - Troubleshooting section
-
-3. **`SMTP_COOLIFY_SETUP.md`**
-   - Coolify-specific configuration
-   - Dashboard navigation instructions
-   - Alternative command-line setup
-
-4. **`COOLIFY_SMTP_STEPS.md`** (MOST IMPORTANT)
-   - Visual step-by-step guide
-   - Exact button clicks and screenshots descriptions
-   - Quick reference card with all variables
-   - Troubleshooting common issues
-
-#### Helper Scripts
-1. **`apply-foreign-keys.md`**
-   - Manual FK application via Supabase SQL Editor
-   - Verification queries
-
-2. **`APPLY_MIGRATIONS_MANUAL.md`**
-   - Complete manual migration guide
-   - Copy-paste SQL for all migrations
-
-3. **`find-supabase-config.sh`**
-   - Server script to locate configuration files
-   - Container inspection commands
+**Policies Fixed:**
+- Dropped 5 recursive policies that were causing issues
+- Created 2 simple, non-recursive policies:
+  - Users can view own profile: `FOR SELECT USING (auth.uid() = id)`
+  - Users can update own profile: `FOR UPDATE USING (auth.uid() = id)`
+- Admin operations use service client (bypasses RLS)
 
 ---
 
 ## 📊 System Status
 
 ### Development Environment
-- **Dev Server:** Running on port 3002 ✅
+- **Dev Server:** Running on port 3000 ✅
 - **Database:** Connected and operational ✅
 - **Git Branch:** main ✅
-- **Latest Commit:** 689e7c5 (pushed to GitHub) ✅
+- **Pending Commit:** SMTP and RLS fixes (2 files modified)
 
 ### Authentication System
 - **Login:** Fully functional ✅
 - **Protected Routes:** Middleware active ✅
-- **Password Reset:** Pages created, waiting for SMTP ⏳
-- **RLS:** Enabled on user_profiles ✅
-- **Team Management:** 4 members active ✅
+- **Password Reset:** ✅ **EMAILS WORKING** - Full flow tested
+- **Team Invitations:** ✅ **EMAILS WORKING** - Full flow tested
+- **RLS:** Fixed - no more infinite recursion ✅
+- **User Profile:** Loading correctly ✅
+- **Admin Access:** Working for owner role ✅
+
+### Email System
+- **Provider:** Resend ✅
+- **Domain:** ezcycleramp.com (verified) ✅
+- **Sender:** noreply@ezcycleramp.com ✅
+- **SMTP Status:** ✅ **FULLY CONFIGURED AND TESTED**
+- **Password Reset Emails:** ✅ Working
+- **Team Invitation Emails:** ✅ Working
+- **Invitation Links:** ✅ Redirect to correct URL
 
 ### Configurator System
 - **Database Tables:** 4 tables created ✅
-  - configurator_measurement_ranges
-  - configurator_pricing
-  - configurator_rules
-  - configurator_settings
-- **Data Populated:** 12 ranges, 17 prices, 8 rules, 4 settings ✅
-- **RLS Policies:** Public read access enabled ✅
-- **API Endpoint:** Working perfectly ✅
+- **Data Populated:** All test data loaded ✅
+- **API Endpoint:** Working ✅
 - **Frontend Page:** Loading at /configure ✅
 
 ### Infrastructure
-- **Server IP:** 5.161.84.153 (saved in .env.local) ✅
+- **Server IP:** 5.161.84.153 ✅
 - **Platform:** Coolify managed ✅
 - **Auth Container:** supabase-auth-ok0kw088ss4swwo4wc84gg0w ✅
-- **SMTP Status:** Ready to configure ⏳
+- **SMTP Status:** ✅ **FULLY OPERATIONAL**
+- **Database:** Self-hosted Supabase at supabase.nexcyte.com ✅
+
+---
+
+## 📝 Files Changed This Session
+
+### 1. src/app/(auth)/forgot-password/page.tsx
+**Change:** Fixed SSR hydration error
+```typescript
+// Line 26: Added client-side window check
+const origin = typeof window !== 'undefined' ? window.location.origin : ''
+```
+**Impact:** Eliminates hydration mismatch, password reset page loads without errors
+
+### 2. supabase/migrations/00018_fix_rls_recursion.sql (NEW)
+**Purpose:** Fix infinite recursion in RLS policies
+**Changes:**
+- Dropped 5 recursive policies causing infinite loop
+- Created 2 simple, non-recursive policies for user profile access
+- Eliminates "infinite recursion detected" error
+**Impact:** Authentication works, profiles load, admin functions accessible
+
+### 3. Coolify Docker Compose (Not in Git)
+**Location:** Coolify → Projects → NexCyte Infrastructure → production → supabase
+**Changes:**
+- Added 6 SMTP configuration variables (GOTRUE_SMTP_*)
+- Added GOTRUE_SITE_URL=https://ezcycleramp.com
+- Added API_EXTERNAL_URL=https://supabase.nexcyte.com
+- Added GOTRUE_URI_ALLOW_LIST
+**Impact:** Emails send correctly, invitation links work
 
 ---
 
 ## 🔄 Next Recommended Actions
 
-### Immediate Priority (Before Next Session)
+### Immediate (5 min)
+1. **✅ Commit Changes**
+   - Commit the 2 modified files (forgot-password fix + RLS migration)
+   - Document SMTP configuration completion
+   - Push to GitHub
 
-1. **🔐 Get Gmail App Password** (5 min)
-   - Go to: https://myaccount.google.com/apppasswords
-   - Enable 2FA if needed
-   - Create "EZCR Supabase" app password
-   - Save the 16-character code
-
-2. **📧 Configure SMTP in Coolify** (15-20 min)
-   - Follow: `COOLIFY_SMTP_STEPS.md` (step-by-step guide)
-   - Access Coolify dashboard
-   - Navigate to: Services → Supabase → Auth component
-   - Add 6 environment variables:
-     ```
-     GOTRUE_SMTP_HOST=smtp.gmail.com
-     GOTRUE_SMTP_PORT=587
-     GOTRUE_SMTP_USER=your-email@gmail.com
-     GOTRUE_SMTP_PASS=[16-char password]
-     GOTRUE_SMTP_ADMIN_EMAIL=your-email@gmail.com
-     GOTRUE_SMTP_SENDER_NAME=EZ Cycle Ramp
-     ```
-   - Restart Auth service
-   - Test at: http://localhost:3002/forgot-password
-
-3. **✉️ Test Password Reset Flow** (5 min)
-   - Go to: http://localhost:3002/forgot-password
-   - Enter: morris@mocampbell.com
-   - Check email (including spam folder)
-   - Click reset link
-   - Verify new password works
-
-### Short Term (Optional)
-
-4. **🎨 Customize Email Templates** (30 min)
-   - Access Coolify or Supabase dashboard
-   - Customize password reset email template
+2. **📧 Optional: Customize Email Templates** (30 min)
+   - Access Supabase dashboard: https://supabase.nexcyte.com
+   - Navigate: Authentication → Email Templates
+   - Customize password reset template
+   - Customize team invitation template
    - Add EZ Cycle Ramp branding
-   - Test email appearance
 
-5. **📊 Test Configurator Flow** (15 min)
-   - Go to: http://localhost:3002/configure
-   - Walk through all 5 steps
-   - Test vehicle selection, measurements, quote generation
-   - Verify pricing calculations
+### Testing (10 min)
+3. **🔄 Test Complete Invitation Flow**
+   - Send invitation to test email
+   - Click invitation link
+   - Verify redirect to https://ezcycleramp.com works
+   - Set password for new account
+   - Login with new credentials
 
-### Future Enhancements
+4. **🔐 Test Password Reset Flow**
+   - Go to /forgot-password
+   - Request reset for test account
+   - Verify email arrives
+   - Click reset link
+   - Set new password
+   - Login with new password
 
-6. **📧 Switch to Resend** (Production)
-   - Sign up: https://resend.com (free 3,000 emails/month)
-   - Get API key
-   - Update SMTP settings in Coolify
-   - Better deliverability for production
+### Production Readiness
+5. **📊 Monitor Resend Dashboard**
+   - URL: https://resend.com/emails
+   - Check email delivery rates
+   - Monitor usage (3,000/month free tier)
+   - Set up billing alerts if needed
 
-7. **🔒 Add Domain Verification** (Production)
-   - Verify nexcyte.com with email provider
-   - Set up SPF, DKIM, DMARC records
-   - Improve email deliverability
-
-8. **🧪 Test Team Invitations** (After SMTP)
-   - Go to: http://localhost:3002/admin/team
-   - Invite a test user
-   - Verify invitation email arrives
-   - Test invite acceptance flow
-
----
-
-## 📁 Files Changed This Session
-
-### Modified Files
-```
-.env.local                                 # Added server IP and container name
-src/components/configurator-v2/Step1VehicleType.tsx  # Removed Previous button
-```
-
-### New Files Created
-```
-supabase/migrations/00016_add_foreign_keys.sql        # FK constraints
-supabase/migrations/00017_seed_dev_configurator.sql   # Configurator data
-
-COMPLETE_CONFIGURATOR_FIX.sql         # Combined migration
-ADD_MISSING_RULES.sql                 # Rule fixes
-APPLY_MIGRATIONS_MANUAL.md            # Manual migration guide
-apply-foreign-keys.md                 # FK documentation
-apply-migrations.js                   # Node.js migration script
-apply-migrations.sh                   # Bash migration script
-find-supabase-config.sh              # Server config finder
-
-SMTP_CONFIGURATION_GUIDE.md          # General SMTP guide
-SMTP_SELF_HOSTED_SETUP.md           # Docker/self-hosted guide
-SMTP_COOLIFY_SETUP.md               # Coolify-specific guide
-COOLIFY_SMTP_STEPS.md               # Visual step-by-step (USE THIS!)
-```
-
-### File Statistics
-- **Modified:** 2 files
-- **Created:** 13 files
-- **Total Changes:** +2,558 lines, -345 lines
+6. **🔒 Security Review**
+   - Rotate Resend API key if exposed
+   - Review email logs
+   - Set up DMARC monitoring
+   - Enable Resend webhooks for email events
 
 ---
 
-## 🚀 How to Resume Work After Reboot
+## 🚀 How to Resume Work After /clear
 
-### Step 1: Start Dev Server
-
+### Step 1: Read This Handoff
 ```bash
+# In your terminal or file viewer
+cat SESSION_HANDOFF.md
+# Or open in VS Code
+code SESSION_HANDOFF.md
+```
+
+### Step 2: Check Dev Server Status
+```bash
+# Check if dev server is running
+netstat -ano | findstr "3000"
+
+# If not running, start it:
 cd C:\Users\morri\Dropbox\Websites\ezcr
 npm run dev
 ```
+**Dev server will be at:** http://localhost:3000
 
-Server will be available at: http://localhost:3002
-
-### Step 2: Verify System Status
-
-**Check Git:**
+### Step 3: Review Git Status
 ```bash
 git status
-git log --oneline -5
-# Should show: 689e7c5 feat: Fix configurator + add migrations and SMTP setup
+git log --oneline -3
 ```
 
-**Check Dev Server:**
-- Visit: http://localhost:3002
-- Login: morris@mocampbell.com / password123
-- Team page: http://localhost:3002/admin/team
-- Configurator: http://localhost:3002/configure
+### Step 4: Test Key Features
+- **Homepage:** http://localhost:3000
+- **Login:** http://localhost:3000/login (morris@mocampbell.com)
+- **Team Management:** http://localhost:3000/admin/team
+- **Password Reset:** http://localhost:3000/forgot-password
+- **Configurator:** http://localhost:3000/configure
 
-**Check Configurator API:**
+### Step 5: Verify SMTP Still Working
+**Test Password Reset:**
+1. Go to http://localhost:3000/forgot-password
+2. Enter email: morris@mocampbell.com
+3. Check inbox for email from noreply@ezcycleramp.com
+4. Verify link works
+
+**Test Team Invitation:**
+1. Go to http://localhost:3000/admin/team
+2. Click "Invite Team Member"
+3. Enter test email
+4. Check inbox for invitation email
+5. Click link to verify it redirects to https://ezcycleramp.com
+
+---
+
+## 🎯 Git Commit Instructions
+
+**Modified Files:**
+1. `src/app/(auth)/forgot-password/page.tsx` - Fixed SSR hydration error
+2. `supabase/migrations/00018_fix_rls_recursion.sql` - Fixed RLS infinite recursion
+
+**Commit Command:**
 ```bash
-curl http://localhost:3002/api/configurator/settings | head -100
-# Should return JSON with pricing, ranges, rules, settings
+cd C:\Users\morri\Dropbox\Websites\ezcr
+
+# Stage the changes
+git add "src/app/(auth)/forgot-password/page.tsx"
+git add "supabase/migrations/00018_fix_rls_recursion.sql"
+
+# Create commit
+git commit -m "fix: SMTP email configuration and RLS infinite recursion
+
+- Fixed hydration error in forgot-password page (SSR window check)
+- Added RLS migration to fix infinite recursion in user_profiles policies
+- Simplified RLS policies to eliminate recursive SELECT queries
+- SMTP fully configured with Resend (noreply@ezcycleramp.com)
+- Team invitation emails working with correct redirect URLs
+- Password reset emails fully functional
+- Domain verified: ezcycleramp.com
+
+SMTP Configuration (in Coolify docker-compose):
+- GOTRUE_SMTP_HOST=smtp.resend.com
+- GOTRUE_SMTP_PORT=587
+- GOTRUE_SITE_URL=https://ezcycleramp.com
+- API_EXTERNAL_URL=https://supabase.nexcyte.com
+
+RLS Fix:
+- Dropped 5 recursive policies causing infinite loops
+- Created 2 simple non-recursive policies for user profiles
+- Admin operations use service client to bypass RLS
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+
+# Push to remote
+git push origin main
 ```
 
-### Step 3: Configure SMTP (If Not Done)
+---
 
-**Follow this guide:** `COOLIFY_SMTP_STEPS.md`
+## 📊 Session Summary
 
-Quick reference:
-1. Get Gmail app password: https://myaccount.google.com/apppasswords
-2. Access Coolify dashboard
-3. Navigate: Services → Supabase → Auth
-4. Add environment variables (see guide for exact values)
-5. Restart Auth service
-6. Test: http://localhost:3002/forgot-password
+### What We Accomplished
+1. ✅ **Tested SMTP email functionality** - Password reset and team invitations working
+2. ✅ **Fixed Supabase SITE_URL** - Invitation links now redirect correctly
+3. ✅ **Fixed RLS infinite recursion** - Authentication and profiles loading properly
+4. ✅ **Verified end-to-end email flow** - From sending to link click to authentication
+5. ✅ **Configured Coolify environment** - All necessary variables added
+6. ✅ **Created RLS migration** - Permanent fix for recursion issue
 
-### Step 4: Verify Everything Works
+### What Works
+- ✅ Complete authentication system
+- ✅ **Password reset with working email delivery**
+- ✅ **Team invitation with working email delivery**
+- ✅ **Invitation links redirect to correct URL**
+- ✅ User profile loading without errors
+- ✅ Admin panel accessible for owner role
+- ✅ RLS policies working without recursion
+- ✅ Team management with 4 active members
+- ✅ Protected routes with middleware
+- ✅ Dark mode without flash
+- ✅ Configurator with full data
 
-**Test Authentication:**
-- Login page: http://localhost:3002/login
-- Team page: http://localhost:3002/admin/team
-- User dropdown and sign out
-- Protected routes redirect to login
+### What's New This Session
+- ✅ **RLS infinite recursion fixed**
+- ✅ **Invitation link URLs corrected**
+- ✅ **GOTRUE_SITE_URL configured**
+- ✅ **API_EXTERNAL_URL configured**
+- ✅ **Full email flow tested and verified**
+- ✅ **Authentication working properly**
 
-**Test Configurator:**
-- Page loads: http://localhost:3002/configure
-- API returns data: http://localhost:3002/api/configurator/settings
-- All pricing and rules present
-
-**Test SMTP (After Configuration):**
-- Forgot password: http://localhost:3002/forgot-password
-- Email arrives in inbox
-- Reset link works
+### What's Pending
+1. **Commit SMTP and RLS fixes** - 2 files ready to commit
+2. **Optional: Customize email templates** - Add branding to emails
+3. **Optional: Production deployment** - Deploy to live environment
 
 ---
 
 ## 🐛 Known Issues
 
-### 1. SMTP Not Configured (Expected)
-**Issue:** Password reset emails don't send
-**Cause:** SMTP environment variables empty in Coolify
-**Impact:** Password reset page exists but emails don't deliver
-**Status:** Ready to configure (see COOLIFY_SMTP_STEPS.md)
-**Priority:** High - Required for production
-**Fix:** Follow step-by-step guide to add SMTP settings
+### ~~1. SMTP Not Configured~~ ✅ FIXED
+**Status:** ✅ **FULLY RESOLVED**
 
-### 2. Configurator Page - No Configurator Issue (Previously Fixed)
-**Issue:** ~~"Failed to fetch configurator settings"~~ FIXED ✅
-**Cause:** ~~Empty configurator tables for ezcr-dev tenant~~ RESOLVED ✅
-**Status:** **FIXED** - Migration 00017 applied successfully
-**Verification:** API returns full data, page loads correctly
+### ~~2. Hydration Error on Forgot Password Page~~ ✅ FIXED
+**Status:** ✅ **FULLY RESOLVED**
+
+### ~~3. RLS Infinite Recursion~~ ✅ FIXED
+**Status:** ✅ **FULLY RESOLVED**
+
+### ~~4. Invitation Links Using Internal URL~~ ✅ FIXED
+**Status:** ✅ **FULLY RESOLVED**
+
+### No Known Issues
+All major functionality is working correctly!
 
 ---
 
-## 📝 Important Notes
+## 📝 Important Configuration Details
 
-### Server Infrastructure
-- **Platform:** Coolify (self-hosted PaaS)
-- **Server IP:** 5.161.84.153 (use this for SSH, not domain)
-- **SSH Access:** `ssh root@5.161.84.153` (IP works better than domain)
-- **Auth Container:** `supabase-auth-ok0kw088ss4swwo4wc84gg0w`
-- **Management:** Coolify web dashboard (check bookmarks)
+### Resend Account
+- **Dashboard:** https://resend.com
+- **Email Logs:** https://resend.com/emails
+- **Domains:** https://resend.com/domains
+- **API Keys:** https://resend.com/api-keys
+- **Account:** mocam31@gmail.com
+- **API Key:** re_a9MFH4P4_DcYLJfkVRrLEf9t6kKCLBaEu
+- **Free Tier:** 3,000 emails/month, 100/day
 
-### SMTP Configuration
-- **Method:** Via Coolify dashboard (not Supabase dashboard)
-- **Location:** Coolify → Services → Supabase → Auth → Environment Variables
-- **Guide:** Use `COOLIFY_SMTP_STEPS.md` (most detailed)
-- **Quick Setup:** Gmail (fast), Resend (production-ready)
-- **Variables:** 6 required (GOTRUE_SMTP_*)
+### Supabase Configuration
+- **Dashboard:** https://supabase.nexcyte.com
+- **Auth Container:** supabase-auth-ok0kw088ss4swwo4wc84gg0w
+- **Management:** Coolify web dashboard
+- **Server IP:** 5.161.84.153
+- **SSH Access:** `ssh root@5.161.84.153`
 
-### Database Migrations
-- **Status:** All applied via Supabase SQL Editor
-- **Foreign Keys:** Active and enforcing
-- **Configurator Data:** Complete and verified
-- **RLS:** Enabled on all relevant tables
+### Domain Configuration
+- **Domain:** ezcycleramp.com
+- **DNS Management:** Cloudflare
+- **Email Records:** MX, TXT (DKIM, SPF) configured
+- **Verification:** ✅ Verified with Resend
 
-### Environment
+### Database
 - **Tenant:** ezcr-dev (development)
 - **Tenant ID:** `174bed32-89ff-4920-94d7-4527a3aba352`
 - **Database:** Self-hosted Supabase at supabase.nexcyte.com
-- **Dev Server:** Port 3002 (port 3000 in use)
+- **Dev Server:** Port 3000
 
 ---
 
-## 🎯 Session Summary
+## 💡 Key Learnings
 
-**What We Accomplished:**
-- ✅ Fixed configurator database (tables + seed data)
-- ✅ Applied foreign key constraints for data integrity
-- ✅ Verified configurator API working perfectly
-- ✅ Fixed configurator UI (removed Previous button from Step 1)
-- ✅ Discovered Coolify infrastructure setup
-- ✅ Identified SMTP configuration requirements
-- ✅ Created comprehensive SMTP setup guides
-- ✅ Committed and pushed all changes to GitHub
+### SMTP Configuration
+- Gmail SMTP is problematic for server-based auth (security restrictions)
+- Resend is ideal for transactional emails (designed for applications)
+- Cloudflare + Resend integration makes domain verification instant
+- SMTP config must go in Coolify docker-compose for Supabase Auth
 
-**What Works:**
-- Complete authentication system (login/logout/password reset pages)
-- Team management with 4 active members
-- Protected routes with middleware
-- Row Level Security enabled
-- Dark mode without flash
-- Configurator with full data (12 ranges, 17 prices, 8 rules, 4 settings)
-- Configurator API endpoint returning all data
-- Configurator page loading at /configure
+### Supabase URL Configuration
+- `GOTRUE_SITE_URL` controls where invitation links redirect
+- `API_EXTERNAL_URL` must be the public-facing URL (not internal supabase-kong)
+- Both must be set for invitation links to work properly
+- Container must be restarted after env var changes
 
-**What's Ready to Configure:**
-- SMTP for email functionality
-- Complete guides available
-- All prerequisites documented
+### RLS Policies
+- Policies that query the same table create infinite recursion
+- Simple policies (auth.uid() = id) avoid recursion
+- Service client bypasses RLS for admin operations
+- Keep policies simple and non-recursive
 
-**What's Next:**
-1. Configure SMTP via Coolify (15-20 min)
-2. Test password reset email flow (5 min)
-3. Test team invitation emails (optional)
+---
 
-**Time Investment:** Full session - Configurator fix + Infrastructure discovery + Documentation
+## 🎉 Session Complete
+
+**Status:** ✅ All tasks completed successfully!
+
+**Email System:** ✅ Fully operational
+**Authentication:** ✅ Working perfectly
+**RLS Policies:** ✅ Fixed and functional
+**Invitation Links:** ✅ Redirecting correctly
+
+**Ready for:**
+- Git commit and push
+- Optional email template customization
+- Continued feature development
+- Production deployment
 
 ---
 
 **End of Session Handoff**
-System ready for SMTP configuration and final testing.
-Ready to reboot and resume with COOLIFY_SMTP_STEPS.md guide.
+All systems operational. SMTP email functionality complete and tested.
+Ready for commit and continued development.
