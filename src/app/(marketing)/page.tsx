@@ -1,6 +1,7 @@
 // src/app/page.tsx
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { TestimonialCarousel } from '@/components/testimonials/TestimonialCarousel'
 
 export default function HomePage() {
   return (
@@ -77,6 +78,21 @@ export default function HomePage() {
                 <Link href="/products/aun200">View Details</Link>
               </Button>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-bold text-center mb-12">
+            What Our Customers Say
+          </h2>
+          <TestimonialCarousel />
+          <div className="text-center mt-8">
+            <Button asChild variant="outline">
+              <Link href="/testimonials">View All Testimonials</Link>
+            </Button>
           </div>
         </div>
       </section>
