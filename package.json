@@ -10,7 +10,10 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
-    "test:e2e:debug": "playwright test --debug"
+    "test:e2e:debug": "playwright test --debug",
+    "db:push": "npx supabase db push --db-url \"$DATABASE_URL\"",
+    "db:diff": "npx supabase db diff --db-url \"$DATABASE_URL\"",
+    "db:reset": "npx supabase db reset --db-url \"$DATABASE_URL\""
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
