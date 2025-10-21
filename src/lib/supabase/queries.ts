@@ -275,3 +275,180 @@ export async function searchProducts(filters: ProductFilters) {
 
   return data as Product[]
 }
+
+// ============================================
+// Gallery Types and Queries
+// ============================================
+
+export interface GalleryCategory {
+  id: string
+  tenant_id: string
+  name: string
+  slug: string
+  description: string | null
+  display_order: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface GalleryItem {
+  id: string
+  tenant_id: string
+  category_id: string | null
+  item_type: 'image' | 'video'
+  title: string
+  description: string | null
+  caption: string | null
+  image_url: string | null
+  thumbnail_url: string | null
+  video_url: string | null
+  video_provider: 'youtube' | 'vimeo' | 'direct' | null
+  video_embed_id: string | null
+  video_duration: number | null
+  alt_text: string | null
+  tags: string[] | null
+  is_featured: boolean
+  display_order: number
+  is_active: boolean
+  meta_title: string | null
+  meta_description: string | null
+  published_at: string | null
+  created_at: string
+  updated_at: string
+  // Relations
+  gallery_category?: GalleryCategory | null
+}
+
+/**
+ * Get all gallery categories
+ */
+export async function getGalleryCategories() {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('gallery_categories')
+    .select('*')
+    .eq('tenant_id', TENANT_ID)
+    .eq('is_active', true)
+    .order('display_order', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching gallery categories:', error)
+    return []
+  }
+
+  return data as GalleryCategory[]
+}
+
+/**
+ * Get all gallery items (images and videos)
+ */
+export async function getGalleryItems(categorySlug?: string) {
+  const supabase = await createClient()
+
+  let query = supabase
+    .from('gallery_items')
+    .select(`
+      *,
+      gallery_category:category_id (
+        id,
+        name,
+        slug
+      )
+    `)
+    .eq('tenant_id', TENANT_ID)
+    .eq('is_active', true)
+    .lte('published_at', new Date().toISOString())
+
+  // Filter by category if provided
+  if (categorySlug) {
+    const { data: category } = await supabase
+      .from('gallery_categories')
+      .select('id')
+      .eq('tenant_id', TENANT_ID)
+      .eq('slug', categorySlug)
+      .single()
+
+    if (category) {
+      query = query.eq('category_id', category.id)
+    }
+  }
+
+  query = query
+    .order('is_featured', { ascending: false })
+    .order('display_order', { ascending: true })
+    .order('created_at', { ascending: false })
+
+  const { data, error } = await query
+
+  if (error) {
+    console.error('Error fetching gallery items:', error)
+    return []
+  }
+
+  return data as GalleryItem[]
+}
+
+/**
+ * Get featured gallery items
+ */
+export async function getFeaturedGalleryItems(limit = 6) {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('gallery_items')
+    .select(`
+      *,
+      gallery_category:category_id (
+        id,
+        name,
+        slug
+      )
+    `)
+    .eq('tenant_id', TENANT_ID)
+    .eq('is_active', true)
+    .eq('is_featured', true)
+    .lte('published_at', new Date().toISOString())
+    .order('display_order', { ascending: true })
+    .limit(limit)
+
+  if (error) {
+    console.error('Error fetching featured gallery items:', error)
+    return []
+  }
+
+  return data as GalleryItem[]
+}
+
+/**
+ * Get gallery items by type (image or video)
+ */
+export async function getGalleryItemsByType(itemType: 'image' | 'video') {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('gallery_items')
+    .select(`
+      *,
+      gallery_category:category_id (
+        id,
+        name,
+        slug
+      )
+    `)
+    .eq('tenant_id', TENANT_ID)
+    .eq('item_type', itemType)
+    .eq('is_active', true)
+    .lte('published_at', new Date().toISOString())
+    .order('is_featured', { ascending: false })
+    .order('display_order', { ascending: true })
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching gallery items by type:', error)
+    return []
+  }
+
+  return data as GalleryItem[]
+}
