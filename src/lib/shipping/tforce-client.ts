@@ -183,10 +183,15 @@ export class TForceFreightClient {
       quantity: number
     }>
     product_sku?: string // For single product quotes
+    supabase?: any // Supabase client for fetching settings
+    tenantId?: string // Tenant ID for fetching settings
   }): Promise<{
     success: boolean
     rates?: TForceRate[]
     cost?: number
+    freight_cost?: number
+    packaging_cost?: number
+    total_shipping?: number
     delivery_days?: string
     free_shipping?: boolean
     message: string
@@ -262,18 +267,45 @@ export class TForceFreightClient {
       // Find standard rate (cheapest option)
       const standardRate = rates.find((r) => r.serviceLevel === 'STANDARD') || rates[0]
 
+      // Fetch packaging cost from database
+      let packagingCost = 63 // Default packaging cost
+      if (args.supabase && args.tenantId) {
+        try {
+          const { data: setting } = await args.supabase
+            .from('shipping_settings')
+            .select('setting_value')
+            .eq('tenant_id', args.tenantId)
+            .eq('setting_key', 'packaging_fee')
+            .eq('is_active', true)
+            .single()
+
+          if (setting && setting.setting_value) {
+            packagingCost = parseFloat(setting.setting_value)
+          }
+        } catch (dbError) {
+          console.warn('Failed to fetch packaging cost from database, using default:', dbError)
+        }
+      }
+
       // Apply free shipping policy (orders over $500)
       const freeShipping = totalValue >= 500
+
+      // Calculate total shipping
+      const freightCost = standardRate.totalCharges
+      const totalShipping = freeShipping ? 0 : freightCost + packagingCost
 
       return {
         success: true,
         rates,
-        cost: freeShipping ? 0 : standardRate.totalCharges,
+        freight_cost: freightCost,
+        packaging_cost: freeShipping ? 0 : packagingCost,
+        total_shipping: totalShipping,
+        cost: totalShipping, // For backward compatibility
         delivery_days: `${standardRate.transitDays}`,
         free_shipping: freeShipping,
         message: freeShipping
-          ? `Free shipping! Your order qualifies for free freight delivery (${standardRate.transitDays} business days to ${args.city}, ${args.state}).`
-          : `Shipping to ${args.city}, ${args.state} (${args.zip}): $${standardRate.totalCharges.toFixed(2)} (${standardRate.transitDays} business days). Orders over $500 ship free!`,
+          ? `Free shipping! Your order qualifies for free freight delivery (${standardRate.transitDays} business days to ${args.city}, ${args.state}). Normally $${(freightCost + packagingCost).toFixed(2)} (freight: $${freightCost.toFixed(2)} + packaging: $${packagingCost.toFixed(2)}).`
+          : `Shipping to ${args.city}, ${args.state} (${args.zip}): $${totalShipping.toFixed(2)} total (freight: $${freightCost.toFixed(2)} + packaging: $${packagingCost.toFixed(2)}). Delivery in ${standardRate.transitDays} business days. Orders over $500 ship free!`,
       }
     } catch (error) {
       console.error('T-Force shipping calculation error:', error)
@@ -292,24 +324,34 @@ export class TForceFreightClient {
     zip: string
     product_sku?: string
     country?: string
+    packaging_cost?: number
   }): {
     success: boolean
     cost: number
+    freight_cost?: number
+    packaging_cost?: number
+    total_shipping?: number
     delivery_days: string
     free_shipping: boolean
     message: string
   } {
     const country = args.country || 'US'
     const zipCode = args.zip
+    const packagingCost = args.packaging_cost || 63
 
     // International shipping
     if (country !== 'US') {
+      const freightCost = 150
+      const totalShipping = freightCost + packagingCost
       return {
         success: true,
-        cost: 150,
+        freight_cost: freightCost,
+        packaging_cost: packagingCost,
+        total_shipping: totalShipping,
+        cost: totalShipping,
         delivery_days: '10-14',
         free_shipping: false,
-        message: 'International shipping: $150 (10-14 business days). Additional customs fees may apply.',
+        message: `International shipping: $${totalShipping.toFixed(2)} total (freight: $${freightCost} + packaging: $${packagingCost}). 10-14 business days. Additional customs fees may apply.`,
       }
     }
 
@@ -322,21 +364,26 @@ export class TForceFreightClient {
     }
 
     const zone = getZone(zipCode)
-    const baseCost = [49, 59, 69][zone - 1]
+    const freightCost = [49, 59, 69][zone - 1]
     const deliveryDays = ['5-7', '6-8', '7-9'][zone - 1]
 
     // Check product value for free shipping
     const productValue = args.product_sku === 'AUN200' ? 799 : args.product_sku === 'AUN210' ? 999 : 1299
     const freeShipping = productValue >= 500
 
+    const totalShipping = freeShipping ? 0 : freightCost + packagingCost
+
     return {
       success: true,
-      cost: freeShipping ? 0 : baseCost,
+      freight_cost: freightCost,
+      packaging_cost: freeShipping ? 0 : packagingCost,
+      total_shipping: totalShipping,
+      cost: totalShipping,
       delivery_days: deliveryDays,
       free_shipping: freeShipping,
       message: freeShipping
-        ? `Free shipping! Your order qualifies for free freight delivery (${deliveryDays} business days).`
-        : `Estimated shipping to ${zipCode}: $${baseCost} (${deliveryDays} business days). Orders over $500 ship free!`,
+        ? `Free shipping! Your order qualifies for free freight delivery (${deliveryDays} business days). Normally $${(freightCost + packagingCost).toFixed(2)} (freight: $${freightCost} + packaging: $${packagingCost}).`
+        : `Estimated shipping to ${zipCode}: $${totalShipping.toFixed(2)} total (freight: $${freightCost} + packaging: $${packagingCost}). ${deliveryDays} business days. Orders over $500 ship free!`,
     }
   }
 }

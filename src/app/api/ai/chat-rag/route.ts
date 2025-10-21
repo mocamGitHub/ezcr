@@ -312,7 +312,7 @@ export async function POST(request: Request) {
         } else if (functionName === 'recommend_product') {
           functionResult = await recommendProduct(supabase, tenantId, functionArgs)
         } else if (functionName === 'calculate_shipping') {
-          functionResult = await calculateShipping(functionArgs)
+          functionResult = await calculateShipping(supabase, tenantId, functionArgs)
         } else if (functionName === 'search_faq') {
           functionResult = await searchFAQ(supabase, tenantId, functionArgs)
         }
@@ -810,14 +810,18 @@ async function recommendProduct(
 /**
  * Calculate shipping cost and delivery estimate using T-Force Freight
  */
-async function calculateShipping(args: {
-  city: string
-  state: string
-  zip_code: string
-  product_sku?: string
-  country?: string
-  residential?: boolean
-}) {
+async function calculateShipping(
+  supabase: any,
+  tenantId: string,
+  args: {
+    city: string
+    state: string
+    zip_code: string
+    product_sku?: string
+    country?: string
+    residential?: boolean
+  }
+) {
   try {
     // Import T-Force client
     const { TForceFreightClient } = await import('@/lib/shipping/tforce-client')
@@ -834,16 +838,37 @@ async function calculateShipping(args: {
         country: args.country || 'US',
         residential: args.residential !== false,
         product_sku: args.product_sku,
+        supabase, // Pass supabase client for packaging cost lookup
+        tenantId, // Pass tenant ID for packaging cost lookup
       })
 
       return result
     } else {
+      // Fetch packaging cost from database for fallback
+      let packagingCost = 63
+      try {
+        const { data: setting } = await supabase
+          .from('shipping_settings')
+          .select('setting_value')
+          .eq('tenant_id', tenantId)
+          .eq('setting_key', 'packaging_fee')
+          .eq('is_active', true)
+          .single()
+
+        if (setting && setting.setting_value) {
+          packagingCost = parseFloat(setting.setting_value)
+        }
+      } catch (dbError) {
+        console.warn('Failed to fetch packaging cost from database:', dbError)
+      }
+
       // Fallback to zone-based estimate if T-Force not configured
       console.warn('T-Force API not configured, using fallback estimates')
       const fallback = TForceFreightClient.getFallbackEstimate({
         zip: args.zip_code,
         product_sku: args.product_sku,
         country: args.country,
+        packaging_cost: packagingCost,
       })
 
       return {
@@ -854,6 +879,24 @@ async function calculateShipping(args: {
   } catch (error) {
     console.error('Error calculating shipping:', error)
 
+    // Fetch packaging cost for final fallback
+    let packagingCost = 63
+    try {
+      const { data: setting } = await supabase
+        .from('shipping_settings')
+        .select('setting_value')
+        .eq('tenant_id', tenantId)
+        .eq('setting_key', 'packaging_fee')
+        .eq('is_active', true)
+        .single()
+
+      if (setting && setting.setting_value) {
+        packagingCost = parseFloat(setting.setting_value)
+      }
+    } catch (dbError) {
+      console.warn('Failed to fetch packaging cost:', dbError)
+    }
+
     // Final fallback - simple zone-based estimate
     try {
       const { TForceFreightClient } = await import('@/lib/shipping/tforce-client')
@@ -861,6 +904,7 @@ async function calculateShipping(args: {
         zip: args.zip_code,
         product_sku: args.product_sku,
         country: args.country,
+        packaging_cost: packagingCost,
       })
 
       return {
