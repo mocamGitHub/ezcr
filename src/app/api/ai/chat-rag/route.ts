@@ -104,7 +104,7 @@ export async function POST(request: Request) {
     // Build comprehensive system prompt
     const systemPrompt = buildSystemPrompt(context, knowledgeContext)
 
-    // Define function tools for order tracking and appointments
+    // Define function tools for order tracking, appointments, and customer service
     const tools = [
       {
         type: 'function',
@@ -161,6 +161,84 @@ export async function POST(request: Request) {
           },
         },
       },
+      {
+        type: 'function',
+        function: {
+          name: 'recommend_product',
+          description: 'Recommend the best ramp model based on customer requirements (motorcycle weight, truck type, budget)',
+          parameters: {
+            type: 'object',
+            properties: {
+              motorcycle_weight: {
+                type: 'number',
+                description: 'Weight of the motorcycle in pounds',
+              },
+              truck_bed_height: {
+                type: 'number',
+                description: 'Truck bed height in inches from ground',
+              },
+              budget: {
+                type: 'string',
+                enum: ['budget', 'standard', 'premium', 'any'],
+                description: 'Customer budget preference',
+              },
+              motorcycle_type: {
+                type: 'string',
+                description: 'Type of motorcycle (cruiser, sport bike, touring, dirt bike, etc.)',
+              },
+            },
+            required: ['motorcycle_weight'],
+          },
+        },
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'calculate_shipping',
+          description: 'Calculate shipping cost and estimated delivery time based on customer location',
+          parameters: {
+            type: 'object',
+            properties: {
+              zip_code: {
+                type: 'string',
+                description: 'Customer ZIP code or postal code',
+              },
+              product_sku: {
+                type: 'string',
+                description: 'Product SKU (AUN250, AUN210, or AUN200)',
+              },
+              country: {
+                type: 'string',
+                description: 'Country code (US, CA, etc.)',
+                default: 'US',
+              },
+            },
+            required: ['zip_code'],
+          },
+        },
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'search_faq',
+          description: 'Search FAQ knowledge base for quick answers to common questions',
+          parameters: {
+            type: 'object',
+            properties: {
+              question: {
+                type: 'string',
+                description: 'The customer question to search for in FAQs',
+              },
+              category: {
+                type: 'string',
+                enum: ['product', 'installation', 'shipping', 'warranty', 'returns', 'general'],
+                description: 'FAQ category to search within (optional)',
+              },
+            },
+            required: ['question'],
+          },
+        },
+      },
     ]
 
     // Call OpenAI API with RAG context and function calling
@@ -206,18 +284,24 @@ export async function POST(request: Request) {
         let functionResult
         if (functionName === 'get_order_status') {
           functionResult = await getOrderStatus(supabase, tenantId, functionArgs)
-          
+
           // Trigger n8n order inquiry handler (non-blocking)
           if (functionResult.success) {
             triggerOrderInquiryWebhook(functionArgs, functionResult).catch(console.error)
           }
         } else if (functionName === 'schedule_appointment') {
           functionResult = await scheduleAppointment(supabase, tenantId, functionArgs)
-          
+
           // Trigger n8n appointment automation (non-blocking)
           if (functionResult.success) {
             triggerAppointmentWebhook(functionArgs, functionResult).catch(console.error)
           }
+        } else if (functionName === 'recommend_product') {
+          functionResult = await recommendProduct(supabase, tenantId, functionArgs)
+        } else if (functionName === 'calculate_shipping') {
+          functionResult = await calculateShipping(functionArgs)
+        } else if (functionName === 'search_faq') {
+          functionResult = await searchFAQ(supabase, tenantId, functionArgs)
         }
 
         functionResults.push({
@@ -607,6 +691,213 @@ function generateSuggestedQuestions(userQuestion: string, assistantResponse: str
 }
 
 /**
+ * Recommend product based on customer requirements
+ */
+async function recommendProduct(
+  supabase: any,
+  tenantId: string,
+  args: {
+    motorcycle_weight: number
+    truck_bed_height?: number
+    budget?: string
+    motorcycle_type?: string
+  }
+) {
+  try {
+    // Product database with specifications
+    const products = [
+      {
+        sku: 'AUN250',
+        name: 'AUN250 Folding Ramp',
+        weight_capacity: 1000,
+        price: 1299,
+        category: 'premium',
+        features: ['Folding design', 'Highest capacity', 'Maximum adjustability', 'Best for heavy touring bikes'],
+        bed_height_range: [18, 48],
+      },
+      {
+        sku: 'AUN210',
+        name: 'AUN210 Standard Ramp',
+        weight_capacity: 800,
+        price: 999,
+        category: 'standard',
+        features: ['Excellent versatility', 'Most popular model', 'Great value', 'Fits most motorcycles'],
+        bed_height_range: [18, 42],
+      },
+      {
+        sku: 'AUN200',
+        name: 'AUN200 Basic Ramp',
+        weight_capacity: 600,
+        price: 799,
+        category: 'budget',
+        features: ['Budget-friendly', 'Perfect for lighter bikes', 'Solid construction', 'Easy to use'],
+        bed_height_range: [18, 36],
+      },
+    ]
+
+    // Filter by weight capacity (with safety margin)
+    let suitable = products.filter((p) => p.weight_capacity >= args.motorcycle_weight * 1.2)
+
+    if (suitable.length === 0) {
+      return {
+        success: false,
+        message: `For a ${args.motorcycle_weight} lb motorcycle, we recommend our AUN250 with 1,000 lb capacity for safety. Contact us at 800-687-4410 for heavy-duty options.`,
+      }
+    }
+
+    // Filter by truck bed height if provided
+    if (args.truck_bed_height) {
+      suitable = suitable.filter(
+        (p) => args.truck_bed_height! >= p.bed_height_range[0] && args.truck_bed_height! <= p.bed_height_range[1]
+      )
+    }
+
+    // Filter by budget if provided
+    if (args.budget && args.budget !== 'any') {
+      suitable = suitable.filter((p) => p.category === args.budget)
+    }
+
+    // Sort by price (budget-conscious first, unless premium requested)
+    if (args.budget === 'premium') {
+      suitable.sort((a, b) => b.price - a.price)
+    } else {
+      suitable.sort((a, b) => a.price - b.price)
+    }
+
+    const recommended = suitable[0]
+    const alternatives = suitable.slice(1)
+
+    return {
+      success: true,
+      recommended: {
+        sku: recommended.sku,
+        name: recommended.name,
+        price: recommended.price,
+        weight_capacity: recommended.weight_capacity,
+        features: recommended.features,
+        fit_assessment: `Perfect fit for your ${args.motorcycle_weight} lb ${args.motorcycle_type || 'motorcycle'}`,
+      },
+      alternatives: alternatives.map((p) => ({
+        sku: p.sku,
+        name: p.name,
+        price: p.price,
+        weight_capacity: p.weight_capacity,
+      })),
+      reasoning: `Based on your ${args.motorcycle_weight} lb motorcycle, the ${recommended.name} provides ${recommended.weight_capacity} lb capacity with a comfortable safety margin.`,
+    }
+  } catch (error) {
+    console.error('Error recommending product:', error)
+    return {
+      success: false,
+      message: 'Error finding the right product. Please call us at 800-687-4410 for personalized recommendations.',
+    }
+  }
+}
+
+/**
+ * Calculate shipping cost and delivery estimate
+ */
+async function calculateShipping(args: { zip_code: string; product_sku?: string; country?: string }) {
+  try {
+    const country = args.country || 'US'
+    const zipCode = args.zip_code
+
+    // Shipping zones (simplified - in production, use actual carrier API)
+    const getShippingZone = (zip: string): number => {
+      const firstDigit = parseInt(zip[0])
+      // Zone 1: East Coast (0-2), Zone 2: Central (3-6), Zone 3: West Coast (7-9)
+      if (firstDigit <= 2) return 1
+      if (firstDigit <= 6) return 2
+      return 3
+    }
+
+    if (country !== 'US') {
+      return {
+        success: true,
+        cost: 150,
+        delivery_days: '10-14',
+        notes: 'International shipping. Additional customs fees may apply. Contact us for exact quote.',
+      }
+    }
+
+    const zone = getShippingZone(zipCode)
+    const baseCost = [49, 59, 69][zone - 1] // Zone-based pricing
+
+    // Free shipping on orders over $500
+    const orderValue = args.product_sku === 'AUN200' ? 799 : args.product_sku === 'AUN210' ? 999 : 1299
+
+    const finalCost = orderValue >= 500 ? 0 : baseCost
+    const deliveryDays = ['5-7', '6-8', '7-9'][zone - 1]
+
+    return {
+      success: true,
+      cost: finalCost,
+      delivery_days: deliveryDays,
+      free_shipping: finalCost === 0,
+      message: finalCost === 0
+        ? `Free shipping! Your order qualifies for free standard ground shipping (${deliveryDays} business days).`
+        : `Shipping to ${zipCode}: $${finalCost} (${deliveryDays} business days). Orders over $500 ship free!`,
+      expedited_available: true,
+      expedited_cost: finalCost === 0 ? 89 : finalCost + 40,
+      expedited_days: '2-3',
+    }
+  } catch (error) {
+    console.error('Error calculating shipping:', error)
+    return {
+      success: false,
+      message: 'Unable to calculate shipping. Please call 800-687-4410 for a quote.',
+    }
+  }
+}
+
+/**
+ * Search FAQ for quick answers
+ */
+async function searchFAQ(supabase: any, tenantId: string, args: { question: string; category?: string }) {
+  try {
+    // Search knowledge base for FAQ entries
+    let query = supabase
+      .from('knowledge_base')
+      .select('title, content, category')
+      .eq('tenant_id', tenantId)
+      .eq('is_active', true)
+      .ilike('content', `%${args.question}%`)
+      .limit(3)
+
+    if (args.category) {
+      query = query.eq('category', args.category)
+    }
+
+    const { data: faqs, error } = await query
+
+    if (error) throw error
+
+    if (!faqs || faqs.length === 0) {
+      return {
+        success: false,
+        message: 'No matching FAQ found. Let me search our full knowledge base for you.',
+      }
+    }
+
+    return {
+      success: true,
+      results: faqs.map((faq) => ({
+        question: faq.title,
+        answer: faq.content,
+        category: faq.category,
+      })),
+      message: `Found ${faqs.length} relevant FAQ ${faqs.length === 1 ? 'entry' : 'entries'}`,
+    }
+  } catch (error) {
+    console.error('Error searching FAQ:', error)
+    return {
+      success: false,
+      message: 'Error searching FAQs. Please visit our FAQ page at /faq for answers.',
+    }
+  }
+}
+
+/**
  * Build system prompt with business context and RAG knowledge
  */
 function buildSystemPrompt(pageContext: any, knowledgeContext: string) {
@@ -618,6 +909,9 @@ Your role:
 - Provide accurate information based on the knowledge base
 - Use the get_order_status function when customers ask about their orders (requires order number and email)
 - Use the schedule_appointment function when customers want to schedule, modify, or cancel delivery/installation appointments
+- Use the recommend_product function when customers need help choosing the right ramp (ask for motorcycle weight, truck type, budget)
+- Use the calculate_shipping function when customers ask about shipping costs (ask for ZIP code)
+- Use the search_faq function for quick answers to common questions
 - Be friendly, professional, and patient
 - Guide customers to complete their purchase when appropriate
 - Never share sensitive business information (costs, margins, internal processes)
