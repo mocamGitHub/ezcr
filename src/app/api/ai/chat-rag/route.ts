@@ -195,10 +195,18 @@ export async function POST(request: Request) {
         type: 'function',
         function: {
           name: 'calculate_shipping',
-          description: 'Calculate shipping cost and estimated delivery time based on customer location',
+          description: 'Calculate shipping cost and estimated delivery time using T-Force Freight terminal-based system',
           parameters: {
             type: 'object',
             properties: {
+              city: {
+                type: 'string',
+                description: 'Customer city name',
+              },
+              state: {
+                type: 'string',
+                description: 'Customer state (2-letter code like CA, TX, NY)',
+              },
               zip_code: {
                 type: 'string',
                 description: 'Customer ZIP code or postal code',
@@ -212,8 +220,13 @@ export async function POST(request: Request) {
                 description: 'Country code (US, CA, etc.)',
                 default: 'US',
               },
+              residential: {
+                type: 'boolean',
+                description: 'Is this a residential address? (requires liftgate delivery)',
+                default: true,
+              },
             },
-            required: ['zip_code'],
+            required: ['city', 'state', 'zip_code'],
           },
         },
       },
@@ -795,57 +808,73 @@ async function recommendProduct(
 }
 
 /**
- * Calculate shipping cost and delivery estimate
+ * Calculate shipping cost and delivery estimate using T-Force Freight
  */
-async function calculateShipping(args: { zip_code: string; product_sku?: string; country?: string }) {
+async function calculateShipping(args: {
+  city: string
+  state: string
+  zip_code: string
+  product_sku?: string
+  country?: string
+  residential?: boolean
+}) {
   try {
-    const country = args.country || 'US'
-    const zipCode = args.zip_code
+    // Import T-Force client
+    const { TForceFreightClient } = await import('@/lib/shipping/tforce-client')
 
-    // Shipping zones (simplified - in production, use actual carrier API)
-    const getShippingZone = (zip: string): number => {
-      const firstDigit = parseInt(zip[0])
-      // Zone 1: East Coast (0-2), Zone 2: Central (3-6), Zone 3: West Coast (7-9)
-      if (firstDigit <= 2) return 1
-      if (firstDigit <= 6) return 2
-      return 3
-    }
+    // Try T-Force first if configured
+    const tforce = new TForceFreightClient()
 
-    if (country !== 'US') {
+    if (tforce.isConfigured()) {
+      // Use T-Force Freight API for accurate terminal-based pricing
+      const result = await tforce.calculateShipping({
+        city: args.city,
+        state: args.state,
+        zip: args.zip_code,
+        country: args.country || 'US',
+        residential: args.residential !== false,
+        product_sku: args.product_sku,
+      })
+
+      return result
+    } else {
+      // Fallback to zone-based estimate if T-Force not configured
+      console.warn('T-Force API not configured, using fallback estimates')
+      const fallback = TForceFreightClient.getFallbackEstimate({
+        zip: args.zip_code,
+        product_sku: args.product_sku,
+        country: args.country,
+      })
+
       return {
-        success: true,
-        cost: 150,
-        delivery_days: '10-14',
-        notes: 'International shipping. Additional customs fees may apply. Contact us for exact quote.',
+        ...fallback,
+        message: `${fallback.message}\n\nNote: This is an estimate. Actual shipping costs calculated at checkout using T-Force Freight.`,
       }
-    }
-
-    const zone = getShippingZone(zipCode)
-    const baseCost = [49, 59, 69][zone - 1] // Zone-based pricing
-
-    // Free shipping on orders over $500
-    const orderValue = args.product_sku === 'AUN200' ? 799 : args.product_sku === 'AUN210' ? 999 : 1299
-
-    const finalCost = orderValue >= 500 ? 0 : baseCost
-    const deliveryDays = ['5-7', '6-8', '7-9'][zone - 1]
-
-    return {
-      success: true,
-      cost: finalCost,
-      delivery_days: deliveryDays,
-      free_shipping: finalCost === 0,
-      message: finalCost === 0
-        ? `Free shipping! Your order qualifies for free standard ground shipping (${deliveryDays} business days).`
-        : `Shipping to ${zipCode}: $${finalCost} (${deliveryDays} business days). Orders over $500 ship free!`,
-      expedited_available: true,
-      expedited_cost: finalCost === 0 ? 89 : finalCost + 40,
-      expedited_days: '2-3',
     }
   } catch (error) {
     console.error('Error calculating shipping:', error)
-    return {
-      success: false,
-      message: 'Unable to calculate shipping. Please call 800-687-4410 for a quote.',
+
+    // Final fallback - simple zone-based estimate
+    try {
+      const { TForceFreightClient } = await import('@/lib/shipping/tforce-client')
+      const fallback = TForceFreightClient.getFallbackEstimate({
+        zip: args.zip_code,
+        product_sku: args.product_sku,
+        country: args.country,
+      })
+
+      return {
+        ...fallback,
+        message: `${fallback.message}\n\nFor an exact quote, please call 800-687-4410.`,
+      }
+    } catch (fallbackError) {
+      return {
+        success: false,
+        cost: 0,
+        delivery_days: '5-7',
+        free_shipping: false,
+        message: 'Unable to calculate shipping at this time. Please call 800-687-4410 for a quote.',
+      }
     }
   }
 }
@@ -910,7 +939,7 @@ Your role:
 - Use the get_order_status function when customers ask about their orders (requires order number and email)
 - Use the schedule_appointment function when customers want to schedule, modify, or cancel delivery/installation appointments
 - Use the recommend_product function when customers need help choosing the right ramp (ask for motorcycle weight, truck type, budget)
-- Use the calculate_shipping function when customers ask about shipping costs (ask for ZIP code)
+- Use the calculate_shipping function when customers ask about shipping costs (ask for city, state, and ZIP code - all three required)
 - Use the search_faq function for quick answers to common questions
 - Be friendly, professional, and patient
 - Guide customers to complete their purchase when appropriate
