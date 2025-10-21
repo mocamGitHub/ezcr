@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { MessageCircle, X, Send, Loader2, Sparkles, ExternalLink } from 'lucide-react'
 import { v4 as uuidv4 } from 'uuid'
+import { ChatSatisfactionSurvey } from './ChatSatisfactionSurvey'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -37,6 +38,7 @@ export function UniversalChatWidget({ pageContext = { page: 'unknown' } }: Unive
   ])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [showSurvey, setShowSurvey] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -118,6 +120,21 @@ export function UniversalChatWidget({ pageContext = { page: 'unknown' } }: Unive
     }
   }
 
+  const handleClose = () => {
+    // Show survey if user had meaningful conversation (more than 2 messages)
+    if (messages.length > 2) {
+      setShowSurvey(true)
+    } else {
+      // Just close if no conversation happened
+      setIsOpen(false)
+    }
+  }
+
+  const handleSurveyClose = () => {
+    setShowSurvey(false)
+    setIsOpen(false)
+  }
+
   if (!isOpen) {
     return (
       <button
@@ -137,26 +154,36 @@ export function UniversalChatWidget({ pageContext = { page: 'unknown' } }: Unive
 
   return (
     <div className="fixed bottom-6 right-6 w-96 h-[600px] bg-card border border-border rounded-xl shadow-2xl flex flex-col z-50 animate-in slide-in-from-bottom-4 fade-in duration-300">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border bg-primary text-primary-foreground rounded-t-xl">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-5 h-5" />
-          <div>
-            <h3 className="font-semibold">EZ Cycle Ramp Assistant</h3>
-            <p className="text-xs opacity-90">Ask me anything!</p>
-          </div>
+      {/* Show survey if requested */}
+      {showSurvey ? (
+        <div className="flex-1 flex items-center justify-center p-4">
+          <ChatSatisfactionSurvey
+            sessionId={sessionId}
+            onClose={handleSurveyClose}
+          />
         </div>
-        <button
-          onClick={() => setIsOpen(false)}
-          className="hover:bg-primary-foreground/10 p-1 rounded transition-colors"
-          aria-label="Close chat"
-        >
-          <X className="w-5 h-5" />
-        </button>
-      </div>
+      ) : (
+        <>
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b border-border bg-primary text-primary-foreground rounded-t-xl">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5" />
+              <div>
+                <h3 className="font-semibold">EZ Cycle Ramp Assistant</h3>
+                <p className="text-xs opacity-90">Ask me anything!</p>
+              </div>
+            </div>
+            <button
+              onClick={handleClose}
+              className="hover:bg-primary-foreground/10 p-1 rounded transition-colors"
+              aria-label="Close chat"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((message, index) => (
           <div key={index}>
             <div
@@ -259,6 +286,8 @@ export function UniversalChatWidget({ pageContext = { page: 'unknown' } }: Unive
           </a>
         </div>
       </div>
+        </>
+      )}
     </div>
   )
 }
