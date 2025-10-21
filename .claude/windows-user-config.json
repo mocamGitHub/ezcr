@@ -1,0 +1,35 @@
+{
+  "// INSTRUCTIONS": "Copy this file to: C:\\Users\\morri\\.claude.json on your Windows machine",
+  "// NOTE": "Update GITHUB_PERSONAL_ACCESS_TOKEN with your actual token",
+
+  "mcpServers": {
+    "firecrawl": {
+      "command": "npx",
+      "args": ["firecrawl-mcp"],
+      "env": {
+        "FIRECRAWL_API_URL": "https://firecrawl.nexcyte.com",
+        "FIRECRAWL_API_KEY": "fc_d7e0f9d55a47fd4da5416c88adf0c3e12d14e3e59491a1972535b105da80faa7"
+      },
+      "description": "Web scraping and content extraction"
+    },
+    "github": {
+      "command": "npx",
+      "args": ["@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "placeholder_generate_token"
+      },
+      "description": "GitHub repository operations - UPDATE TOKEN BEFORE USE!"
+    },
+    "serena": {
+      "command": "python",
+      "args": [
+        "-m", "uv", "tool", "run",
+        "--from", "git+https://github.com/oraios/serena",
+        "serena", "start-mcp-server",
+        "--enable-web-dashboard", "false",
+        "--project", "C:/Users/morri/Dropbox/Websites/ezcr"
+      ],
+      "description": "Semantic code understanding (reduces token usage)"
+    }
+  }
+}
