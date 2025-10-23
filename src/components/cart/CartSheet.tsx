@@ -15,9 +15,11 @@ import { formatPrice } from '@/lib/utils/format'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Minus, Plus, Trash2, ShoppingCart } from 'lucide-react'
+import { useAutoAnimate } from '@formkit/auto-animate/react'
 
 export function CartSheet() {
   const { cart, isOpen, closeCart, updateQuantity, removeItem } = useCart()
+  const [parent] = useAutoAnimate()
 
   return (
     <Sheet open={isOpen} onOpenChange={closeCart}>
@@ -43,7 +45,7 @@ export function CartSheet() {
         ) : (
           <>
             <ScrollArea className="flex-1 -mx-6 px-6">
-              <div className="space-y-4">
+              <div ref={parent} className="space-y-4">
                 {cart.items.map((item) => (
                   <div key={item.productId} className="flex gap-4">
                     {/* Product Image */}
