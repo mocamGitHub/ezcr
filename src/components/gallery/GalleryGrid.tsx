@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
+import { useAutoAnimate } from '@formkit/auto-animate/react'
 import { GalleryItem } from '@/lib/supabase/queries'
 import { ImageLightbox } from './ImageLightbox'
 import { VideoPlayer } from './VideoPlayer'
@@ -17,6 +18,7 @@ interface GalleryGridProps {
 }
 
 export function GalleryGrid({ items, columns = 3, showFilters = true }: GalleryGridProps) {
+  const [parent] = useAutoAnimate()
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [filter, setFilter] = useState<'all' | 'image' | 'video'>('all')
@@ -79,7 +81,7 @@ export function GalleryGrid({ items, columns = 3, showFilters = true }: GalleryG
       )}
 
       {/* Gallery Grid */}
-      <div className={cn('grid gap-6', gridColumns[columns])}>
+      <div ref={parent} className={cn('grid gap-6', gridColumns[columns])}>
         {filteredItems.map((item) => (
           <div key={item.id} className="group">
             {item.item_type === 'image' ? (
