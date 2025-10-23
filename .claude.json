@@ -1,0 +1,32 @@
+{
+  "mcpServers": {
+    "shadcn": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://www.shadcn.io/api/mcp"],
+      "description": "Official ShadCN UI MCP - Browse components, props, and installation"
+    },
+    "ref": {
+      "type": "http",
+      "url": "https://api.ref.tools/mcp?apiKey=ref-d04a507c782207bfd34a",
+      "description": "Documentation search to reduce hallucinations"
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@executeautomation/playwright-mcp-server"],
+      "description": "Browser automation and testing"
+    },
+    "brave-search": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "env": {
+        "BRAVE_API_KEY": "BSAFrISIwYmdVauteJUQM2ehuDz50Cb"
+      },
+      "description": "Web search API (2,000 free queries/month)"
+    },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": ["-y", "chrome-devtools-mcp"],
+      "description": "Performance profiling, debugging, console inspection"
+    }
+  }
+}
