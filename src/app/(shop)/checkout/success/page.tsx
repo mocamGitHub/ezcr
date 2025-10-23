@@ -6,7 +6,7 @@ import Link from 'next/link'
 import Lottie from 'lottie-react'
 import { Button } from '@/components/ui/button'
 import { CheckCircle2, Home, Package } from 'lucide-react'
-import successAnimation from '@/public/animations/success.json'
+import successAnimation from '@/animations/success.json'
 
 export default function CheckoutSuccessPage() {
   const router = useRouter()

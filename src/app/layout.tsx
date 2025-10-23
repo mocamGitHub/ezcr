@@ -1,6 +1,7 @@
 // src/app/layout.tsx
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+// Temporarily using system font for build validation (network issue prevents Google Fonts fetch)
+// import { Inter } from 'next/font/google'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { CartProvider } from '@/contexts/CartContext'
@@ -9,7 +10,11 @@ import { AuthProvider } from '@/contexts/AuthContext'
 import { CartSheet } from '@/components/cart/CartSheet'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'] })
+// const inter = Inter({
+//   subsets: ['latin'],
+//   display: 'swap',
+//   fallback: ['system-ui', 'arial'],
+// })
 
 export const metadata: Metadata = {
   title: 'EZ Cycle Ramp - Premium Motorcycle Loading Ramps',
@@ -42,7 +47,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={inter.className} suppressHydrationWarning>
+      <body className="font-sans" suppressHydrationWarning>
         <ThemeProvider>
           <AuthProvider>
             <CartProvider>

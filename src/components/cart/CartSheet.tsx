@@ -17,7 +17,7 @@ import Link from 'next/link'
 import { Minus, Plus, Trash2, ShoppingCart } from 'lucide-react'
 import { useAutoAnimate } from '@formkit/auto-animate/react'
 import Lottie from 'lottie-react'
-import emptyCartAnimation from '@/public/animations/empty-cart.json'
+import emptyCartAnimation from '@/animations/empty-cart.json'
 
 export function CartSheet() {
   const { cart, isOpen, closeCart, updateQuantity, removeItem } = useCart()

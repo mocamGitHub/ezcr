@@ -478,7 +478,7 @@ export function LottieExamplesDemo() {
  * 3. Download as JSON and place in /public/animations/
  *
  * 4. Import in your component:
- *    import animationData from '@/public/animations/loading.json';
+ *    import animationData from '@/animations/loading.json';
  *
  * 5. Use:
  *    <Lottie animationData={animationData} loop autoplay />

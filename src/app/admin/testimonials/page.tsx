@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -16,11 +16,7 @@ export default function AdminTestimonialsPage() {
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending')
   const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    fetchTestimonials()
-  }, [filter])
-
-  const fetchTestimonials = async () => {
+  const fetchTestimonials = useCallback(async () => {
     setIsLoading(true)
     const supabase = createClient()
 
@@ -42,7 +38,11 @@ export default function AdminTestimonialsPage() {
       setTestimonials(data || [])
     }
     setIsLoading(false)
-  }
+  }, [filter])
+
+  useEffect(() => {
+    fetchTestimonials()
+  }, [fetchTestimonials])
 
   const updateStatus = async (id: string, status: 'approved' | 'rejected') => {
     const supabase = createClient()

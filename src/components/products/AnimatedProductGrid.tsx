@@ -4,7 +4,7 @@ import { useAutoAnimate } from '@formkit/auto-animate/react'
 import { ProductCard } from './ProductCard'
 import type { Product } from '@/lib/supabase/queries'
 import Lottie from 'lottie-react'
-import noResultsAnimation from '@/public/animations/no-results.json'
+import noResultsAnimation from '@/animations/no-results.json'
 
 interface AnimatedProductGridProps {
   products: Product[]
