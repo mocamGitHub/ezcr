@@ -9,6 +9,7 @@ import { ShoppingCart } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'
 import { formatPrice } from '@/lib/utils/format'
 import type { Product } from '@/lib/supabase/queries'
+import { motion } from 'framer-motion'
 
 interface ProductCardProps {
   product: Product
@@ -25,7 +26,13 @@ export function ProductCard({ product }: ProductCardProps) {
   const primaryImage = product.product_images?.find(img => img.is_primary) || product.product_images?.[0]
 
   return (
-    <div className="group relative border rounded-lg overflow-hidden hover:shadow-lg transition-shadow bg-background">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      whileHover={{ y: -4 }}
+      className="group relative border rounded-lg overflow-hidden hover:shadow-lg transition-shadow bg-background"
+    >
       {/* Image */}
       <Link href={`/products/${product.slug}`}>
         <div className="aspect-square relative bg-muted">
@@ -105,12 +112,13 @@ export function ProductCard({ product }: ProductCardProps) {
               View Details
             </Link>
           </Button>
-          <Button
-            size="icon"
-            variant="outline"
-            disabled={isOutOfStock || isComingSoon}
-            className="hover:bg-[#F78309] hover:text-white hover:border-[#F78309]"
-            onClick={() => addItem({
+          <motion.div whileTap={{ scale: 0.95 }}>
+            <Button
+              size="icon"
+              variant="outline"
+              disabled={isOutOfStock || isComingSoon}
+              className="hover:bg-[#F78309] hover:text-white hover:border-[#F78309]"
+              onClick={() => addItem({
               productId: product.id,
               productName: product.name,
               productSlug: product.slug,
@@ -118,11 +126,12 @@ export function ProductCard({ product }: ProductCardProps) {
               price: product.base_price,
               sku: product.sku,
             })}
-          >
-            <ShoppingCart className="h-4 w-4" />
-          </Button>
+            >
+              <ShoppingCart className="h-4 w-4" />
+            </Button>
+          </motion.div>
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }
