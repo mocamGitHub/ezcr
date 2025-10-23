@@ -3,6 +3,8 @@
 import { useAutoAnimate } from '@formkit/auto-animate/react'
 import { ProductCard } from './ProductCard'
 import type { Product } from '@/lib/supabase/queries'
+import Lottie from 'lottie-react'
+import noResultsAnimation from '@/public/animations/no-results.json'
 
 interface AnimatedProductGridProps {
   products: Product[]
@@ -20,6 +22,18 @@ export function AnimatedProductGrid({
   if (products.length === 0) {
     return (
       <div className="text-center py-12 border rounded-lg">
+        <div className="flex justify-center mb-6">
+          <div className="w-48 h-48">
+            <Lottie
+              animationData={noResultsAnimation}
+              loop={true}
+              style={{ width: '100%', height: '100%' }}
+            />
+          </div>
+        </div>
+        <h3 className="font-semibold text-xl mb-2">
+          {hasActiveFilters ? 'No Results Found' : 'No Products Available'}
+        </h3>
         <p className="text-muted-foreground mb-4">
           {hasActiveFilters
             ? 'No products match your search criteria.'

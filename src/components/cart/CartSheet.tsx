@@ -16,6 +16,8 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Minus, Plus, Trash2, ShoppingCart } from 'lucide-react'
 import { useAutoAnimate } from '@formkit/auto-animate/react'
+import Lottie from 'lottie-react'
+import emptyCartAnimation from '@/public/animations/empty-cart.json'
 
 export function CartSheet() {
   const { cart, isOpen, closeCart, updateQuantity, removeItem } = useCart()
@@ -33,12 +35,18 @@ export function CartSheet() {
 
         {cart.items.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
-            <ShoppingCart className="h-16 w-16 text-muted-foreground mb-4" />
+            <div className="w-48 h-48 mb-4">
+              <Lottie
+                animationData={emptyCartAnimation}
+                loop={true}
+                style={{ width: '100%', height: '100%' }}
+              />
+            </div>
             <h3 className="font-semibold text-lg mb-2">Your cart is empty</h3>
             <p className="text-muted-foreground mb-4">
               Add some products to get started!
             </p>
-            <Button asChild onClick={closeCart}>
+            <Button asChild onClick={closeCart} className="bg-[#0B5394] hover:bg-[#0B5394]/90">
               <Link href="/products">Browse Products</Link>
             </Button>
           </div>
