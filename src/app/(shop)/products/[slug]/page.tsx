@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { formatPrice } from '@/lib/utils/format'
 import { ArrowLeft, Check, X } from 'lucide-react'
+import { ProductImageGallery } from '@/components/gallery/ProductImageGallery'
 
 interface ProductPageProps {
   params: Promise<{
@@ -47,14 +48,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const isComingSoon = product.coming_soon
   const hasDiscount = product.compare_at_price && product.compare_at_price > product.base_price
 
-  // Sort images: primary first, then by display_order
-  const sortedImages = product.product_images?.sort((a, b) => {
-    if (a.is_primary && !b.is_primary) return -1
-    if (!a.is_primary && b.is_primary) return 1
-    return a.display_order - b.display_order
-  }) || []
+  // Get product images for gallery
+  const productImages = product.product_images || []
 
-  const primaryImage = sortedImages[0]
+  // Get primary image for cart/meta
+  const primaryImage = productImages.find(img => img.is_primary) || productImages[0]
 
   return (
     <div>
@@ -69,59 +67,29 @@ export default async function ProductPage({ params }: ProductPageProps) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-        {/* Product Images */}
-        <div>
-          <div className="aspect-square relative bg-muted rounded-lg overflow-hidden mb-4">
-            {primaryImage ? (
-              <Image
-                src={primaryImage.url}
-                alt={primaryImage.alt_text || product.name}
-                fill
-                className="object-cover"
-                priority
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full text-muted-foreground">
-                No Image Available
-              </div>
+        {/* Product Images - Interactive Gallery */}
+        <div className="relative">
+          <ProductImageGallery images={productImages} productName={product.name} />
+
+          {/* Status Badges Overlay */}
+          <div className="absolute top-4 left-4 space-y-2 z-10 pointer-events-none">
+            {product.is_featured && (
+              <Badge variant="secondary">Featured</Badge>
             )}
-
-            {/* Status Badges */}
-            <div className="absolute top-4 left-4 space-y-2">
-              {product.is_featured && (
-                <Badge variant="secondary">Featured</Badge>
-              )}
-              {isOutOfStock && (
-                <Badge variant="destructive">Out of Stock</Badge>
-              )}
-              {isComingSoon && (
-                <Badge variant="secondary">Coming Soon</Badge>
-              )}
-            </div>
-
-            {/* Discount Badge */}
-            {hasDiscount && (
-              <div className="absolute top-4 right-4">
-                <Badge className="bg-[#F78309] text-white">
-                  Save {Math.round(((product.compare_at_price! - product.base_price) / product.compare_at_price!) * 100)}%
-                </Badge>
-              </div>
+            {isOutOfStock && (
+              <Badge variant="destructive">Out of Stock</Badge>
+            )}
+            {isComingSoon && (
+              <Badge variant="secondary">Coming Soon</Badge>
             )}
           </div>
 
-          {/* Thumbnail Gallery */}
-          {sortedImages.length > 1 && (
-            <div className="grid grid-cols-4 gap-2">
-              {sortedImages.slice(0, 4).map((image) => (
-                <div key={image.id} className="aspect-square relative bg-muted rounded-lg overflow-hidden border-2 border-transparent hover:border-[#0B5394] transition-colors cursor-pointer">
-                  <Image
-                    src={image.url}
-                    alt={image.alt_text || product.name}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-              ))}
+          {/* Discount Badge Overlay */}
+          {hasDiscount && (
+            <div className="absolute top-4 right-4 z-10 pointer-events-none">
+              <Badge className="bg-[#F78309] text-white">
+                Save {Math.round(((product.compare_at_price! - product.base_price) / product.compare_at_price!) * 100)}%
+              </Badge>
             </div>
           )}
         </div>
