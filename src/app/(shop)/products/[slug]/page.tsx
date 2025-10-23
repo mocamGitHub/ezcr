@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { getProductBySlug, getProducts } from '@/lib/supabase/queries'
-import { AddToCartButton } from '@/components/cart/AddToCartButton'
+import { AddToCartButton } from '@/components/products/AddToCartButton'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { formatPrice } from '@/lib/utils/format'
@@ -127,16 +127,34 @@ export default async function ProductPage({ params }: ProductPageProps) {
           )}
 
           {/* Add to Cart */}
-          <div className="flex gap-4 mb-8">
+          <div className="space-y-3 mb-8">
             <AddToCartButton
-              product={product}
-              primaryImage={primaryImage}
-              isOutOfStock={isOutOfStock}
-              isComingSoon={isComingSoon}
+              product={{
+                id: product.id,
+                name: product.name,
+                slug: product.slug,
+                price: product.base_price,
+                sku: product.sku,
+                images: primaryImage ? [primaryImage.url] : [],
+              }}
+              variant="default"
+              size="lg"
+              className="w-full"
+              showIcon={true}
+              successDuration={3000}
             />
-            <Button size="lg" variant="outline" className="hover:bg-[#F78309] hover:text-white">
-              Contact Us
-            </Button>
+            <div className="flex gap-3">
+              <Button size="lg" variant="outline" className="flex-1 hover:bg-[#F78309] hover:text-white" asChild>
+                <Link href="/configure">
+                  Custom Build
+                </Link>
+              </Button>
+              <Button size="lg" variant="outline" className="flex-1" asChild>
+                <Link href="/contact">
+                  Contact Us
+                </Link>
+              </Button>
+            </div>
           </div>
 
           {/* Features */}
