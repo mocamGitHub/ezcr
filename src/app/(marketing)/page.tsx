@@ -1,8 +1,21 @@
 // src/app/page.tsx
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { createClient } from '@/lib/supabase/server'
+import { TestimonialsSection } from '@/components/testimonials/TestimonialsSection'
 
-export default function HomePage() {
+export default async function HomePage() {
+  // Fetch featured testimonials
+  const supabase = await createClient()
+  const { data: testimonials } = await supabase
+    .from('testimonials')
+    .select('*')
+    .eq('status', 'approved')
+    .eq('is_featured', true)
+    .order('helpful_count', { ascending: false })
+    .limit(3)
+
+
   return (
     <div>
       {/* Hero Section */}
@@ -50,6 +63,11 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Testimonials Section */}
+      {testimonials && testimonials.length > 0 && (
+        <TestimonialsSection testimonials={testimonials} />
+      )}
 
       {/* Featured Products */}
       <section className="py-16 bg-muted/50">
