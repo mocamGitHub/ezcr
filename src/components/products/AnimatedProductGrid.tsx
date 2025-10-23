@@ -2,7 +2,7 @@
 
 import { useAutoAnimate } from '@formkit/auto-animate/react'
 import { ProductCard } from './ProductCard'
-import type { Product } from '@/types/database'
+import type { Product } from '@/lib/supabase/queries'
 
 interface AnimatedProductGridProps {
   products: Product[]
