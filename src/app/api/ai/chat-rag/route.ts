@@ -104,7 +104,7 @@ export async function POST(request: Request) {
     // Build comprehensive system prompt
     const systemPrompt = buildSystemPrompt(context, knowledgeContext)
 
-    // Define function tools for order tracking and appointments
+    // Define function tools for order tracking, appointments, and customer service
     const tools = [
       {
         type: 'function',
@@ -161,6 +161,97 @@ export async function POST(request: Request) {
           },
         },
       },
+      {
+        type: 'function',
+        function: {
+          name: 'recommend_product',
+          description: 'Recommend the best ramp model based on customer requirements (motorcycle weight, truck type, budget)',
+          parameters: {
+            type: 'object',
+            properties: {
+              motorcycle_weight: {
+                type: 'number',
+                description: 'Weight of the motorcycle in pounds',
+              },
+              truck_bed_height: {
+                type: 'number',
+                description: 'Truck bed height in inches from ground',
+              },
+              budget: {
+                type: 'string',
+                enum: ['budget', 'standard', 'premium', 'any'],
+                description: 'Customer budget preference',
+              },
+              motorcycle_type: {
+                type: 'string',
+                description: 'Type of motorcycle (cruiser, sport bike, touring, dirt bike, etc.)',
+              },
+            },
+            required: ['motorcycle_weight'],
+          },
+        },
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'calculate_shipping',
+          description: 'Calculate shipping cost and estimated delivery time using T-Force Freight terminal-based system',
+          parameters: {
+            type: 'object',
+            properties: {
+              city: {
+                type: 'string',
+                description: 'Customer city name',
+              },
+              state: {
+                type: 'string',
+                description: 'Customer state (2-letter code like CA, TX, NY)',
+              },
+              zip_code: {
+                type: 'string',
+                description: 'Customer ZIP code or postal code',
+              },
+              product_sku: {
+                type: 'string',
+                description: 'Product SKU (AUN250, AUN210, or AUN200)',
+              },
+              country: {
+                type: 'string',
+                description: 'Country code (US, CA, etc.)',
+                default: 'US',
+              },
+              residential: {
+                type: 'boolean',
+                description: 'Is this a residential address? (requires liftgate delivery)',
+                default: true,
+              },
+            },
+            required: ['city', 'state', 'zip_code'],
+          },
+        },
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'search_faq',
+          description: 'Search FAQ knowledge base for quick answers to common questions',
+          parameters: {
+            type: 'object',
+            properties: {
+              question: {
+                type: 'string',
+                description: 'The customer question to search for in FAQs',
+              },
+              category: {
+                type: 'string',
+                enum: ['product', 'installation', 'shipping', 'warranty', 'returns', 'general'],
+                description: 'FAQ category to search within (optional)',
+              },
+            },
+            required: ['question'],
+          },
+        },
+      },
     ]
 
     // Call OpenAI API with RAG context and function calling
@@ -206,18 +297,24 @@ export async function POST(request: Request) {
         let functionResult
         if (functionName === 'get_order_status') {
           functionResult = await getOrderStatus(supabase, tenantId, functionArgs)
-          
+
           // Trigger n8n order inquiry handler (non-blocking)
           if (functionResult.success) {
             triggerOrderInquiryWebhook(functionArgs, functionResult).catch(console.error)
           }
         } else if (functionName === 'schedule_appointment') {
           functionResult = await scheduleAppointment(supabase, tenantId, functionArgs)
-          
+
           // Trigger n8n appointment automation (non-blocking)
           if (functionResult.success) {
             triggerAppointmentWebhook(functionArgs, functionResult).catch(console.error)
           }
+        } else if (functionName === 'recommend_product') {
+          functionResult = await recommendProduct(supabase, tenantId, functionArgs)
+        } else if (functionName === 'calculate_shipping') {
+          functionResult = await calculateShipping(supabase, tenantId, functionArgs)
+        } else if (functionName === 'search_faq') {
+          functionResult = await searchFAQ(supabase, tenantId, functionArgs)
         }
 
         functionResults.push({
@@ -607,6 +704,273 @@ function generateSuggestedQuestions(userQuestion: string, assistantResponse: str
 }
 
 /**
+ * Recommend product based on customer requirements
+ */
+async function recommendProduct(
+  supabase: any,
+  tenantId: string,
+  args: {
+    motorcycle_weight: number
+    truck_bed_height?: number
+    budget?: string
+    motorcycle_type?: string
+  }
+) {
+  try {
+    // Product database with specifications
+    const products = [
+      {
+        sku: 'AUN250',
+        name: 'AUN250 Folding Ramp',
+        weight_capacity: 1000,
+        price: 1299,
+        category: 'premium',
+        features: ['Folding design', 'Highest capacity', 'Maximum adjustability', 'Best for heavy touring bikes'],
+        bed_height_range: [18, 48],
+      },
+      {
+        sku: 'AUN210',
+        name: 'AUN210 Standard Ramp',
+        weight_capacity: 800,
+        price: 999,
+        category: 'standard',
+        features: ['Excellent versatility', 'Most popular model', 'Great value', 'Fits most motorcycles'],
+        bed_height_range: [18, 42],
+      },
+      {
+        sku: 'AUN200',
+        name: 'AUN200 Basic Ramp',
+        weight_capacity: 600,
+        price: 799,
+        category: 'budget',
+        features: ['Budget-friendly', 'Perfect for lighter bikes', 'Solid construction', 'Easy to use'],
+        bed_height_range: [18, 36],
+      },
+    ]
+
+    // Filter by weight capacity (with safety margin)
+    let suitable = products.filter((p) => p.weight_capacity >= args.motorcycle_weight * 1.2)
+
+    if (suitable.length === 0) {
+      return {
+        success: false,
+        message: `For a ${args.motorcycle_weight} lb motorcycle, we recommend our AUN250 with 1,000 lb capacity for safety. Contact us at 800-687-4410 for heavy-duty options.`,
+      }
+    }
+
+    // Filter by truck bed height if provided
+    if (args.truck_bed_height) {
+      suitable = suitable.filter(
+        (p) => args.truck_bed_height! >= p.bed_height_range[0] && args.truck_bed_height! <= p.bed_height_range[1]
+      )
+    }
+
+    // Filter by budget if provided
+    if (args.budget && args.budget !== 'any') {
+      suitable = suitable.filter((p) => p.category === args.budget)
+    }
+
+    // Sort by price (budget-conscious first, unless premium requested)
+    if (args.budget === 'premium') {
+      suitable.sort((a, b) => b.price - a.price)
+    } else {
+      suitable.sort((a, b) => a.price - b.price)
+    }
+
+    const recommended = suitable[0]
+    const alternatives = suitable.slice(1)
+
+    return {
+      success: true,
+      recommended: {
+        sku: recommended.sku,
+        name: recommended.name,
+        price: recommended.price,
+        weight_capacity: recommended.weight_capacity,
+        features: recommended.features,
+        fit_assessment: `Perfect fit for your ${args.motorcycle_weight} lb ${args.motorcycle_type || 'motorcycle'}`,
+      },
+      alternatives: alternatives.map((p) => ({
+        sku: p.sku,
+        name: p.name,
+        price: p.price,
+        weight_capacity: p.weight_capacity,
+      })),
+      reasoning: `Based on your ${args.motorcycle_weight} lb motorcycle, the ${recommended.name} provides ${recommended.weight_capacity} lb capacity with a comfortable safety margin.`,
+    }
+  } catch (error) {
+    console.error('Error recommending product:', error)
+    return {
+      success: false,
+      message: 'Error finding the right product. Please call us at 800-687-4410 for personalized recommendations.',
+    }
+  }
+}
+
+/**
+ * Calculate shipping cost and delivery estimate using T-Force Freight
+ */
+async function calculateShipping(
+  supabase: any,
+  tenantId: string,
+  args: {
+    city: string
+    state: string
+    zip_code: string
+    product_sku?: string
+    country?: string
+    residential?: boolean
+  }
+) {
+  try {
+    // Import T-Force client
+    const { TForceFreightClient } = await import('@/lib/shipping/tforce-client')
+
+    // Try T-Force first if configured
+    const tforce = new TForceFreightClient()
+
+    if (tforce.isConfigured()) {
+      // Use T-Force Freight API for accurate terminal-based pricing
+      const result = await tforce.calculateShipping({
+        city: args.city,
+        state: args.state,
+        zip: args.zip_code,
+        country: args.country || 'US',
+        residential: args.residential !== false,
+        product_sku: args.product_sku,
+        supabase, // Pass supabase client for packaging cost lookup
+        tenantId, // Pass tenant ID for packaging cost lookup
+      })
+
+      return result
+    } else {
+      // Fetch packaging cost from database for fallback
+      let packagingCost = 63
+      try {
+        const { data: setting } = await supabase
+          .from('shipping_settings')
+          .select('setting_value')
+          .eq('tenant_id', tenantId)
+          .eq('setting_key', 'packaging_fee')
+          .eq('is_active', true)
+          .single()
+
+        if (setting && setting.setting_value) {
+          packagingCost = parseFloat(setting.setting_value)
+        }
+      } catch (dbError) {
+        console.warn('Failed to fetch packaging cost from database:', dbError)
+      }
+
+      // Fallback to zone-based estimate if T-Force not configured
+      console.warn('T-Force API not configured, using fallback estimates')
+      const fallback = TForceFreightClient.getFallbackEstimate({
+        zip: args.zip_code,
+        product_sku: args.product_sku,
+        country: args.country,
+        packaging_cost: packagingCost,
+      })
+
+      return {
+        ...fallback,
+        message: `${fallback.message}\n\nNote: This is an estimate. Actual shipping costs calculated at checkout using T-Force Freight.`,
+      }
+    }
+  } catch (error) {
+    console.error('Error calculating shipping:', error)
+
+    // Fetch packaging cost for final fallback
+    let packagingCost = 63
+    try {
+      const { data: setting } = await supabase
+        .from('shipping_settings')
+        .select('setting_value')
+        .eq('tenant_id', tenantId)
+        .eq('setting_key', 'packaging_fee')
+        .eq('is_active', true)
+        .single()
+
+      if (setting && setting.setting_value) {
+        packagingCost = parseFloat(setting.setting_value)
+      }
+    } catch (dbError) {
+      console.warn('Failed to fetch packaging cost:', dbError)
+    }
+
+    // Final fallback - simple zone-based estimate
+    try {
+      const { TForceFreightClient } = await import('@/lib/shipping/tforce-client')
+      const fallback = TForceFreightClient.getFallbackEstimate({
+        zip: args.zip_code,
+        product_sku: args.product_sku,
+        country: args.country,
+        packaging_cost: packagingCost,
+      })
+
+      return {
+        ...fallback,
+        message: `${fallback.message}\n\nFor an exact quote, please call 800-687-4410.`,
+      }
+    } catch (fallbackError) {
+      return {
+        success: false,
+        cost: 0,
+        delivery_days: '5-7',
+        free_shipping: false,
+        message: 'Unable to calculate shipping at this time. Please call 800-687-4410 for a quote.',
+      }
+    }
+  }
+}
+
+/**
+ * Search FAQ for quick answers
+ */
+async function searchFAQ(supabase: any, tenantId: string, args: { question: string; category?: string }) {
+  try {
+    // Search knowledge base for FAQ entries
+    let query = supabase
+      .from('knowledge_base')
+      .select('title, content, category')
+      .eq('tenant_id', tenantId)
+      .eq('is_active', true)
+      .ilike('content', `%${args.question}%`)
+      .limit(3)
+
+    if (args.category) {
+      query = query.eq('category', args.category)
+    }
+
+    const { data: faqs, error } = await query
+
+    if (error) throw error
+
+    if (!faqs || faqs.length === 0) {
+      return {
+        success: false,
+        message: 'No matching FAQ found. Let me search our full knowledge base for you.',
+      }
+    }
+
+    return {
+      success: true,
+      results: faqs.map((faq) => ({
+        question: faq.title,
+        answer: faq.content,
+        category: faq.category,
+      })),
+      message: `Found ${faqs.length} relevant FAQ ${faqs.length === 1 ? 'entry' : 'entries'}`,
+    }
+  } catch (error) {
+    console.error('Error searching FAQ:', error)
+    return {
+      success: false,
+      message: 'Error searching FAQs. Please visit our FAQ page at /faq for answers.',
+    }
+  }
+}
+
+/**
  * Build system prompt with business context and RAG knowledge
  */
 function buildSystemPrompt(pageContext: any, knowledgeContext: string) {
@@ -618,6 +982,9 @@ Your role:
 - Provide accurate information based on the knowledge base
 - Use the get_order_status function when customers ask about their orders (requires order number and email)
 - Use the schedule_appointment function when customers want to schedule, modify, or cancel delivery/installation appointments
+- Use the recommend_product function when customers need help choosing the right ramp (ask for motorcycle weight, truck type, budget)
+- Use the calculate_shipping function when customers ask about shipping costs (ask for city, state, and ZIP code - all three required)
+- Use the search_faq function for quick answers to common questions
 - Be friendly, professional, and patient
 - Guide customers to complete their purchase when appropriate
 - Never share sensitive business information (costs, margins, internal processes)
