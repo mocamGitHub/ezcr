@@ -12,7 +12,7 @@
 │                     │  SSH    │                     │
 │  Coolify (Manager)  │────────>│  Your Application   │
 │                     │         │                     │
-│  coolify31.com      │         │  dev.ezcycleramp.com│
+│  coolify.nexcyte.com      │         │  dev.ezcycleramp.com│
 └─────────────────────┘         └─────────────────────┘
         ↑                                 ↑
         │                                 │
@@ -30,17 +30,17 @@ Before starting, have these ready on your iPhone:
 
 ### Browser Tabs to Open
 
-1. **Coolify Dashboard**: https://coolify31.com (or your Coolify URL)
+1. **Coolify Dashboard**: https://coolify.nexcyte.com (or your Coolify URL)
 2. **DreamHost Panel**: https://panel.dreamhost.com
 3. **GitHub**: https://github.com
-4. **Supabase**: https://supabase.com
+4. **Supabase**: https://supabase.nexcyte.com
 5. **Stripe Dashboard**: https://dashboard.stripe.com
 6. **OpenAI**: https://platform.openai.com
 
 ### Credentials You'll Need
 
 - [ ] **DreamHost login** (panel.dreamhost.com)
-- [ ] **Coolify login** (coolify31.com)
+- [ ] **Coolify login** (coolify.nexcyte.com)
 - [ ] **GitHub Personal Access Token** (or OAuth)
 - [ ] **Supabase account** (will create project)
 - [ ] **Stripe API keys** (production or test)
@@ -77,34 +77,37 @@ Before starting, have these ready on your iPhone:
 
 ## PHASE 1: Gather Credentials (30 minutes)
 
-### Step 1.1: Create Supabase Project
+### Step 1.1: Access Your Self-Hosted Supabase
 
 **On your iPhone:**
 
 1. Open Safari/Chrome
-2. Go to https://supabase.com
-3. Tap **Sign In** (create account if needed)
-4. Tap **New Project**
-5. Fill in:
-   - **Organization**: Select or create new
+2. Go to https://supabase.nexcyte.com
+3. **Sign In** with your Supabase admin credentials
+4. Tap **New Project** (or select existing project if already created)
+5. Fill in (if creating new):
+   - **Organization**: Select your organization
    - **Project Name**: `EZ Cycle Ramp Production`
    - **Database Password**: Tap "Generate password" (SAVE THIS!)
-   - **Region**: Choose closest to DreamHost location
-     - If DreamHost is US: `us-east-1` or `us-west-1`
-     - If DreamHost is EU: `eu-west-1`
-   - **Pricing**: Free (or Pro if you prefer)
-6. Tap **Create new project**
-7. Wait 2-3 minutes (keep this tab open)
+   - **Region**: Default (self-hosted, no region selection needed)
+6. Tap **Create new project** (if new)
+7. Wait 2-3 minutes for project setup
 
-**While waiting, copy these credentials:**
+**Copy your project credentials:**
 
 8. Go to **Settings** (gear icon) → **API**
 9. Copy to Notes app:
    ```
-   SUPABASE_URL=https://xxxxx.supabase.co
+   SUPABASE_URL=https://supabase.nexcyte.com (or project-specific URL)
    SUPABASE_ANON_KEY=eyJhbGc...
    SUPABASE_SERVICE_ROLE_KEY=eyJhbGc...
    ```
+
+**Note:** Your self-hosted Supabase URL format may be:
+- `https://supabase.nexcyte.com`
+- Or with project subdomain: `https://project-name.supabase.nexcyte.com`
+
+Check the URL shown in Settings → API for the exact format.
 
 **✅ Checkpoint:** You have 3 Supabase credentials saved
 
@@ -225,7 +228,7 @@ DREAMHOST_SERVER=ps123456.dreamhostps.com (server name)
 
 **Now switch to Coolify tab:**
 
-1. Open new tab: https://coolify31.com (your Coolify URL)
+1. Open new tab: https://coolify.nexcyte.com (your Coolify URL)
 2. Sign in to Coolify
 3. Go to **Servers** (left sidebar)
 4. You should see your Hetzner server listed
@@ -288,7 +291,7 @@ DREAMHOST_SERVER=ps123456.dreamhostps.com
 
 ### Step 3.1: Add New Server in Coolify
 
-1. In Coolify tab: https://coolify31.com
+1. In Coolify tab: https://coolify.nexcyte.com
 2. Tap **Servers** (left sidebar)
 3. Tap **+ Add Server** or **Add New Server**
 
@@ -771,7 +774,7 @@ Step 9: Request SSL certificate (if DNS ready)
 **You need to run 24 SQL migration files**
 
 **Open Supabase tab:**
-1. Go to https://supabase.com
+1. Go to https://supabase.nexcyte.com
 2. Open your project: "EZ Cycle Ramp Production"
 3. Tap **SQL Editor** (in left menu)
 
@@ -1070,7 +1073,7 @@ You've successfully deployed a **production-grade e-commerce application** with:
 
 **Website**: https://dev.ezcycleramp.com
 
-**Management**: https://coolify31.com (Coolify dashboard)
+**Management**: https://coolify.nexcyte.com (Coolify dashboard)
 
 ---
 
@@ -1172,9 +1175,9 @@ You've successfully deployed a **production-grade e-commerce application** with:
 
 ```
 Website:        https://dev.ezcycleramp.com
-Coolify:        https://coolify31.com
+Coolify:        https://coolify.nexcyte.com
 DreamHost:      https://panel.dreamhost.com
-Supabase:       https://supabase.com
+Supabase:       https://supabase.nexcyte.com
 GitHub:         https://github.com/mocamGitHub/ezcr
 Stripe:         https://dashboard.stripe.com
 ```
@@ -1250,4 +1253,4 @@ Application already has:
 
 Visit **https://dev.ezcycleramp.com** to see your work!
 
-Manage everything from **Coolify** on your iPhone: https://coolify31.com
+Manage everything from **Coolify** on your iPhone: https://coolify.nexcyte.com
