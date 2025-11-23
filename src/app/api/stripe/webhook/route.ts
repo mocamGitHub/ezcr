@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe/config'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { sendOrderConfirmationEmail } from '@/lib/email/order-confirmation'
 import Stripe from 'stripe'
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!
@@ -98,8 +99,39 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // TODO: Send order confirmation email
-        // TODO: Trigger fulfillment workflow
+        // Send order confirmation email
+        try {
+          // Get order details for email
+          const { data: order } = await supabaseAdmin
+            .from('orders')
+            .select('*')
+            .eq('id', orderId)
+            .single()
+
+          if (order && orderItems) {
+            await sendOrderConfirmationEmail({
+              orderNumber: orderNumber || order.order_number,
+              customerName: order.customer_name,
+              customerEmail: order.customer_email,
+              items: orderItems.map((item: any) => ({
+                product_name: item.product_name || 'Product',
+                quantity: item.quantity,
+                unit_price: item.unit_price,
+                total_price: item.total_price,
+              })),
+              subtotal: order.subtotal,
+              shipping: order.shipping_amount,
+              tax: order.tax_amount,
+              total: order.total_amount,
+              shippingAddress: order.shipping_address,
+            })
+          }
+        } catch (emailError) {
+          console.error('Failed to send order confirmation email:', emailError)
+          // Don't fail webhook for email errors
+        }
+
+        // TODO: Trigger fulfillment workflow via N8N
 
         break
       }

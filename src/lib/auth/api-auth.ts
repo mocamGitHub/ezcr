@@ -170,3 +170,45 @@ export const ROLE_GROUPS = {
   STAFF_ROLES: ['admin', 'inventory_manager', 'customer_service'],
   ALL_ROLES: ['admin', 'inventory_manager', 'customer_service', 'customer'],
 } as const
+
+/**
+ * Authenticate admin for API routes
+ * Returns supabase client, user, and potential error
+ */
+export async function authenticateAdmin(request: NextRequest) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY
+
+  if (!supabaseUrl || !supabaseServiceKey) {
+    return {
+      supabase: null,
+      user: null,
+      error: { message: 'Server configuration error', status: 500 },
+    }
+  }
+
+  // Create admin Supabase client
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  })
+
+  // Get auth result
+  const authResult = await requireRole(request, ROLE_GROUPS.ADMIN_ROLES)
+
+  if ('error' in authResult) {
+    return {
+      supabase: null,
+      user: null,
+      error: { message: authResult.error.error, status: authResult.status },
+    }
+  }
+
+  return {
+    supabase,
+    user: authResult.user,
+    error: null,
+  }
+}
