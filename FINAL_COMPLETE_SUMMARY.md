@@ -318,7 +318,7 @@ Import and add `<UniversalChatWidget pageContext={{...}} />` where needed.
 ### Step 6: N8N Setup (1-2 hours)
 
 ```bash
-# 1. Access n8n: https://n8n.coolify31.com
+# 1. Access n8n: https://n8n.nexcyte.com
 # 2. Import: n8n/workflows/abandoned-cart-recovery.json
 # 3. Configure credentials
 # 4. Test and activate

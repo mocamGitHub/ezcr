@@ -130,7 +130,7 @@ git push origin main
 ### Step 4: N8N Setup (1-2 hours)
 
 ```bash
-# 1. Access n8n: https://n8n.coolify31.com
+# 1. Access n8n: https://n8n.nexcyte.com
 # 2. Import: n8n/workflows/abandoned-cart-recovery.json
 # 3. Configure credentials:
 #    - Supabase PostgreSQL
@@ -283,7 +283,7 @@ Net Benefit:     $78,000-174,000/year
 
 **Using the New Features**:
 1. **Update Prices**: Supabase Dashboard → configurator_pricing table
-2. **Monitor N8N**: https://n8n.coolify31.com → Executions tab
+2. **Monitor N8N**: https://n8n.nexcyte.com → Executions tab
 3. **Check OpenAI Costs**: https://platform.openai.com/usage
 4. **View Chat Logs**: Application logs (implementation pending)
 

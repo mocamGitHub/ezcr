@@ -49,7 +49,7 @@ When a customer checks their order status via the chatbot, this workflow automat
 
 1. **Access n8n**:
    ```
-   https://n8n.coolify31.com
+   https://n8n.nexcyte.com
    ```
 
 2. **Create New Workflow**:
@@ -125,12 +125,12 @@ Or hardcode in workflow nodes if preferred.
 
 1. **In n8n workflow**:
    - Click on "Webhook - Order Inquiry" node
-   - Copy the webhook URL (e.g., `https://n8n.coolify31.com/webhook/order-inquiry`)
+   - Copy the webhook URL (e.g., `https://n8n.nexcyte.com/webhook/order-inquiry`)
 
 2. **Add to Next.js environment**:
    ```bash
    # Add to .env.local
-   N8N_ORDER_INQUIRY_WEBHOOK=https://n8n.coolify31.com/webhook/order-inquiry
+   N8N_ORDER_INQUIRY_WEBHOOK=https://n8n.nexcyte.com/webhook/order-inquiry
    ```
 
 ### Step 5: Update Next.js Code (10 min)
@@ -177,7 +177,7 @@ INSERT INTO orders (
 EOF
 
 # Test webhook with delayed order
-curl -X POST https://n8n.coolify31.com/webhook/order-inquiry \
+curl -X POST https://n8n.nexcyte.com/webhook/order-inquiry \
   -H "Content-Type: application/json" \
   -d '{
     "order_number": "ORD-DELAYED-001",
@@ -208,7 +208,7 @@ INSERT INTO orders (
 EOF
 
 # Test webhook with shipped order
-curl -X POST https://n8n.coolify31.com/webhook/order-inquiry \
+curl -X POST https://n8n.nexcyte.com/webhook/order-inquiry \
   -H "Content-Type: application/json" \
   -d '{
     "order_number": "ORD-SHIPPED-001",
@@ -238,7 +238,7 @@ INSERT INTO orders (
 EOF
 
 # Test webhook with delivered order
-curl -X POST https://n8n.coolify31.com/webhook/order-inquiry \
+curl -X POST https://n8n.nexcyte.com/webhook/order-inquiry \
   -H "Content-Type: application/json" \
   -d '{
     "order_number": "ORD-DELIVERED-001",
@@ -571,7 +571,7 @@ ORDER BY date DESC;
 
 **Test**:
 ```bash
-curl -X POST https://n8n.coolify31.com/webhook/order-inquiry \
+curl -X POST https://n8n.nexcyte.com/webhook/order-inquiry \
   -H "Content-Type: application/json" \
   -d '{
     "order_number": "TEST",

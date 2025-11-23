@@ -38,7 +38,7 @@ This workflow automatically sends 3 recovery emails to customers who abandon the
 ## Prerequisites
 
 ### 1. N8N Installation
-Your n8n is documented as installed on `n8n.coolify31.com` but currently non-functional.
+Your n8n is documented as installed on `n8n.nexcyte.com` but currently non-functional.
 
 **Option A: Repair Existing Installation**
 ```bash
@@ -62,11 +62,11 @@ docker run -d \
   --name n8n \
   --restart always \
   -p 5678:5678 \
-  -e N8N_HOST=n8n.coolify31.com \
+  -e N8N_HOST=n8n.nexcyte.com \
   -e N8N_PORT=5678 \
   -e N8N_PROTOCOL=https \
   -e NODE_ENV=production \
-  -e WEBHOOK_URL=https://n8n.coolify31.com/ \
+  -e WEBHOOK_URL=https://n8n.nexcyte.com/ \
   -v /opt/n8n:/home/node/.n8n \
   n8nio/n8n
 ```
@@ -74,7 +74,7 @@ docker run -d \
 **Option C: Install via Coolify**
 1. Go to Coolify dashboard
 2. Add new service → n8n
-3. Configure domain: n8n.coolify31.com
+3. Configure domain: n8n.nexcyte.com
 4. Deploy
 
 ### 2. Email Service (Resend)
@@ -112,7 +112,7 @@ docker run -d \
 
 ### Step 1: Import Workflow to N8N
 
-1. Access n8n dashboard: `https://n8n.coolify31.com`
+1. Access n8n dashboard: `https://n8n.nexcyte.com`
 
 2. Click **Workflows** → **Import From File**
 

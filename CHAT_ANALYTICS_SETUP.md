@@ -91,7 +91,7 @@ WITH CHECK (true);
 
 1. **Access n8n**:
    ```
-   https://n8n.coolify31.com
+   https://n8n.nexcyte.com
    ```
 
 2. **Create New Workflow**:

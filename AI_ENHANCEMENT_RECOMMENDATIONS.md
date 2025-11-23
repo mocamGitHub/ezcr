@@ -399,7 +399,7 @@ HTTP Webhook
 1. **Review this document** with your team
 2. **Prioritize features** (recommend: n8n cart recovery first)
 3. **Get OpenAI API key** (https://platform.openai.com/api-keys)
-4. **Access n8n instance** (check if n8n.coolify31.com is working, or set up new)
+4. **Access n8n instance** (check if n8n.nexcyte.com is working, or set up new)
 5. **Verify budget** ($500-900/month for AI features)
 
 ### Next Week:

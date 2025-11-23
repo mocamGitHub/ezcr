@@ -238,7 +238,7 @@ curl -X POST http://localhost:3000/api/ai/chat \
 
 ```bash
 # 1. Access or repair n8n instance
-# URL: https://n8n.coolify31.com
+# URL: https://n8n.nexcyte.com
 
 # 2. Set up Resend email service
 # - Sign up: https://resend.com

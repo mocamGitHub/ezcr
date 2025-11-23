@@ -194,7 +194,7 @@ Three new comprehensive documents:
    - Get OpenAI API key if proceeding
 
 3. **Fix/Setup n8n**
-   - Check if n8n.coolify31.com is accessible
+   - Check if n8n.nexcyte.com is accessible
    - Set up new n8n instance if needed
    - Prepare for workflow implementation
 

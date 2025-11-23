@@ -159,7 +159,7 @@ SSH User: nexcyte
 Operating System: Ubuntu 22.04 LTS
 
 Services:
-  - Coolify: https://coolify31.com (Container orchestration)
+  - Coolify: https://coolify.nexcyte.com (Container orchestration)
   - Supabase: https://supabase.nexcyte.com (PostgreSQL database)
   - N8N: (Workflow automation) [Currently non-functional - needs setup]
 ```
@@ -231,12 +231,12 @@ NEXT_PUBLIC_SITE_URL=https://ezcycleramp.com
 ### Current Infrastructure Status
 
 ✅ **Working Services**:
-- Coolify (coolify31.com)
+- Coolify (coolify.nexcyte.com)
 - Supabase (supabase.nexcyte.com)
 
 ❌ **Broken/Non-Functional Services** (Remove from KB references):
-- n8n.coolify31.com
-- api.coolify31.com
+- n8n.nexcyte.com
+- api.nexcyte.com
 
 ⚠️ **Action Required**: Update all knowledge base documents to remove references to broken services.
 

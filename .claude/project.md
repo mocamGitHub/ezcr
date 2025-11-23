@@ -27,7 +27,7 @@ Rebuild ezcycleramp.com as a modern, multi-tenant e-commerce platform using Next
 ### Infrastructure
 ```
 Hetzner VPS (5.161.84.153)
-â”œâ”€â”€ Coolify (coolify31.com)
+â”œâ”€â”€ Coolify (coolify.nexcyte.com)
 â”œâ”€â”€ Supabase (supabase.nexcyte.com)
 â””â”€â”€ N8N (to be configured)
 ```
@@ -153,7 +153,7 @@ Hetzner VPS (5.161.84.153)
 - Agent Specifications
 
 ### Infrastructure
-- Coolify: https://coolify31.com
+- Coolify: https://coolify.nexcyte.com
 - Supabase: https://supabase.nexcyte.com
 - GitHub: github.com/mocamGitHub/ezcr
 

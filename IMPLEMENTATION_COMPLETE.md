@@ -228,7 +228,7 @@ WHERE setting_key = 'fees';
 
 ### Phase 2: N8N Setup (High Priority)
 
-- [ ] Access or repair n8n instance (n8n.coolify31.com)
+- [ ] Access or repair n8n instance (n8n.nexcyte.com)
 - [ ] Set up Resend account and verify domain
 - [ ] Import workflow: `n8n/workflows/abandoned-cart-recovery.json`
 - [ ] Configure credentials (Supabase, Resend, Slack)

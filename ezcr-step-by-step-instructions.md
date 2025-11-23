@@ -39,7 +39,7 @@
 - SSH key or password access
 
 ✅ **Coolify Access**
-- URL: https://coolify31.com
+- URL: https://coolify.nexcyte.com
 - Login credentials
 - Project creation permission
 

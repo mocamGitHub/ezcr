@@ -78,8 +78,8 @@ ADD COLUMN IF NOT EXISTS appointment_time_slot VARCHAR(50);
 Add to `.env.local`:
 ```bash
 # n8n Webhook URLs (add after setting up workflows)
-N8N_APPOINTMENT_WEBHOOK=https://n8n.coolify31.com/webhook/appointment-scheduled
-N8N_ORDER_INQUIRY_WEBHOOK=https://n8n.coolify31.com/webhook/order-inquiry
+N8N_APPOINTMENT_WEBHOOK=https://n8n.nexcyte.com/webhook/appointment-scheduled
+N8N_ORDER_INQUIRY_WEBHOOK=https://n8n.nexcyte.com/webhook/order-inquiry
 
 # These should already exist:
 SLACK_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
@@ -93,7 +93,7 @@ TWILIO_PHONE_NUMBER=+1234567890
 
 ### ✅ Step 3: Access n8n Instance (2 min)
 
-1. Open: https://n8n.coolify31.com
+1. Open: https://n8n.nexcyte.com
 2. Log in with your credentials
 3. Verify you can create new workflows
 
@@ -151,7 +151,7 @@ TWILIO_PHONE_NUMBER=+1234567890
 ### Update Workflow Settings (5 min)
 
 - [ ] Click "Webhook - Appointment Scheduled" node
-- [ ] Copy webhook URL (e.g., `https://n8n.coolify31.com/webhook/appointment-scheduled`)
+- [ ] Copy webhook URL (e.g., `https://n8n.nexcyte.com/webhook/appointment-scheduled`)
 - [ ] Update `.env.local` with this URL as `N8N_APPOINTMENT_WEBHOOK`
 - [ ] Review email templates in "Send Confirmation Email" node
 - [ ] Update sender email if needed
@@ -162,7 +162,7 @@ TWILIO_PHONE_NUMBER=+1234567890
 
 **Test 1: Manual webhook call**
 ```bash
-curl -X POST https://n8n.coolify31.com/webhook/appointment-scheduled \
+curl -X POST https://n8n.nexcyte.com/webhook/appointment-scheduled \
   -H "Content-Type: application/json" \
   -d '{
     "order_number": "ORD-TEST-001",
@@ -220,7 +220,7 @@ curl -X POST https://n8n.coolify31.com/webhook/appointment-scheduled \
 ### Update Workflow Settings (5 min)
 
 - [ ] Click "Webhook - Order Inquiry" node
-- [ ] Copy webhook URL (e.g., `https://n8n.coolify31.com/webhook/order-inquiry`)
+- [ ] Copy webhook URL (e.g., `https://n8n.nexcyte.com/webhook/order-inquiry`)
 - [ ] Update `.env.local` with this URL as `N8N_ORDER_INQUIRY_WEBHOOK`
 - [ ] Review email templates for delayed/shipped/delivered orders
 - [ ] Update survey link in "Send Satisfaction Survey" node
@@ -243,7 +243,7 @@ INSERT INTO orders (
 ```
 
 ```bash
-curl -X POST https://n8n.coolify31.com/webhook/order-inquiry \
+curl -X POST https://n8n.nexcyte.com/webhook/order-inquiry \
   -H "Content-Type: application/json" \
   -d '{
     "order_number": "ORD-DELAYED-001",
@@ -260,7 +260,7 @@ curl -X POST https://n8n.coolify31.com/webhook/order-inquiry \
 **Test 2: Shipped Order**
 ```bash
 # Create test shipped order, then:
-curl -X POST https://n8n.coolify31.com/webhook/order-inquiry \
+curl -X POST https://n8n.nexcyte.com/webhook/order-inquiry \
   -H "Content-Type: application/json" \
   -d '{
     "order_number": "ORD-SHIPPED-001",
@@ -449,7 +449,7 @@ git push origin main
 **Test**:
 ```bash
 # Test webhook directly
-curl -X POST https://n8n.coolify31.com/webhook/appointment-scheduled \
+curl -X POST https://n8n.nexcyte.com/webhook/appointment-scheduled \
   -H "Content-Type: application/json" \
   -d '{"order_number": "TEST"}'
 ```

@@ -48,7 +48,7 @@ When a customer schedules an appointment via the chatbot, this workflow automati
 
 1. **Access n8n**:
    ```
-   https://n8n.coolify31.com
+   https://n8n.nexcyte.com
    ```
 
 2. **Create New Workflow**:
@@ -144,12 +144,12 @@ Or hardcode in workflow nodes if preferred.
 
 1. **In n8n workflow**:
    - Click on "Webhook - Appointment Scheduled" node
-   - Copy the webhook URL (e.g., `https://n8n.coolify31.com/webhook/appointment-scheduled`)
+   - Copy the webhook URL (e.g., `https://n8n.nexcyte.com/webhook/appointment-scheduled`)
 
 2. **Add to Next.js environment**:
    ```bash
    # Add to .env.local
-   N8N_APPOINTMENT_WEBHOOK=https://n8n.coolify31.com/webhook/appointment-scheduled
+   N8N_APPOINTMENT_WEBHOOK=https://n8n.nexcyte.com/webhook/appointment-scheduled
    ```
 
 ### Step 5: Update Next.js Code (10 min)
@@ -185,7 +185,7 @@ if (functionName === 'schedule_appointment' && functionResult.success) {
 #### Test 1: Manual Webhook Trigger
 ```bash
 # Test webhook with curl
-curl -X POST https://n8n.coolify31.com/webhook/appointment-scheduled \
+curl -X POST https://n8n.nexcyte.com/webhook/appointment-scheduled \
   -H "Content-Type: application/json" \
   -d '{
     "order_number": "ORD-TEST-001",
@@ -527,7 +527,7 @@ GROUP BY date;
 
 **Test**:
 ```bash
-curl -X POST https://n8n.coolify31.com/webhook/appointment-scheduled \
+curl -X POST https://n8n.nexcyte.com/webhook/appointment-scheduled \
   -H "Content-Type: application/json" \
   -d '{"order_number": "TEST"}'
 ```
