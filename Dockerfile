@@ -26,8 +26,8 @@ RUN npm ci --no-optional && \
 # Copy source
 COPY . .
 
-# Pre-install SWC binary to avoid download issues
-RUN npm install @next/swc-linux-x64-gnu@15.5.4 --save-dev --no-save
+# Pre-install SWC binary for Alpine Linux (musl libc)
+RUN npm install @next/swc-linux-x64-musl@15.5.4 --save-dev --no-save
 
 # Build the application
 RUN npm run build
