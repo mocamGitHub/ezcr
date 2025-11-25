@@ -11,6 +11,10 @@ import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
 
+// Force dynamic rendering for all pages to avoid static generation issues
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export const metadata: Metadata = {
   title: 'EZ Cycle Ramp - Premium Motorcycle Loading Ramps',
   description: 'Premium folding and standard motorcycle loading ramps for pickups, vans, and trailers. Veteran owned with A+ BBB rating. Free shipping over $500.',
