@@ -11,7 +11,7 @@ ENV npm_config_user_agent="npm/10.8.2 node/v20.0.0 linux x64"
 ENV npm_config_registry="https://registry.npmjs.org/"
 
 # Cache bust to ensure fresh install (update when needed)
-ARG CACHEBUST=23
+ARG CACHEBUST=24
 
 # Install dependencies (includes devDependencies like TypeScript)
 COPY package*.json ./
@@ -35,6 +35,9 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+
+# Install curl for health checks
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs
