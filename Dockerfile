@@ -11,7 +11,7 @@ ENV npm_config_user_agent="npm/10.8.2 node/v20.0.0 linux x64"
 ENV npm_config_registry="https://registry.npmjs.org/"
 
 # Cache bust to ensure fresh install (update when needed)
-ARG CACHEBUST=14
+ARG CACHEBUST=15
 
 # Install dependencies (includes devDependencies like TypeScript)
 COPY package*.json ./
@@ -50,5 +50,5 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Try multiple server start approaches
-CMD [ "sh", "-c", "if [ -f server.js ]; then node server.js; elif [ -f .next/standalone/server.js ]; then node .next/standalone/server.js; else npm start; fi" ]
+# Use comprehensive server startup script
+CMD ["npm", "run", "start:server"]

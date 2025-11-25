@@ -7,6 +7,7 @@
     "build": "next build",
     "build:staging": "node scripts/build-staging.js",
     "start": "next start",
+    "start:server": "node scripts/start-server.js",
     "lint": "eslint",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
