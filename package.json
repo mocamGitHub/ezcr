@@ -10,6 +10,7 @@
     "start:server": "node scripts/start-server.js",
     "start:debug": "node scripts/debug-start.js",
     "start:express": "node server-express.js",
+    "start:static": "node server-static.js",
     "lint": "eslint",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
