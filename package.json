@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
+    "build:staging": "node scripts/build-staging.js",
     "start": "next start",
     "lint": "eslint",
     "test:e2e": "playwright test",
