@@ -11,7 +11,7 @@ ENV npm_config_user_agent="npm/10.8.2 node/v20.0.0 linux x64"
 ENV npm_config_registry="https://registry.npmjs.org/"
 
 # Cache bust to ensure fresh install (update when needed)
-ARG CACHEBUST=13
+ARG CACHEBUST=14
 
 # Install dependencies (includes devDependencies like TypeScript)
 COPY package*.json ./
@@ -40,10 +40,8 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy built assets
-COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Copy entire app with dependencies from builder
+COPY --from=builder --chown=nextjs:nodejs /app ./
 
 USER nextjs
 
@@ -52,4 +50,5 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["node", "server.js"]
+# Try multiple server start approaches
+CMD [ "sh", "-c", "if [ -f server.js ]; then node server.js; elif [ -f .next/standalone/server.js ]; then node .next/standalone/server.js; else npm start; fi" ]
