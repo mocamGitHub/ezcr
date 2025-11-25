@@ -1,5 +1,3 @@
-import { Resend } from 'resend'
-
 interface OrderItem {
   product_name: string
   quantity: number
@@ -194,6 +192,8 @@ export async function sendOrderConfirmationEmail(
       return { success: false, error: 'Email service not configured' }
     }
 
+    // Dynamic import to prevent bundling during static generation
+    const { Resend } = await import('resend')
     const resend = new Resend(resendApiKey)
     const fromEmail = process.env.FROM_EMAIL || 'orders@ezcycleramp.com'
 
