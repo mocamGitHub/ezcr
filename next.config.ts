@@ -22,9 +22,7 @@ const nextConfig: NextConfig = {
     ],
   },
   experimental: {
-    // Skip static generation to avoid Html import errors during build
-    // TODO: Investigate and fix the Html import issue
-    isrMemoryCacheSize: 0,
+    // Limit static generation concurrency to avoid Html import errors
     staticGenerationMaxConcurrency: 1,
   },
 };
