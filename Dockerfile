@@ -11,7 +11,7 @@ ENV npm_config_user_agent="npm/10.8.2 node/v20.0.0 linux x64"
 ENV npm_config_registry="https://registry.npmjs.org/"
 
 # Cache bust to ensure fresh install (update when needed)
-ARG CACHEBUST=25
+ARG CACHEBUST=26
 
 # Install dependencies (includes devDependencies like TypeScript)
 COPY package*.json ./
@@ -48,7 +48,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/package*.json ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=nextjs:nodejs /app/custom-server.js ./custom-server.js
+COPY --from=builder --chown=nextjs:nodejs /app/simple-server.js ./simple-server.js
 
 USER nextjs
 
@@ -57,5 +57,5 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Use custom server for better diagnostics
-CMD ["node", "custom-server.js"]
+# Use simple diagnostic server first
+CMD ["node", "simple-server.js"]

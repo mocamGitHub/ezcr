@@ -1,27 +1,45 @@
 const { createServer } = require('http');
 const { parse } = require('url');
-const next = require('next');
+const fs = require('fs');
+const path = require('path');
 
-const dev = process.env.NODE_ENV !== 'production';
 const hostname = process.env.HOSTNAME || '0.0.0.0';
 const port = parseInt(process.env.PORT || '3000', 10);
 
-console.log('Starting custom Next.js server...');
+console.log('Starting custom diagnostic server...');
 console.log('Environment:', process.env.NODE_ENV);
 console.log('Port:', port);
 console.log('Hostname:', hostname);
+console.log('Current directory:', process.cwd());
+console.log('Directory contents:', fs.readdirSync('.'));
+console.log('.next exists?', fs.existsSync('.next'));
+console.log('src exists?', fs.existsSync('src'));
 
-const app = next({
-  dev,
-  hostname,
-  port,
-  dir: process.cwd(),
-  conf: {
-    distDir: '.next',
-  }
-});
+// Check if we can use Next.js
+let app, handle;
+let useNextJs = false;
 
-const handle = app.getRequestHandler();
+try {
+  const next = require('next');
+  const dev = process.env.NODE_ENV !== 'production';
+
+  app = next({
+    dev,
+    hostname,
+    port,
+    dir: process.cwd(),
+    conf: {
+      distDir: '.next',
+    }
+  });
+
+  handle = app.getRequestHandler();
+  useNextJs = true;
+  console.log('Next.js initialized successfully');
+} catch (error) {
+  console.error('Failed to initialize Next.js:', error.message);
+  useNextJs = false;
+}
 
 app.prepare().then(() => {
   createServer(async (req, res) => {
