@@ -7,9 +7,19 @@ WORKDIR /app
 ENV NODE_ENV=development
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Cache bust to ensure fresh install (update when needed)
+ARG CACHEBUST=1
+
 # Install dependencies (includes devDependencies like TypeScript)
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --no-optional && \
+    # Ensure no @react-email packages are present (they cause Html import errors)
+    rm -rf node_modules/@react-email && \
+    # Check what resend has installed
+    echo "=== Checking resend dependencies ===" && \
+    (npm ls resend || true) && \
+    echo "=== Checking for react-email packages ===" && \
+    (find node_modules -name "Html.js" -o -name "Html.tsx" -o -name "Html.ts" | head -5 || true)
 
 # Copy source
 COPY . .
