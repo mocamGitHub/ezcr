@@ -3,7 +3,11 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install dependencies (do NOT set NODE_ENV=production here!)
+# Set NODE_ENV to development for build stage (required for devDependencies)
+ENV NODE_ENV=development
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Install dependencies (includes devDependencies like TypeScript)
 COPY package*.json ./
 RUN npm ci
 
@@ -11,8 +15,6 @@ RUN npm ci
 COPY . .
 
 # Build the application
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV NODE_ENV=development
 RUN npm run build
 
 # Production stage
