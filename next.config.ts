@@ -21,12 +21,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  experimental: {
-    // Limit static generation concurrency to avoid Html import errors
-    staticGenerationMaxConcurrency: 1,
-    // Force server-side rendering for all pages
-    isrFlushToDisk: false,
-  },
   // Skip optimization to avoid static generation issues
   generateBuildId: async () => {
     // Use a fixed build ID to avoid issues
