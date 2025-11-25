@@ -11,7 +11,7 @@ ENV npm_config_user_agent="npm/10.8.2 node/v20.0.0 linux x64"
 ENV npm_config_registry="https://registry.npmjs.org/"
 
 # Cache bust to ensure fresh install (update when needed)
-ARG CACHEBUST=9
+ARG CACHEBUST=10
 
 # Install dependencies (includes devDependencies like TypeScript)
 COPY package*.json ./
@@ -30,10 +30,10 @@ COPY . .
 # Pre-install SWC binary using npm to avoid pnpm detection
 RUN npm install @next/swc-linux-x64-gnu@15.5.4 --save-dev --registry=https://registry.npmjs.org/
 
-# Build the application (using custom script to bypass static generation errors)
+# Build the application
 ENV NEXT_PRIVATE_STANDALONE=true
 ENV NEXT_SHARP_PATH=/app/node_modules/sharp
-RUN npm run build:staging
+RUN npm run build
 
 # Production stage - Using standard node image
 FROM node:20-slim AS runner
