@@ -3,7 +3,7 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install dependencies
+# Install dependencies (do NOT set NODE_ENV=production here!)
 COPY package*.json ./
 RUN npm ci
 
@@ -12,6 +12,7 @@ COPY . .
 
 # Build the application
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=development
 RUN npm run build
 
 # Production stage

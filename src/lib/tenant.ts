@@ -22,6 +22,11 @@ export const TENANT_CONFIG = {
     name: 'EZ Cycle Ramp (Development)',
     isProduction: false,
   },
+  staging: {
+    slug: 'ezcr-staging',
+    name: 'EZ Cycle Ramp (Staging)',
+    isProduction: false,
+  },
   production: {
     slug: 'ezcr-01',
     name: 'EZ Cycle Ramp',
@@ -32,9 +37,11 @@ export const TENANT_CONFIG = {
 /**
  * Get current environment
  */
-export function getEnvironment(): 'development' | 'production' {
+export function getEnvironment(): 'development' | 'staging' | 'production' {
   const env = process.env.NEXT_PUBLIC_ENVIRONMENT || process.env.NODE_ENV || 'development'
-  return env === 'production' ? 'production' : 'development'
+  if (env === 'production') return 'production'
+  if (env === 'staging') return 'staging'
+  return 'development'
 }
 
 /**
@@ -104,5 +111,5 @@ export function getTenantConfig() {
 /**
  * Type exports
  */
-export type Environment = 'development' | 'production'
+export type Environment = 'development' | 'staging' | 'production'
 export type TenantConfig = typeof TENANT_CONFIG[Environment]
