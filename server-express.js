@@ -27,7 +27,8 @@ app.prepare().then(() => {
   });
 
   // Handle all other requests with Next.js
-  server.all('*', (req, res) => {
+  // Express 5 requires proper path pattern
+  server.use((req, res) => {
     return handle(req, res);
   });
 
