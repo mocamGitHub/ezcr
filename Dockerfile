@@ -26,11 +26,11 @@ RUN npm ci --no-optional && \
 # Copy source
 COPY . .
 
-# Pre-install SWC binary for Alpine Linux (musl libc)
-RUN npm install @next/swc-linux-x64-musl@15.5.4 --save-dev --no-save
-
-# Build the application
-RUN npm run build
+# Build the application (Next.js will auto-download the correct SWC binary)
+# Set package manager explicitly for Next.js
+ENV NEXT_PRIVATE_STANDALONE=true
+ENV NEXT_SHARP_PATH=/app/node_modules/sharp
+RUN npx next build
 
 # Production stage
 FROM node:20-alpine AS runner
