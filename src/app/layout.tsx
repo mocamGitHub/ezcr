@@ -14,6 +14,7 @@ const inter = Inter({ subsets: ['latin'] })
 // Force dynamic rendering for all pages to avoid static generation issues
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+export const runtime = 'nodejs'
 
 export const metadata: Metadata = {
   title: 'EZ Cycle Ramp - Premium Motorcycle Loading Ramps',
