@@ -10,7 +10,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV npm_config_user_agent="npm"
 
 # Cache bust to ensure fresh install (update when needed)
-ARG CACHEBUST=2
+ARG CACHEBUST=3
 
 # Install dependencies (includes devDependencies like TypeScript)
 COPY package*.json ./
@@ -26,11 +26,18 @@ RUN npm ci --no-optional && \
 # Copy source
 COPY . .
 
-# Build the application (Next.js will auto-download the correct SWC binary)
-# Set package manager explicitly for Next.js
+# Pre-download SWC binary for Alpine
+RUN mkdir -p /root/.cache/next-swc && \
+    cd /root/.cache/next-swc && \
+    wget -q https://registry.npmjs.org/@next/swc-linux-x64-musl/-/swc-linux-x64-musl-15.5.4.tgz && \
+    tar xzf swc-linux-x64-musl-15.5.4.tgz && \
+    mv package/* . && \
+    rm -rf package swc-linux-x64-musl-15.5.4.tgz
+
+# Build the application
 ENV NEXT_PRIVATE_STANDALONE=true
 ENV NEXT_SHARP_PATH=/app/node_modules/sharp
-RUN npx next build
+RUN npm run build
 
 # Production stage
 FROM node:20-alpine AS runner
