@@ -13,6 +13,7 @@ console.log('🚀 Starting custom staging build...');
 process.env.NEXT_PRIVATE_STANDALONE = 'true';
 process.env.SKIP_BUILD_STATIC_GENERATION = 'true';
 process.env.NEXT_BUILD_ID = 'staging-' + Date.now();
+process.env.NODE_ENV = 'production'; // Ensure production build
 
 try {
   // Run Next.js build but continue even if static generation fails
