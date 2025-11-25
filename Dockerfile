@@ -6,9 +6,11 @@ WORKDIR /app
 # Set NODE_ENV to development for build stage (required for devDependencies)
 ENV NODE_ENV=development
 ENV NEXT_TELEMETRY_DISABLED=1
+# Use npm as package manager for Next.js
+ENV npm_config_user_agent="npm"
 
 # Cache bust to ensure fresh install (update when needed)
-ARG CACHEBUST=1
+ARG CACHEBUST=2
 
 # Install dependencies (includes devDependencies like TypeScript)
 COPY package*.json ./
@@ -23,6 +25,9 @@ RUN npm ci --no-optional && \
 
 # Copy source
 COPY . .
+
+# Pre-install SWC binary to avoid download issues
+RUN npm install @next/swc-linux-x64-gnu@15.5.4 --save-dev --no-save
 
 # Build the application
 RUN npm run build
