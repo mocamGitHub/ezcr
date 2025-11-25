@@ -2,6 +2,12 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  experimental: {
+    // Ensure server components work properly
+    serverActions: {
+      bodySizeLimit: '2mb',
+    },
+  },
   eslint: {
     // Skip ESLint during production builds (for staging deployment)
     // TODO: Fix linting errors and remove this
