@@ -11,18 +11,11 @@ ENV npm_config_user_agent="npm/10.8.2 node/v20.0.0 linux x64"
 ENV npm_config_registry="https://registry.npmjs.org/"
 
 # Cache bust to ensure fresh install (update when needed)
-ARG CACHEBUST=10
+ARG CACHEBUST=11
 
 # Install dependencies (includes devDependencies like TypeScript)
 COPY package*.json ./
-RUN npm ci --no-optional && \
-    # Ensure no @react-email packages are present (they cause Html import errors)
-    rm -rf node_modules/@react-email && \
-    # Check what resend has installed
-    echo "=== Checking resend dependencies ===" && \
-    (npm ls resend || true) && \
-    echo "=== Checking for react-email packages ===" && \
-    (find node_modules -name "Html.js" -o -name "Html.tsx" -o -name "Html.ts" | head -5 || true)
+RUN npm ci --no-optional
 
 # Copy source
 COPY . .
