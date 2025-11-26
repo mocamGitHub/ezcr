@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  ezcr-staging:
+    build:
+      context: .
+      dockerfile: Dockerfile.diagnostic  # Start with diagnostic server
+    ports:
+      - "3001:3000"  # Direct port mapping - access via http://5.161.187.109:3001
+      - "80:3000"    # If port 80 is available
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "app=ezcr-staging"
+      - "environment=staging"
+
+  # Optional: Nginx reverse proxy if needed
+  nginx-proxy:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - ezcr-staging
+    restart: unless-stopped
