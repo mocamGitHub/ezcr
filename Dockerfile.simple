@@ -1,25 +1,29 @@
-# Simple single-stage build for debugging
 FROM node:20-slim
 
 WORKDIR /app
 
-# Set environment
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
+# Install curl for health checks
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
-# Copy everything
-COPY . .
-
-# Install ALL dependencies (including dev dependencies for build)
-RUN npm ci
-
-# Build the app
-RUN npm run build || echo "Build had errors but continuing..."
+# Create a simple server inline
+RUN echo 'const http = require("http"); \
+const server = http.createServer((req, res) => { \
+  console.log(`${new Date().toISOString()} ${req.method} ${req.url}`); \
+  if (req.url === "/") { \
+    res.writeHead(200, {"Content-Type": "text/html"}); \
+    res.end("<h1>Staging Server Working!</h1><p>Time: " + new Date().toISOString() + "</p>"); \
+  } else if (req.url === "/api/health") { \
+    res.writeHead(200, {"Content-Type": "application/json"}); \
+    res.end(JSON.stringify({status: "ok", time: new Date().toISOString()})); \
+  } else { \
+    res.writeHead(404); \
+    res.end("Not Found"); \
+  } \
+}); \
+server.listen(3000, "0.0.0.0", () => { \
+  console.log("Server running on http://0.0.0.0:3000"); \
+});' > server.js
 
 EXPOSE 3000
 
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
-
-# Simple start command
-CMD ["npm", "start"]
+CMD ["node", "server.js"]
