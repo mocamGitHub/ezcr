@@ -1,0 +1,30 @@
+# Enhanced Diagnostic Dockerfile for Troubleshooting
+FROM node:20-slim
+
+WORKDIR /app
+
+# Install curl for health checks
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+# Copy only the diagnostic server
+COPY enhanced-diagnostic-server.js ./server.js
+
+# Add some metadata
+LABEL maintainer="EZCR Team"
+LABEL version="2.0"
+LABEL description="Enhanced diagnostic server for troubleshooting Coolify/Traefik routing"
+
+# Expose port 3000
+EXPOSE 3000
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:3000/health || exit 1
+
+# Run the diagnostic server
+CMD ["node", "server.js"]
