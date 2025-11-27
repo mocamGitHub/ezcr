@@ -1,0 +1,70 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+
+            echo "📦 Pulling latest code..."
+            cd /opt/ezcr-staging
+            git fetch origin
+            git reset --hard origin/main
+
+            echo "🔨 Building Docker image..."
+            docker build -t ezcr-nextjs-prod:latest --build-arg CACHEBUST=$(date +%s) .
+
+            echo "🔄 Restarting container..."
+            docker stop ezcr-nextjs || true
+            docker rm ezcr-nextjs || true
+            docker run -d \
+              --name ezcr-nextjs \
+              --restart unless-stopped \
+              --network coolify \
+              -p 3001:3000 \
+              -e NODE_ENV=production \
+              -e PORT=3000 \
+              -e HOSTNAME=0.0.0.0 \
+              --env-file /opt/ezcr-staging/.env.production \
+              ezcr-nextjs-prod:latest
+
+            echo "⏳ Waiting for container to start..."
+            sleep 5
+
+            echo "✅ Checking container health..."
+            docker ps --filter "name=ezcr-nextjs" --format "table {{.Names}}\t{{.Status}}"
+
+            # Verify the site is responding
+            if curl -s -o /dev/null -w "%{http_code}" http://localhost:3001 | grep -q "200"; then
+              echo "✅ Deployment successful! Site is responding."
+            else
+              echo "⚠️ Warning: Site may not be responding correctly"
+              docker logs --tail 20 ezcr-nextjs
+              exit 1
+            fi
+
+      - name: Notify success
+        if: success()
+        run: echo "🎉 Deployment to staging.ezcycleramp.com completed successfully!"
+
+      - name: Notify failure
+        if: failure()
+        run: echo "❌ Deployment failed. Check the logs above."
