@@ -57,5 +57,5 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Use simple diagnostic server first
-CMD ["node", "simple-server.js"]
+# Run Next.js production server
+CMD ["npm", "start"]
