@@ -123,12 +123,12 @@ function HeroSlider() {
 // ============================================
 function ProductShowcase() {
   return (
-    <section className="relative py-16 lg:py-24 bg-gradient-to-br from-gray-50 via-blue-50 to-gray-100 dark:from-slate-900 dark:via-[#0B5394] dark:to-slate-900">
+    <section className="relative py-16 lg:py-24 bg-gradient-to-br from-gray-200 via-orange-50 to-gray-200 dark:from-slate-900 dark:via-[#0B5394] dark:to-slate-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           {/* Left: Text Content */}
           <div>
-            <div className="inline-block bg-[#0B5394]/10 dark:bg-[#F78309]/20 text-[#0B5394] dark:text-[#F78309] px-4 py-1 rounded-full text-sm font-semibold mb-6">
+            <div className="inline-block bg-[#F78309]/15 dark:bg-[#F78309]/20 text-[#F78309] dark:text-[#F78309] px-4 py-1 rounded-full text-sm font-semibold mb-6">
               Made in USA • Veteran Owned • A+ BBB Rating
             </div>
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
@@ -168,7 +168,7 @@ function ProductShowcase() {
           <div className="relative flex items-center justify-center">
             <div className="relative">
               {/* Glow effect */}
-              <div className="absolute inset-0 bg-[#0B5394]/10 dark:bg-[#F78309]/20 blur-3xl rounded-full scale-75" />
+              <div className="absolute inset-0 bg-[#F78309]/15 dark:bg-[#F78309]/20 blur-3xl rounded-full scale-75" />
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={`${LIVE_SITE}/images/ramp6.webp`}
