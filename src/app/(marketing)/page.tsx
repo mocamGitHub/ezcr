@@ -119,23 +119,23 @@ function HeroSlider() {
 }
 
 // ============================================
-// Product Showcase Section (Variant B style)
+// Product Showcase Section (Variant B style - Light/Dark mode)
 // ============================================
 function ProductShowcase() {
   return (
-    <section className="relative bg-gradient-to-br from-slate-900 via-[#0B5394] to-slate-900 py-16 lg:py-24">
+    <section className="relative py-16 lg:py-24 bg-gradient-to-br from-gray-50 via-blue-50 to-gray-100 dark:from-slate-900 dark:via-[#0B5394] dark:to-slate-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           {/* Left: Text Content */}
           <div>
-            <div className="inline-block bg-[#F78309]/20 text-[#F78309] px-4 py-1 rounded-full text-sm font-semibold mb-6">
+            <div className="inline-block bg-[#0B5394]/10 dark:bg-[#F78309]/20 text-[#0B5394] dark:text-[#F78309] px-4 py-1 rounded-full text-sm font-semibold mb-6">
               Made in USA • Veteran Owned • A+ BBB Rating
             </div>
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6 leading-tight">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
               Load Your Bike<br />
               <span className="text-[#F78309]">With Confidence</span>
             </h2>
-            <p className="text-lg text-blue-100 mb-8 max-w-lg">
+            <p className="text-lg text-gray-600 dark:text-blue-100 mb-8 max-w-lg">
               Premium folding and standard motorcycle loading ramps.
               Engineered for safety, built to last.
             </p>
@@ -143,20 +143,20 @@ function ProductShowcase() {
               <Button asChild size="lg" className="bg-[#F78309] hover:bg-[#F78309]/90 text-white text-lg px-8 py-6">
                 <Link href="/products">Shop All Ramps</Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="text-white border-white/30 hover:bg-white/10 text-lg px-8 py-6">
+              <Button asChild size="lg" variant="outline" className="text-[#0B5394] dark:text-white border-[#0B5394]/30 dark:border-white/30 hover:bg-[#0B5394]/10 dark:hover:bg-white/10 text-lg px-8 py-6">
                 <Link href="/configure">Configure Your Ramp</Link>
               </Button>
             </div>
             {/* Trust badges */}
-            <div className="flex flex-wrap items-center gap-6 mt-10 text-sm text-blue-200">
+            <div className="flex flex-wrap items-center gap-6 mt-10 text-sm text-gray-600 dark:text-blue-200">
               <div className="flex items-center gap-2">
-                <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
                 Free Shipping $500+
               </div>
               <div className="flex items-center gap-2">
-                <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
                 Lifetime Warranty
@@ -168,7 +168,7 @@ function ProductShowcase() {
           <div className="relative flex items-center justify-center">
             <div className="relative">
               {/* Glow effect */}
-              <div className="absolute inset-0 bg-[#F78309]/20 blur-3xl rounded-full scale-75" />
+              <div className="absolute inset-0 bg-[#0B5394]/10 dark:bg-[#F78309]/20 blur-3xl rounded-full scale-75" />
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={`${LIVE_SITE}/images/ramp6.webp`}
