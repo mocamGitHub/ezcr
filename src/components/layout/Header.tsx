@@ -46,6 +46,9 @@ export function Header() {
           <Link href="/configure" className="transition-colors hover:text-[#F78309]">
             Configurator
           </Link>
+          <Link href="/testimonials" className="transition-colors hover:text-[#F78309]">
+            Reviews
+          </Link>
           <Link href="/about" className="transition-colors hover:text-[#F78309]">
             About
           </Link>
