@@ -10,8 +10,17 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV npm_config_user_agent="npm/10.8.2 node/v20.0.0 linux x64"
 ENV npm_config_registry="https://registry.npmjs.org/"
 
+# Build-time environment variables for Next.js client-side code
+# These MUST be set at build time as they get baked into the JS bundle
+ENV NEXT_PUBLIC_SUPABASE_URL=https://supabase.nexcyte.com
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc1OTEwNTM4MCwiZXhwIjo0OTE0Nzc4OTgwLCJyb2xlIjoiYW5vbiJ9.LEjES7ZdligKvnm15fl1ssmOHDXw9_1-ophSf9fKbm8
+ENV NEXT_PUBLIC_ENVIRONMENT=production
+ENV NEXT_PUBLIC_TENANT_SLUG=ezcr-01
+ENV NEXT_PUBLIC_BASE_URL=https://staging.ezcycleramp.com
+ENV NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_51MZyzBH2Ea7mEUq79OBZiWvAUTeCzggk9qga1zfeUeyNOQX7qlW85LLC7NZPt8wL5ORWQeST5Z7mcloqsJgrsUQa002QA510SO
+
 # Cache bust to ensure fresh install (update when needed)
-ARG CACHEBUST=26
+ARG CACHEBUST=28
 
 # Install dependencies (includes devDependencies like TypeScript)
 COPY package*.json ./
