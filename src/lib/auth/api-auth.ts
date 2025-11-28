@@ -165,11 +165,11 @@ export const ROLES = {
  * Common role groups
  */
 export const ROLE_GROUPS = {
-  ADMIN_ROLES: ['admin'],
-  INVENTORY_ROLES: ['admin', 'inventory_manager'],
-  STAFF_ROLES: ['admin', 'inventory_manager', 'customer_service'],
-  ALL_ROLES: ['admin', 'inventory_manager', 'customer_service', 'customer'],
-} as const
+  ADMIN_ROLES: ['admin'] as string[],
+  INVENTORY_ROLES: ['admin', 'inventory_manager'] as string[],
+  STAFF_ROLES: ['admin', 'inventory_manager', 'customer_service'] as string[],
+  ALL_ROLES: ['admin', 'inventory_manager', 'customer_service', 'customer'] as string[],
+}
 
 /**
  * Authenticate admin for API routes
@@ -199,10 +199,11 @@ export async function authenticateAdmin(request: NextRequest) {
   const authResult = await requireRole(request, ROLE_GROUPS.ADMIN_ROLES)
 
   if ('error' in authResult) {
+    const errorResult = authResult as { error: { error: string }; status: number }
     return {
       supabase: null,
       user: null,
-      error: { message: authResult.error.error, status: authResult.status },
+      error: { message: errorResult.error.error, status: errorResult.status },
     }
   }
 

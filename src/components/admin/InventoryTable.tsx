@@ -49,9 +49,9 @@ export function InventoryTable({ products, loading, onRefresh }: InventoryTableP
       return { label: 'Out of Stock', variant: 'destructive' as const, icon: AlertTriangle }
     }
     if (product.inventory_count <= product.low_stock_threshold) {
-      return { label: 'Low Stock', variant: 'warning' as const, icon: AlertTriangle }
+      return { label: 'Low Stock', variant: 'secondary' as const, icon: AlertTriangle, className: 'bg-yellow-100 text-yellow-800 border-yellow-200' }
     }
-    return { label: 'In Stock', variant: 'default' as const, icon: null }
+    return { label: 'In Stock', variant: 'default' as const, icon: null, className: '' }
   }
 
   if (loading) {
@@ -122,7 +122,7 @@ export function InventoryTable({ products, loading, onRefresh }: InventoryTableP
                     {product.low_stock_threshold}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={status.variant} className="flex items-center gap-1 w-fit">
+                    <Badge variant={status.variant} className={`flex items-center gap-1 w-fit ${status.className || ''}`}>
                       {status.icon && <status.icon className="h-3 w-3" />}
                       {status.label}
                     </Badge>

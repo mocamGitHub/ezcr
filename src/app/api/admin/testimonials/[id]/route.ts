@@ -7,7 +7,7 @@ import { authenticateAdmin } from '@/lib/auth/api-auth';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { supabase, user, error: authError } = await authenticateAdmin(request);
@@ -16,7 +16,7 @@ export async function DELETE(
       return NextResponse.json({ error: authError.message }, { status: authError.status });
     }
 
-    const testimonialId = params.id;
+    const { id: testimonialId } = await params;
 
     // -------------------- Delete Testimonial --------------------
     const { error: deleteError } = await supabase

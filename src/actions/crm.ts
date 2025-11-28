@@ -474,7 +474,7 @@ export async function getCustomerTagsForCustomer(email: string): Promise<Custome
 
     if (error) throw error
 
-    return data.map(d => d.tag) as CustomerTag[]
+    return (data?.map(d => d.tag) || []) as unknown as CustomerTag[]
   } catch (error) {
     console.error('Error fetching customer tags:', error)
     return []

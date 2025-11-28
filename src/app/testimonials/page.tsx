@@ -231,7 +231,7 @@ export default function TestimonialsPage() {
 
                   {/* Review Text */}
                   <p className="mt-4 text-gray-700 line-clamp-4">
-                    "{testimonial.review_text}"
+                    &quot;{testimonial.review_text}&quot;
                   </p>
 
                   {/* Customer Info */}

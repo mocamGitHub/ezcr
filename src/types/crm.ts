@@ -77,7 +77,8 @@ export interface CRMActivity {
   tenant_id: string
   customer_email: string
   activity_type: string
-  activity_data: Record<string, any>
+  activity_data: Record<string, unknown>
+  metadata?: Record<string, unknown>
   related_entity_type?: string
   related_entity_id?: string
   performed_by?: string

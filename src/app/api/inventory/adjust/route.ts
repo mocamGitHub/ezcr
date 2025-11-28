@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     const authResult = await requireRole(request, ROLE_GROUPS.INVENTORY_ROLES)
 
     if ('error' in authResult) {
-      return NextResponse.json(authResult.error, { status: authResult.status })
+      return NextResponse.json(authResult.error, { status: (authResult as { error: unknown; status: number }).status })
     }
 
     const { user } = authResult

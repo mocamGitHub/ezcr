@@ -96,7 +96,7 @@ export async function POST(request: Request) {
     let knowledgeContext = ''
     if (relevantKnowledge && relevantKnowledge.length > 0) {
       knowledgeContext = '\n\nRelevant information from our knowledge base:\n\n'
-      relevantKnowledge.forEach((item, index) => {
+      relevantKnowledge.forEach((item: { title: string; content: string }, index: number) => {
         knowledgeContext += `[Source ${index + 1}] ${item.title}\n${item.content}\n\n`
       })
     }
@@ -195,9 +195,10 @@ export async function POST(request: Request) {
     const assistantChoice = data.choices[0]
 
     // Handle function calls if present
+    let assistantMessage: string
     if (assistantChoice.message.tool_calls) {
       const toolCalls = assistantChoice.message.tool_calls
-      let functionResults = []
+      const functionResults = []
 
       for (const toolCall of toolCalls) {
         const functionName = toolCall.function.name
@@ -206,14 +207,14 @@ export async function POST(request: Request) {
         let functionResult
         if (functionName === 'get_order_status') {
           functionResult = await getOrderStatus(supabase, tenantId, functionArgs)
-          
+
           // Trigger n8n order inquiry handler (non-blocking)
           if (functionResult.success) {
             triggerOrderInquiryWebhook(functionArgs, functionResult).catch(console.error)
           }
         } else if (functionName === 'schedule_appointment') {
           functionResult = await scheduleAppointment(supabase, tenantId, functionArgs)
-          
+
           // Trigger n8n appointment automation (non-blocking)
           if (functionResult.success) {
             triggerAppointmentWebhook(functionArgs, functionResult).catch(console.error)
@@ -252,9 +253,9 @@ export async function POST(request: Request) {
       }
 
       const secondData = await secondResponse.json()
-      var assistantMessage = secondData.choices[0].message.content
+      assistantMessage = secondData.choices[0].message.content
     } else {
-      var assistantMessage = assistantChoice.message.content
+      assistantMessage = assistantChoice.message.content
     }
 
     // Generate suggested follow-up questions
@@ -327,7 +328,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       type: 'message',
       content: assistantMessage,
-      sources: relevantKnowledge?.map((k) => ({
+      sources: relevantKnowledge?.map((k: { title: string; category: string; similarity: number }) => ({
         title: k.title,
         category: k.category,
         similarity: k.similarity,

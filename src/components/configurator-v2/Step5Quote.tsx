@@ -152,7 +152,12 @@ export function Step5Quote() {
         },
         vehicle: configData.vehicle || '',
         measurements: configData.measurements,
-        motorcycle: configData.motorcycle,
+        motorcycle: {
+          type: configData.motorcycle.type || '',
+          weight: configData.motorcycle.weight,
+          wheelbase: configData.motorcycle.wheelbase,
+          length: configData.motorcycle.length,
+        },
         selectedModel: configData.selectedModel,
         extension: configData.extension,
         boltlessKit: configData.boltlessKit,

@@ -95,7 +95,7 @@ export default function SignupPage() {
             </div>
             <h2 className="text-2xl font-bold">Check Your Email</h2>
             <p className="text-muted-foreground">
-              We've sent you a confirmation email. Please check your inbox and click the link to verify your account.
+              We&apos;ve sent you a confirmation email. Please check your inbox and click the link to verify your account.
             </p>
             <p className="text-sm text-muted-foreground">
               Redirecting to login page...

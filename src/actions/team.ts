@@ -259,7 +259,7 @@ export async function updateTeamMember(userId: string, updates: UpdateTeamMember
     }
 
     // Prevent changing owner role
-    if (existing.role === 'owner' && updates.role && updates.role !== 'owner') {
+    if (existing.role === 'owner' && updates.role) {
       throw new Error('Cannot change owner role')
     }
 

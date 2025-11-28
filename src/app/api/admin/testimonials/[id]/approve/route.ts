@@ -7,7 +7,7 @@ import { authenticateAdmin } from '@/lib/auth/api-auth';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { supabase, user, error: authError } = await authenticateAdmin(request);
@@ -16,7 +16,7 @@ export async function POST(
       return NextResponse.json({ error: authError.message }, { status: authError.status });
     }
 
-    const testimonialId = params.id;
+    const { id: testimonialId } = await params;
 
     // -------------------- Update Testimonial Status --------------------
     const { data: testimonial, error: updateError } = await supabase

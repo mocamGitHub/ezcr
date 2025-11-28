@@ -76,8 +76,10 @@ export function CustomerTasks({ tasks, customerEmail, onUpdate }: CustomerTasksP
 
   const handleToggleComplete = async (task: CustomerTask) => {
     try {
+      const isCompleted = task.status === 'completed'
       await updateCustomerTask(task.id, {
-        completed: !task.completed,
+        status: isCompleted ? 'pending' : 'completed',
+        completed_at: isCompleted ? undefined : new Date().toISOString(),
       })
       onUpdate()
     } catch (err) {
@@ -114,8 +116,8 @@ export function CustomerTasks({ tasks, customerEmail, onUpdate }: CustomerTasksP
     setEditPriority('medium')
   }
 
-  const openTasks = tasks.filter(t => !t.completed)
-  const completedTasks = tasks.filter(t => t.completed)
+  const openTasks = tasks.filter(t => t.status !== 'completed')
+  const completedTasks = tasks.filter(t => t.status === 'completed')
 
   return (
     <div className="space-y-4">
@@ -358,19 +360,20 @@ function TaskCard({
     urgent: 'bg-red-100 text-red-700',
   }
 
-  const isOverdue = task.due_date && !task.completed && new Date(task.due_date) < new Date()
+  const isCompleted = task.status === 'completed'
+  const isOverdue = task.due_date && !isCompleted && new Date(task.due_date) < new Date()
 
   return (
-    <div className={`border rounded-lg p-4 bg-card ${task.completed ? 'opacity-60' : ''} ${isOverdue ? 'border-destructive' : ''}`}>
+    <div className={`border rounded-lg p-4 bg-card ${isCompleted ? 'opacity-60' : ''} ${isOverdue ? 'border-destructive' : ''}`}>
       <div className="flex items-start gap-3">
         <input
           type="checkbox"
-          checked={task.completed}
+          checked={isCompleted}
           onChange={() => onToggle(task)}
           className="mt-1 w-5 h-5 cursor-pointer"
         />
         <div className="flex-1">
-          <div className={`font-medium ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
+          <div className={`font-medium ${isCompleted ? 'line-through text-muted-foreground' : ''}`}>
             {task.title}
           </div>
           {task.description && (
@@ -389,7 +392,7 @@ function TaskCard({
           </div>
         </div>
         <div className="flex gap-1">
-          {!task.completed && (
+          {!isCompleted && (
             <button
               onClick={() => onEdit(task)}
               className="px-2 py-1 text-xs border rounded hover:bg-muted transition-colors"

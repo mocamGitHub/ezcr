@@ -27,7 +27,7 @@ function OrderConfirmationContent() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const sessionId = searchParams.get('session_id')
+  const sessionId = searchParams?.get('session_id')
 
   useEffect(() => {
     if (!sessionId) {
@@ -153,10 +153,10 @@ function OrderConfirmationContent() {
           <div className="flex gap-3">
             <Package className="h-6 w-6 text-[#0B5394] flex-shrink-0" />
             <div>
-              <h3 className="font-semibold mb-2">What's Next?</h3>
+              <h3 className="font-semibold mb-2">What&apos;s Next?</h3>
               <ul className="text-sm text-muted-foreground space-y-2">
-                <li>• You'll receive an email confirmation at {order.customer_email}</li>
-                <li>• We'll send you a shipping confirmation with tracking details once your order ships</li>
+                <li>• You&apos;ll receive an email confirmation at {order.customer_email}</li>
+                <li>• We&apos;ll send you a shipping confirmation with tracking details once your order ships</li>
                 <li>• You can view your order status anytime in your order history</li>
               </ul>
             </div>

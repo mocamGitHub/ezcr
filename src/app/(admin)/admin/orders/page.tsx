@@ -134,7 +134,8 @@ export default function AdminOrdersPage() {
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
       const supabase = createClient()
-      const { error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .from('orders')
         .update({ status: newStatus })
         .eq('id', orderId)

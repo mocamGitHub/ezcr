@@ -13,14 +13,14 @@ export function ProductFilters() {
   const searchParams = useSearchParams()
   const [isPending, startTransition] = useTransition()
 
-  const availableOnly = searchParams.get('available') === 'true'
+  const availableOnly = searchParams?.get('available') === 'true'
   const [priceRange, setPriceRange] = useState([
-    Number(searchParams.get('minPrice')) || 0,
-    Number(searchParams.get('maxPrice')) || 3000
+    Number(searchParams?.get('minPrice')) || 0,
+    Number(searchParams?.get('maxPrice')) || 3000
   ])
 
   const handleAvailableToggle = (checked: boolean) => {
-    const params = new URLSearchParams(searchParams.toString())
+    const params = new URLSearchParams(searchParams?.toString() || '')
 
     if (checked) {
       params.set('available', 'true')
@@ -38,7 +38,7 @@ export function ProductFilters() {
   }
 
   const applyPriceFilter = () => {
-    const params = new URLSearchParams(searchParams.toString())
+    const params = new URLSearchParams(searchParams?.toString() || '')
 
     if (priceRange[0] > 0) {
       params.set('minPrice', priceRange[0].toString())
@@ -59,7 +59,7 @@ export function ProductFilters() {
 
   const clearFilters = () => {
     const params = new URLSearchParams()
-    const category = searchParams.get('category')
+    const category = searchParams?.get('category')
 
     // Only keep category filter
     if (category) params.set('category', category)
@@ -72,9 +72,9 @@ export function ProductFilters() {
   }
 
   const hasFilters = availableOnly ||
-                     Number(searchParams.get('minPrice')) > 0 ||
-                     Number(searchParams.get('maxPrice')) < 3000 ||
-                     searchParams.get('q')
+                     Number(searchParams?.get('minPrice')) > 0 ||
+                     Number(searchParams?.get('maxPrice')) < 3000 ||
+                     searchParams?.get('q')
 
   return (
     <div className="space-y-6 p-6 border rounded-lg bg-background">

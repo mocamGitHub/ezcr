@@ -18,17 +18,15 @@ const nextConfig: NextConfig = {
     },
   },
   eslint: {
-    // Skip ESLint during production builds (for staging deployment)
-    // TODO: Fix linting errors and remove this
-    ignoreDuringBuilds: true,
+    // ESLint errors fixed - strict linting enabled
+    ignoreDuringBuilds: false,
   },
   typescript: {
-    // Skip TypeScript type checking during production builds (for staging deployment)
-    // TODO: Fix Next.js 15 async params and remove this
-    ignoreBuildErrors: true,
+    // TypeScript errors fixed - strict type checking enabled
+    ignoreBuildErrors: false,
   },
   images: {
-    unoptimized: true,
+    // Re-enabled image optimization with remote patterns
     remotePatterns: [
       {
         protocol: 'https',
@@ -38,6 +36,11 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'supabase.nexcyte.com',
+        pathname: '/storage/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.supabase.co',
         pathname: '/storage/**',
       },
     ],

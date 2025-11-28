@@ -9,8 +9,8 @@ export function ProductSearch() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isPending, startTransition] = useTransition()
-  const [searchValue, setSearchValue] = useState(searchParams.get('q') || '')
-  const debounceRef = useRef<NodeJS.Timeout>()
+  const [searchValue, setSearchValue] = useState(searchParams?.get('q') || '')
+  const debounceRef = useRef<NodeJS.Timeout>(undefined)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const handleChange = (value: string) => {
@@ -27,7 +27,7 @@ export function ProductSearch() {
 
     // Set new timeout for debounced search
     debounceRef.current = setTimeout(() => {
-      const params = new URLSearchParams(searchParams.toString())
+      const params = new URLSearchParams(searchParams?.toString() || '')
 
       if (value) {
         params.set('q', value)

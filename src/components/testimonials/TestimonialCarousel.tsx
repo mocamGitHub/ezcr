@@ -137,7 +137,7 @@ export function TestimonialCarousel({
 
           {/* Review Text */}
           <blockquote className="text-lg md:text-xl text-gray-700 text-center mb-6 leading-relaxed">
-            "{currentTestimonial.review_text}"
+            &quot;{currentTestimonial.review_text}&quot;
           </blockquote>
 
           {/* Customer Info */}

@@ -16,7 +16,7 @@ const respondTestimonialSchema = z.object({
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { supabase, user, error: authError } = await authenticateAdmin(request);
@@ -25,7 +25,7 @@ export async function POST(
       return NextResponse.json({ error: authError.message }, { status: authError.status });
     }
 
-    const testimonialId = params.id;
+    const { id: testimonialId } = await params;
 
     // -------------------- Parse & Validate Request --------------------
     const body = await request.json();
@@ -35,7 +35,7 @@ export async function POST(
       return NextResponse.json(
         {
           error: 'Invalid request data',
-          details: validation.error.errors,
+          details: validation.error.issues,
         },
         { status: 400 }
       );

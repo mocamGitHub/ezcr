@@ -35,7 +35,8 @@ export default function LoginPage() {
 
       if (data.user) {
         // Update last_login
-        await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any)
           .from('user_profiles')
           .update({ last_login: new Date().toISOString() })
           .eq('id', data.user.id)
@@ -117,7 +118,7 @@ export default function LoginPage() {
 
         <div className="text-center text-sm text-muted-foreground">
           <p>
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link
               href="/signup"
               className="text-blue-600 hover:text-blue-700 hover:underline font-medium"

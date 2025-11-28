@@ -10,7 +10,7 @@ interface CategoryFilterProps {
 export function CategoryFilter({ categories }: CategoryFilterProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const activeCategory = searchParams.get('category')
+  const activeCategory = searchParams?.get('category')
 
   const handleCategoryClick = (categorySlug: string | null) => {
     if (categorySlug) {

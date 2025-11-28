@@ -29,13 +29,13 @@ export function ChatWidget() {
   const inputRef = useRef<HTMLInputElement>(null)
 
   const {
-    vehicle,
-    measurements,
-    motorcycle,
-    updateVehicle,
+    configData,
+    selectVehicle,
     updateMeasurements,
     updateMotorcycle,
   } = useConfigurator()
+
+  const { vehicle, measurements, motorcycle } = configData
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -132,25 +132,25 @@ export function ChatWidget() {
     }
   }
 
-  const handleFunctionCall = (functionName: string, args: any) => {
+  const handleFunctionCall = (functionName: string, args: Record<string, unknown>) => {
     if (functionName === 'update_configurator') {
       // Update form with extracted values
       if (args.vehicleType) {
-        updateVehicle(args.vehicleType)
+        selectVehicle(args.vehicleType as 'pickup' | 'van' | 'trailer')
       }
-      if (args.cargoLength || args.totalLength || args.loadHeight) {
+      if (args.cargoLength || args.loadHeight) {
         updateMeasurements({
-          cargoLength: args.cargoLength || measurements.cargoLength,
-          totalLength: args.totalLength || measurements.totalLength,
-          loadHeight: args.loadHeight || measurements.loadHeight,
+          cargoLength: (args.cargoLength as number) || measurements.cargoLength,
+          loadHeight: (args.loadHeight as number) || measurements.loadHeight,
         })
       }
       if (args.motorcycleType || args.motorcycleWeight || args.wheelbase || args.motorcycleLength) {
+        const bikeType = args.motorcycleType as 'sport' | 'cruiser' | 'adventure' | undefined
         updateMotorcycle({
-          type: args.motorcycleType || motorcycle.type,
-          weight: args.motorcycleWeight || motorcycle.weight,
-          wheelbase: args.wheelbase || motorcycle.wheelbase,
-          length: args.motorcycleLength || motorcycle.length,
+          type: bikeType || motorcycle.type,
+          weight: (args.motorcycleWeight as number) || motorcycle.weight,
+          wheelbase: (args.wheelbase as number) || motorcycle.wheelbase,
+          length: (args.motorcycleLength as number) || motorcycle.length,
         })
       }
     }

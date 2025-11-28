@@ -70,7 +70,7 @@ interface HistoryResponse {
 export default function ProductInventoryHistoryPage() {
   const params = useParams()
   const router = useRouter()
-  const productId = params.productId as string
+  const productId = params?.productId as string
 
   const [data, setData] = useState<HistoryResponse | null>(null)
   const [loading, setLoading] = useState(true)

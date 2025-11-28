@@ -216,7 +216,7 @@ export default function TeamManagementPage() {
           <DialogHeader>
             <DialogTitle>Invite Team Member</DialogTitle>
             <DialogDescription>
-              Send an invitation email to a new team member. They'll receive an email with instructions to set their password.
+              Send an invitation email to a new team member. They&apos;ll receive an email with instructions to set their password.
             </DialogDescription>
           </DialogHeader>
 

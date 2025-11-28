@@ -16,19 +16,19 @@ import { requireRole, ROLE_GROUPS } from '@/lib/auth/api-auth'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { productId: string } }
+  { params }: { params: Promise<{ productId: string }> }
 ) {
   try {
     // Require staff role (admin, inventory_manager, or customer_service)
     const authResult = await requireRole(request, ROLE_GROUPS.STAFF_ROLES)
 
     if ('error' in authResult) {
-      return NextResponse.json(authResult.error, { status: authResult.status })
+      return NextResponse.json(authResult.error, { status: (authResult as { error: unknown; status: number }).status })
     }
 
     const { user } = authResult
 
-    const productId = params.productId
+    const { productId } = await params
     const searchParams = request.nextUrl.searchParams
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 500)
     const transactionType = searchParams.get('transactionType')

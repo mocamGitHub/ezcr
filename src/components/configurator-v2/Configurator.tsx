@@ -20,7 +20,7 @@ function ConfiguratorContent() {
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    const loadId = searchParams.get('load')
+    const loadId = searchParams?.get('load')
     if (loadId) {
       setIsLoading(true)
       loadConfiguration(loadId)
