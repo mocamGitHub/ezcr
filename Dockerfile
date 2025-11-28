@@ -18,9 +18,11 @@ ENV NEXT_PUBLIC_ENVIRONMENT=production
 ENV NEXT_PUBLIC_TENANT_SLUG=ezcr-01
 ENV NEXT_PUBLIC_BASE_URL=https://staging.ezcycleramp.com
 ENV NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_51MZyzBH2Ea7mEUq79OBZiWvAUTeCzggk9qga1zfeUeyNOQX7qlW85LLC7NZPt8wL5ORWQeST5Z7mcloqsJgrsUQa002QA510SO
+# Server-side env vars needed for middleware (Edge Runtime bakes these at build time)
+ENV SUPABASE_SERVICE_KEY=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc1OTEwNTM4MCwiZXhwIjo0OTE0Nzc4OTgwLCJyb2xlIjoic2VydmljZV9yb2xlIn0.eJi_5yIeVN64jC-Vg_vdZLGUthLcWqY7dtMoRiE56YY
 
 # Cache bust to ensure fresh install (update when needed)
-ARG CACHEBUST=28
+ARG CACHEBUST=29
 
 # Install dependencies (includes devDependencies like TypeScript)
 COPY package*.json ./
