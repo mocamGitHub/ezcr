@@ -22,7 +22,7 @@ ENV NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_51MZyzBH2Ea7mEUq79OBZiWvAUTeCzggk
 ENV SUPABASE_SERVICE_KEY=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc1OTEwNTM4MCwiZXhwIjo0OTE0Nzc4OTgwLCJyb2xlIjoic2VydmljZV9yb2xlIn0.eJi_5yIeVN64jC-Vg_vdZLGUthLcWqY7dtMoRiE56YY
 
 # Cache bust to ensure fresh install (update when needed)
-ARG CACHEBUST=29
+ARG CACHEBUST=30
 
 # Install dependencies (includes devDependencies like TypeScript)
 COPY package*.json ./
@@ -30,6 +30,16 @@ RUN npm ci --no-optional
 
 # Copy source
 COPY . .
+
+# Create .env.production file for Next.js build
+RUN echo "NEXT_PUBLIC_SUPABASE_URL=https://supabase.nexcyte.com" > .env.production && \
+    echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc1OTEwNTM4MCwiZXhwIjo0OTE0Nzc4OTgwLCJyb2xlIjoiYW5vbiJ9.LEjES7ZdligKvnm15fl1ssmOHDXw9_1-ophSf9fKbm8" >> .env.production && \
+    echo "NEXT_PUBLIC_ENVIRONMENT=production" >> .env.production && \
+    echo "NEXT_PUBLIC_TENANT_SLUG=ezcr-01" >> .env.production && \
+    echo "NEXT_PUBLIC_BASE_URL=https://staging.ezcycleramp.com" >> .env.production && \
+    echo "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_51MZyzBH2Ea7mEUq79OBZiWvAUTeCzggk9qga1zfeUeyNOQX7qlW85LLC7NZPt8wL5ORWQeST5Z7mcloqsJgrsUQa002QA510SO" >> .env.production && \
+    echo "SUPABASE_SERVICE_KEY=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc1OTEwNTM4MCwiZXhwIjo0OTE0Nzc4OTgwLCJyb2xlIjoic2VydmljZV9yb2xlIn0.eJi_5yIeVN64jC-Vg_vdZLGUthLcWqY7dtMoRiE56YY" >> .env.production && \
+    cat .env.production
 
 # Pre-install SWC binary using npm to avoid pnpm detection
 RUN npm install @next/swc-linux-x64-gnu@15.5.4 --save-dev --registry=https://registry.npmjs.org/
