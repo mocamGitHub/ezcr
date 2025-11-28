@@ -34,6 +34,11 @@ const nextConfig: NextConfig = {
         hostname: 'images.unsplash.com',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'supabase.nexcyte.com',
+        pathname: '/storage/**',
+      },
     ],
   },
   // Skip optimization to avoid static generation issues
