@@ -12,10 +12,20 @@ export async function middleware(request: NextRequest) {
     },
   })
 
+  // Check if env vars are available (skip if not configured)
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.warn('Supabase env vars not configured, skipping auth middleware')
+    return response
+  }
+
   // Create a Supabase client for authentication (uses anon key)
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         getAll() {
@@ -36,18 +46,6 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Create a service client for database queries (bypasses RLS)
-  const serviceClient = createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_KEY!,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
-    }
-  )
-
   // Refresh session if needed
   const {
     data: { session },
@@ -62,6 +60,23 @@ export async function middleware(request: NextRequest) {
       url.searchParams.set('redirect', pathname)
       return NextResponse.redirect(url)
     }
+
+    // Only create service client when needed for admin routes
+    if (!supabaseServiceKey) {
+      console.warn('SUPABASE_SERVICE_KEY not configured')
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
+
+    const serviceClient = createSupabaseClient(
+      supabaseUrl,
+      supabaseServiceKey,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
 
     // Check if user has admin access (use service client to bypass RLS)
     const { data: profile } = await serviceClient
