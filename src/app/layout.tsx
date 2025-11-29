@@ -7,6 +7,7 @@ import { CartProvider } from '@/contexts/CartContext'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { CartSheet } from '@/components/cart/CartSheet'
+import { UniversalChatWidget } from '@/components/chat/UniversalChatWidget'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -57,6 +58,7 @@ export default function RootLayout({
               </main>
               <Footer />
               <CartSheet />
+              <UniversalChatWidget />
             </CartProvider>
           </AuthProvider>
         </ThemeProvider>

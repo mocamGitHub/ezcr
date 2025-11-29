@@ -46,7 +46,7 @@ function HeroSlider() {
   const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length)
 
   return (
-    <section className="relative h-[500px] md:h-[600px] overflow-hidden bg-black">
+    <section className="relative h-[350px] sm:h-[450px] md:h-[550px] lg:h-[600px] overflow-hidden bg-black">
       {/* Slides */}
       {slides.map((slide, index) => (
         <div
@@ -55,28 +55,29 @@ function HeroSlider() {
             index === currentSlide ? 'opacity-100' : 'opacity-0'
           }`}
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent z-10" />
+          {/* Stronger gradient on mobile for better text readability */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/30 md:from-black/70 md:via-black/40 md:to-transparent z-10" />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={slide.image}
             alt={slide.headline}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover object-center"
           />
           <div className="absolute inset-0 z-20 flex items-center">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-              <div className="max-w-2xl">
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4">
+              <div className="max-w-xl md:max-w-2xl">
+                <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-2 sm:mb-4">
                   {slide.headline}
                 </h1>
-                <p className="text-lg md:text-xl lg:text-2xl text-gray-200 mb-8">
+                <p className="text-sm sm:text-base md:text-xl lg:text-2xl text-gray-200 mb-4 sm:mb-6 md:mb-8 line-clamp-2 md:line-clamp-none">
                   {slide.subtext}
                 </p>
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <Button asChild size="lg" className="bg-[#F78309] hover:bg-[#F78309]/90 text-white text-lg px-8">
-                    <Link href="/products">Shop All Ramps</Link>
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+                  <Button asChild size="default" className="bg-[#F78309] hover:bg-[#F78309]/90 text-white text-sm sm:text-base md:text-lg px-4 sm:px-6 md:px-8">
+                    <Link href="/products">Shop Ramps</Link>
                   </Button>
-                  <Button asChild size="lg" variant="outline" className="text-white border-white hover:bg-white/20 text-lg px-8">
-                    <Link href="/configure">Find Your Perfect Ramp</Link>
+                  <Button asChild size="default" variant="outline" className="text-white border-white hover:bg-white/20 text-sm sm:text-base md:text-lg px-4 sm:px-6 md:px-8">
+                    <Link href="/configure">Find Your Ramp</Link>
                   </Button>
                 </div>
               </div>
@@ -85,29 +86,29 @@ function HeroSlider() {
         </div>
       ))}
 
-      {/* Navigation Arrows */}
+      {/* Navigation Arrows - Smaller on mobile */}
       <button
         onClick={prevSlide}
-        className="absolute left-4 top-1/2 -translate-y-1/2 z-30 bg-white/20 hover:bg-white/40 p-3 rounded-full transition-colors"
+        className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-30 bg-white/20 hover:bg-white/40 p-2 sm:p-3 rounded-full transition-colors"
         aria-label="Previous slide"
       >
-        <ChevronLeft className="w-6 h-6 text-white" />
+        <ChevronLeft className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
       </button>
       <button
         onClick={nextSlide}
-        className="absolute right-4 top-1/2 -translate-y-1/2 z-30 bg-white/20 hover:bg-white/40 p-3 rounded-full transition-colors"
+        className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-30 bg-white/20 hover:bg-white/40 p-2 sm:p-3 rounded-full transition-colors"
         aria-label="Next slide"
       >
-        <ChevronRight className="w-6 h-6 text-white" />
+        <ChevronRight className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
       </button>
 
-      {/* Dots */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex gap-3">
+      {/* Dots - Smaller on mobile */}
+      <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-30 flex gap-2 sm:gap-3">
         {slides.map((_, index) => (
           <button
             key={index}
             onClick={() => setCurrentSlide(index)}
-            className={`w-3 h-3 rounded-full transition-colors ${
+            className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-colors ${
               index === currentSlide ? 'bg-[#F78309]' : 'bg-white/50 hover:bg-white/80'
             }`}
             aria-label={`Go to slide ${index + 1}`}

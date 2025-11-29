@@ -2,20 +2,24 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { Search, Menu, User, Sun, Moon, LogOut, Settings } from 'lucide-react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Search, Menu, User, Sun, Moon, LogOut, Settings, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { CartButton } from '@/components/cart/CartButton'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/contexts/AuthContext'
 import Image from 'next/image'
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 
 export function Header() {
   const { theme, toggleTheme } = useTheme()
   const { user, profile, signOut } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [showMobileMenu, setShowMobileMenu] = useState(false)
+  const [showSearch, setShowSearch] = useState(false)
+  const [searchQuery, setSearchQuery] = useState(searchParams?.get('q') || '')
 
   const handleSignOut = async () => {
     await signOut()
@@ -23,50 +27,66 @@ export function Header() {
     setShowUserMenu(false)
   }
 
+  const handleSearch = useCallback((e: React.FormEvent) => {
+    e.preventDefault()
+    if (searchQuery.trim()) {
+      router.push(`/products?q=${encodeURIComponent(searchQuery.trim())}`)
+      setShowSearch(false)
+    }
+  }, [searchQuery, router])
+
+  const navLinks = [
+    { href: '/products', label: 'Products' },
+    { href: '/configure', label: 'Configurator' },
+    { href: '/testimonials', label: 'Reviews' },
+    { href: '/about', label: 'About' },
+    { href: '/contact', label: 'Contact' },
+  ]
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex h-20 items-center">
         {/* Logo */}
-        <Link href="/" className="mr-8 flex items-center">
+        <Link href="/" className="mr-8 flex items-center flex-shrink-0">
           <Image
             src="/logo.png"
             alt="EZ Cycle Ramp Logo"
             width={180}
             height={60}
             priority
-            className="h-auto w-auto"
+            className="h-auto w-auto max-w-[140px] sm:max-w-[180px]"
           />
         </Link>
 
-        {/* Navigation */}
+        {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
-          <Link href="/products" className="transition-colors hover:text-[#F78309]">
-            Products
-          </Link>
-          <Link href="/configure" className="transition-colors hover:text-[#F78309]">
-            Configurator
-          </Link>
-          <Link href="/testimonials" className="transition-colors hover:text-[#F78309]">
-            Reviews
-          </Link>
-          <Link href="/about" className="transition-colors hover:text-[#F78309]">
-            About
-          </Link>
-          <Link href="/contact" className="transition-colors hover:text-[#F78309]">
-            Contact
-          </Link>
+          {navLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="transition-colors hover:text-[#F78309]"
+            >
+              {link.label}
+            </Link>
+          ))}
         </nav>
 
         {/* Actions */}
-        <div className="ml-auto flex items-center space-x-4">
-          <Button variant="ghost" size="icon" aria-label="Search">
+        <div className="ml-auto flex items-center space-x-2 sm:space-x-4">
+          {/* Search Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Search"
+            onClick={() => setShowSearch(!showSearch)}
+          >
             <Search className="h-5 w-5" />
           </Button>
 
-          {/* Theme Toggle Switch */}
+          {/* Theme Toggle Switch - Hidden on very small screens */}
           <button
             onClick={toggleTheme}
-            className="relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="relative hidden sm:inline-flex h-8 w-14 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             style={{ backgroundColor: theme === 'dark' ? '#3b82f6' : '#94a3b8' }}
             aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
           >
@@ -140,18 +160,106 @@ export function Header() {
               )}
             </div>
           ) : (
-            <Link href="/login">
+            <Link href="/login" className="hidden sm:block">
               <Button variant="ghost" size="icon" aria-label="Sign In">
                 <User className="h-5 w-5" />
               </Button>
             </Link>
           )}
           <CartButton />
-          <Button variant="ghost" size="icon" className="md:hidden" aria-label="Menu">
-            <Menu className="h-5 w-5" />
+
+          {/* Mobile Menu Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            aria-label="Menu"
+            onClick={() => setShowMobileMenu(!showMobileMenu)}
+          >
+            {showMobileMenu ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
         </div>
       </div>
+
+      {/* Search Bar - Expandable */}
+      {showSearch && (
+        <div className="border-t bg-background px-4 py-3">
+          <form onSubmit={handleSearch} className="max-w-2xl mx-auto">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <input
+                type="search"
+                placeholder="Search products..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-[#0B5394]"
+                autoFocus
+              />
+              <Button
+                type="submit"
+                size="sm"
+                className="absolute right-1 top-1/2 -translate-y-1/2 bg-[#0B5394] hover:bg-[#0B5394]/90"
+              >
+                Search
+              </Button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Mobile Menu */}
+      {showMobileMenu && (
+        <div className="md:hidden border-t bg-background">
+          <nav className="flex flex-col px-4 py-4 space-y-4">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="text-lg font-medium transition-colors hover:text-[#F78309] py-2"
+                onClick={() => setShowMobileMenu(false)}
+              >
+                {link.label}
+              </Link>
+            ))}
+
+            {/* Mobile-only items */}
+            <div className="pt-4 border-t space-y-4">
+              {!user && (
+                <Link
+                  href="/login"
+                  className="flex items-center text-lg font-medium transition-colors hover:text-[#F78309] py-2"
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  <User className="h-5 w-5 mr-2" />
+                  Sign In
+                </Link>
+              )}
+
+              {/* Theme toggle for mobile */}
+              <div className="flex items-center justify-between py-2">
+                <span className="text-lg font-medium">Dark Mode</span>
+                <button
+                  onClick={toggleTheme}
+                  className="relative inline-flex h-8 w-14 items-center rounded-full transition-colors"
+                  style={{ backgroundColor: theme === 'dark' ? '#3b82f6' : '#94a3b8' }}
+                >
+                  <span
+                    className={`inline-flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-lg transition-transform ${
+                      theme === 'dark' ? 'translate-x-7' : 'translate-x-1'
+                    }`}
+                  >
+                    {theme === 'dark' ? (
+                      <Moon className="h-3.5 w-3.5 text-blue-600" />
+                    ) : (
+                      <Sun className="h-3.5 w-3.5 text-amber-500" />
+                    )}
+                  </span>
+                </button>
+              </div>
+            </div>
+          </nav>
+        </div>
+      )}
 
       {/* Trust Badges Bar */}
       <div className="border-t bg-muted/50">
