@@ -26,24 +26,9 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: false,
   },
   images: {
-    // Re-enabled image optimization with remote patterns
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'supabase.nexcyte.com',
-        pathname: '/storage/**',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.supabase.co',
-        pathname: '/storage/**',
-      },
-    ],
+    // Disable image optimization for Docker deployment reliability
+    // Uses unoptimized prop on all images - more reliable for external URLs
+    unoptimized: true,
   },
   // Skip optimization to avoid static generation issues
   generateBuildId: async () => {

@@ -35,6 +35,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
+                // Theme initialization
                 try {
                   const theme = localStorage.getItem('site-theme') || 'dark';
                   if (theme === 'dark') {
@@ -43,6 +44,12 @@ export default function RootLayout({
                     document.documentElement.classList.remove('dark');
                   }
                 } catch (e) {}
+
+                // Scroll to top on page load
+                if ('scrollRestoration' in history) {
+                  history.scrollRestoration = 'manual';
+                }
+                window.scrollTo(0, 0);
               })();
             `,
           }}
