@@ -11,10 +11,11 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 const LIVE_SITE = 'https://ezcycleramp.com'
 
 // ============================================
-// Hero Section (Variant A - Rotating Slider)
+// Hero Section (Variant A - Rotating Slider with Crossfade)
 // ============================================
 function HeroSlider() {
   const [currentSlide, setCurrentSlide] = useState(0)
+  const [isTransitioning, setIsTransitioning] = useState(false)
 
   const slides = [
     {
@@ -34,82 +35,123 @@ function HeroSlider() {
     },
   ]
 
-  // Auto-advance slides
+  // Auto-advance slides with 9-second delay (matching original site)
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length)
-    }, 7000)
+      setIsTransitioning(true)
+      setTimeout(() => {
+        setCurrentSlide((prev) => (prev + 1) % slides.length)
+        setTimeout(() => setIsTransitioning(false), 100)
+      }, 800)
+    }, 9000)
     return () => clearInterval(timer)
   }, [slides.length])
 
-  const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % slides.length)
-  const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length)
+  const goToSlide = (index: number) => {
+    if (index === currentSlide || isTransitioning) return
+    setIsTransitioning(true)
+    setTimeout(() => {
+      setCurrentSlide(index)
+      setTimeout(() => setIsTransitioning(false), 100)
+    }, 800)
+  }
+
+  const nextSlide = () => goToSlide((currentSlide + 1) % slides.length)
+  const prevSlide = () => goToSlide((currentSlide - 1 + slides.length) % slides.length)
 
   return (
     <section className="relative h-[350px] sm:h-[450px] md:h-[550px] lg:h-[600px] overflow-hidden bg-black">
-      {/* Slides */}
+      {/* Background slides with crossfade effect */}
       {slides.map((slide, index) => (
         <div
           key={index}
-          className={`absolute inset-0 transition-opacity duration-1000 ${
-            index === currentSlide ? 'opacity-100' : 'opacity-0'
-          }`}
+          className="absolute inset-0"
+          style={{
+            opacity: index === currentSlide ? 1 : 0,
+            transition: 'opacity 1.5s ease-in-out',
+            zIndex: index === currentSlide ? 1 : 0,
+          }}
         >
-          {/* Stronger gradient on mobile for better text readability */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/30 md:from-black/70 md:via-black/40 md:to-transparent z-10" />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={slide.image}
             alt={slide.headline}
             className="w-full h-full object-cover object-center"
+            style={{
+              transform: index === currentSlide ? 'scale(1)' : 'scale(1.05)',
+              transition: 'transform 9s ease-out',
+            }}
           />
-          <div className="absolute inset-0 z-20 flex items-center">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-              <div className="max-w-xl md:max-w-2xl">
-                <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-2 sm:mb-4">
+        </div>
+      ))}
+
+      {/* Gradient overlay - always visible */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/20 md:from-black/70 md:via-black/40 md:to-transparent z-10" />
+
+      {/* Content overlay with fade animation */}
+      <div className="absolute inset-0 z-20 flex items-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+          <div className="max-w-xl md:max-w-2xl">
+            {slides.map((slide, index) => (
+              <div
+                key={index}
+                className="absolute"
+                style={{
+                  opacity: index === currentSlide && !isTransitioning ? 1 : 0,
+                  transform: index === currentSlide && !isTransitioning ? 'translateY(0)' : 'translateY(20px)',
+                  transition: 'opacity 0.8s ease-out, transform 0.8s ease-out',
+                  pointerEvents: index === currentSlide ? 'auto' : 'none',
+                }}
+              >
+                <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-2 sm:mb-4 drop-shadow-lg">
                   {slide.headline}
                 </h1>
-                <p className="text-sm sm:text-base md:text-xl lg:text-2xl text-gray-200 mb-4 sm:mb-6 md:mb-8 line-clamp-2 md:line-clamp-none">
+                <p className="text-sm sm:text-base md:text-xl lg:text-2xl text-gray-100 mb-4 sm:mb-6 md:mb-8 line-clamp-2 md:line-clamp-none drop-shadow-md">
                   {slide.subtext}
                 </p>
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
-                  <Button asChild size="default" className="bg-[#F78309] hover:bg-[#F78309]/90 text-white text-sm sm:text-base md:text-lg px-4 sm:px-6 md:px-8">
+                  <Button asChild size="default" className="bg-[#F78309] hover:bg-[#F78309]/90 text-white text-sm sm:text-base md:text-lg px-4 sm:px-6 md:px-8 shadow-lg">
                     <Link href="/products">Shop Ramps</Link>
                   </Button>
-                  <Button asChild size="default" variant="outline" className="text-white border-white hover:bg-white/20 text-sm sm:text-base md:text-lg px-4 sm:px-6 md:px-8">
+                  <Button asChild size="default" variant="outline" className="text-white border-white hover:bg-white/20 text-sm sm:text-base md:text-lg px-4 sm:px-6 md:px-8 shadow-lg backdrop-blur-sm">
                     <Link href="/configure">Find Your Ramp</Link>
                   </Button>
                 </div>
               </div>
-            </div>
+            ))}
           </div>
         </div>
-      ))}
+      </div>
 
-      {/* Navigation Arrows - Smaller on mobile */}
+      {/* Navigation Arrows */}
       <button
         onClick={prevSlide}
-        className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-30 bg-white/20 hover:bg-white/40 p-2 sm:p-3 rounded-full transition-colors"
+        disabled={isTransitioning}
+        className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-30 bg-black/30 hover:bg-black/50 p-2 sm:p-3 rounded-full transition-all backdrop-blur-sm border border-white/20 disabled:opacity-50"
         aria-label="Previous slide"
       >
         <ChevronLeft className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
       </button>
       <button
         onClick={nextSlide}
-        className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-30 bg-white/20 hover:bg-white/40 p-2 sm:p-3 rounded-full transition-colors"
+        disabled={isTransitioning}
+        className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-30 bg-black/30 hover:bg-black/50 p-2 sm:p-3 rounded-full transition-all backdrop-blur-sm border border-white/20 disabled:opacity-50"
         aria-label="Next slide"
       >
         <ChevronRight className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
       </button>
 
-      {/* Dots - Smaller on mobile */}
+      {/* Progress Dots */}
       <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-30 flex gap-2 sm:gap-3">
         {slides.map((_, index) => (
           <button
             key={index}
-            onClick={() => setCurrentSlide(index)}
-            className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-colors ${
-              index === currentSlide ? 'bg-[#F78309]' : 'bg-white/50 hover:bg-white/80'
+            onClick={() => goToSlide(index)}
+            disabled={isTransitioning}
+            className={`h-2 sm:h-3 rounded-full transition-all duration-500 ${
+              index === currentSlide
+                ? 'bg-[#F78309] w-6 sm:w-8'
+                : 'bg-white/50 hover:bg-white/80 w-2 sm:w-3'
             }`}
             aria-label={`Go to slide ${index + 1}`}
           />

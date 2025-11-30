@@ -8,6 +8,7 @@ import { ThemeProvider } from '@/contexts/ThemeContext'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { CartSheet } from '@/components/cart/CartSheet'
 import { UniversalChatWidget } from '@/components/chat/UniversalChatWidget'
+import { ScrollToTop } from '@/components/ui/ScrollToTop'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -65,6 +66,7 @@ export default function RootLayout({
               </main>
               <Footer />
               <CartSheet />
+              <ScrollToTop />
               <UniversalChatWidget />
             </CartProvider>
           </AuthProvider>

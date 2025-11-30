@@ -38,6 +38,7 @@ export function Header() {
   const navLinks = [
     { href: '/products', label: 'Products' },
     { href: '/configure', label: 'Configurator' },
+    { href: '/faq', label: 'FAQ' },
     { href: '/testimonials', label: 'Reviews' },
     { href: '/about', label: 'About' },
     { href: '/contact', label: 'Contact' },
@@ -47,14 +48,14 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex h-20 items-center">
         {/* Logo */}
-        <Link href="/" className="mr-8 flex items-center flex-shrink-0">
+        <Link href="/" className="mr-6 flex items-center flex-shrink-0 p-2">
           <Image
             src="/logo.png"
             alt="EZ Cycle Ramp Logo"
-            width={180}
-            height={60}
+            width={140}
+            height={46}
             priority
-            className="h-auto w-auto max-w-[140px] sm:max-w-[180px]"
+            className="h-auto w-auto max-w-[110px] sm:max-w-[140px]"
           />
         </Link>
 
