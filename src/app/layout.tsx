@@ -7,7 +7,7 @@ import { CartProvider } from '@/contexts/CartContext'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { CartSheet } from '@/components/cart/CartSheet'
-import { UniversalChatWidget } from '@/components/chat/UniversalChatWidget'
+import { ChatWidgetWrapper } from '@/components/chat/ChatWidgetWrapper'
 import { ScrollToTop } from '@/components/ui/ScrollToTop'
 import './globals.css'
 
@@ -67,7 +67,7 @@ export default function RootLayout({
               <Footer />
               <CartSheet />
               <ScrollToTop />
-              <UniversalChatWidget />
+              <ChatWidgetWrapper />
             </CartProvider>
           </AuthProvider>
         </ThemeProvider>

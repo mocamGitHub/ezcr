@@ -266,26 +266,59 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-center mb-12">Featured Ramps</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-background border rounded-lg p-6 text-center hover:shadow-lg transition-shadow">
-              <h3 className="font-semibold text-lg mb-2">AUN250 Folding Ramp</h3>
-              <p className="text-2xl font-bold text-[#F78309] mb-4">$1,299</p>
-              <Button asChild className="w-full bg-[#0B5394] hover:bg-[#0B5394]/90">
-                <Link href="/products/aun250">View Details</Link>
-              </Button>
+            <div className="bg-background border rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
+              <div className="aspect-[4/3] relative bg-gray-100">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`${LIVE_SITE}/images/ramp6.webp`}
+                  alt="AUN250 Folding Ramp"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="p-6 text-center">
+                <h3 className="font-semibold text-lg mb-2">AUN250 Folding Ramp</h3>
+                <p className="text-sm text-muted-foreground mb-2">Premium folding design for easy storage</p>
+                <p className="text-2xl font-bold text-[#F78309] mb-4">$1,299</p>
+                <Button asChild className="w-full bg-[#0B5394] hover:bg-[#0B5394]/90">
+                  <Link href="/products/aun-250-folding-ramp">View Details</Link>
+                </Button>
+              </div>
             </div>
-            <div className="bg-background border rounded-lg p-6 text-center hover:shadow-lg transition-shadow">
-              <h3 className="font-semibold text-lg mb-2">AUN210 Standard Ramp</h3>
-              <p className="text-2xl font-bold text-[#F78309] mb-4">$999</p>
-              <Button asChild className="w-full bg-[#0B5394] hover:bg-[#0B5394]/90">
-                <Link href="/products/aun210">View Details</Link>
-              </Button>
+            <div className="bg-background border rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
+              <div className="aspect-[4/3] relative bg-gray-100">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`${LIVE_SITE}/images/ramp4.webp`}
+                  alt="AUN210 Standard Ramp"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="p-6 text-center">
+                <h3 className="font-semibold text-lg mb-2">AUN210 Standard Ramp</h3>
+                <p className="text-sm text-muted-foreground mb-2">Heavy-duty standard loading ramp</p>
+                <p className="text-2xl font-bold text-[#F78309] mb-4">$999</p>
+                <Button asChild className="w-full bg-[#0B5394] hover:bg-[#0B5394]/90">
+                  <Link href="/products/aun-210-standard-ramp">View Details</Link>
+                </Button>
+              </div>
             </div>
-            <div className="bg-background border rounded-lg p-6 text-center hover:shadow-lg transition-shadow">
-              <h3 className="font-semibold text-lg mb-2">AUN200 Basic Ramp</h3>
-              <p className="text-2xl font-bold text-[#F78309] mb-4">$799</p>
-              <Button asChild className="w-full bg-[#0B5394] hover:bg-[#0B5394]/90">
-                <Link href="/products/aun200">View Details</Link>
-              </Button>
+            <div className="bg-background border rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
+              <div className="aspect-[4/3] relative bg-gray-100">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`${LIVE_SITE}/images/ramp2.webp`}
+                  alt="AUN200 Basic Ramp"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="p-6 text-center">
+                <h3 className="font-semibold text-lg mb-2">AUN200 Basic Ramp</h3>
+                <p className="text-sm text-muted-foreground mb-2">Reliable and affordable entry option</p>
+                <p className="text-2xl font-bold text-[#F78309] mb-4">$799</p>
+                <Button asChild className="w-full bg-[#0B5394] hover:bg-[#0B5394]/90">
+                  <Link href="/products/aun-200-basic-ramp">View Details</Link>
+                </Button>
+              </div>
             </div>
           </div>
         </div>

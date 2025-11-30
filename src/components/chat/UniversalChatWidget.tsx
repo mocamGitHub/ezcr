@@ -20,6 +20,7 @@ interface UniversalChatWidgetProps {
     [key: string]: unknown
   }
   embedded?: boolean
+  hideFloatingButton?: boolean
 }
 
 // Initial guiding prompts for new users
@@ -34,7 +35,7 @@ const INITIAL_PROMPTS = [
  * Universal RAG Chat Widget for entire site
  * Can answer any business-related questions using knowledge base
  */
-export function UniversalChatWidget({ pageContext = { page: 'unknown' }, embedded = false }: UniversalChatWidgetProps) {
+export function UniversalChatWidget({ pageContext = { page: 'unknown' }, embedded = false, hideFloatingButton = false }: UniversalChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(embedded)
   const [sessionId] = useState(() => uuidv4())
   const [messages, setMessages] = useState<Message[]>([
@@ -286,8 +287,11 @@ export function UniversalChatWidget({ pageContext = { page: 'unknown' }, embedde
     ])
   }
 
-  // Floating button when closed (not shown for embedded mode)
+  // Floating button when closed (not shown for embedded mode or when hideFloatingButton is true)
   if (!isOpen && !embedded) {
+    // Don't show the floating button if hideFloatingButton is true
+    if (hideFloatingButton) return null
+
     return (
       <button
         onClick={() => setIsOpen(true)}
