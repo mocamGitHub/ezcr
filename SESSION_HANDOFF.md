@@ -1,8 +1,8 @@
-# Session Handoff - Technical Debt Cleanup
+# Session Handoff - UX/UI Improvements
 
-**Date**: 2025-11-28
-**Time**: Evening Session (continued)
-**Previous Commit**: `f09e0ec` - docs: Update session handoff for staging deployment fixes
+**Date**: 2025-11-30
+**Time**: Evening Session
+**Previous Commit**: `094cdb2` - feat: Hide chatbot floating button on FAQ page, fix Featured Ramps
 **Branch**: main
 **Staging URL**: https://staging.ezcycleramp.com
 **VPS**: 5.161.187.109 (SSH as root)
@@ -11,37 +11,56 @@
 
 ## What Was Accomplished This Session
 
-### 1. Fixed All TypeScript Errors (~33 errors → 0)
-- Updated API routes to use Next.js 15 async `params` pattern (`Promise<{ id: string }>`)
-- Fixed `ROLE_GROUPS` readonly array type mismatch
-- Fixed Zod `.errors` → `.issues` property usage
-- Fixed `CustomerTask` type using `status` instead of `completed`
-- Fixed `CRMActivity` type to include `metadata` property
-- Fixed Supabase update type issues with appropriate casting
-- Re-enabled `ignoreBuildErrors: false` in next.config.ts
+### 1. Chatbot UX Improvements
+- **High contrast floating button**: Orange (#F78309) with white border, positioned bottom-right
+- **Blue header** (#0B5394) with navigation buttons (Save/Download, Print, Close)
+- **Guiding prompts**: 4 clickable suggestions appear at start and after each response
+- **Voice input**: Web Speech API SpeechRecognition for voice-to-text
+- **Text-to-speech**: speechSynthesis for reading bot responses aloud
+- **Embedded mode**: For inline rendering on FAQ page
 
-### 2. Fixed All ESLint Errors (~61 errors → 0)
-- Fixed `react/no-unescaped-entities` (apostrophes and quotes in JSX)
-- Fixed `no-var` → `let` declarations
-- Configured ESLint to warn (not error) on `@typescript-eslint/no-explicit-any`
-- Re-enabled `ignoreDuringBuilds: false` in next.config.ts
+### 2. FAQ Page Created
+- New page at `/faq` with embedded chatbot in sidebar
+- 5 FAQ categories with accordion-style collapsible items
+- Added FAQ link to main navigation header
+- Chatbot floating button hidden on FAQ page (uses embedded version)
 
-### 3. Re-enabled Image Optimization
-- Removed `unoptimized: true` from next.config.ts
-- Added wildcard pattern for `*.supabase.co` storage
+### 3. Header Logo Improvements
+- Reduced logo size: `max-w-[110px] sm:max-w-[140px]` (was 180px)
+- Added padding (p-2) around logo
 
-### 4. Improved Supabase Credentials Handling
-- Updated `src/lib/supabase/client.ts` to use environment variables with fallback
-- Updated Dockerfile to use ARG → ENV pattern for build-time injection
-- Credentials can now be overridden via `--build-arg` or environment variables
+### 4. Scroll-to-Top Button
+- New component at `src/components/ui/ScrollToTop.tsx`
+- Appears after scrolling 400px down
+- Fixed position bottom-left, blue button with white border
+- Smooth scroll animation to top
 
-### Files Modified (Key Changes)
-- `next.config.ts` - Re-enabled strict TypeScript and ESLint checking
-- `eslint.config.mjs` - Added rule overrides for `any` type warnings
-- `src/lib/supabase/client.ts` - Uses env vars with fallback
-- `Dockerfile` - Uses ARG for build-time credential injection
-- Multiple API routes - Updated to Next.js 15 async params pattern
-- Multiple components - Fixed type errors and ESLint issues
+### 5. Hero Slider Enhancements
+- Ken Burns zoom effect on images (scale 1.0 → 1.1 over 9s)
+- Crossfade transitions between slides (1.5s transition)
+- 9-second display time per slide
+
+### 6. Featured Ramps Section Fixed
+- Added product images from live ezcycleramp.com
+- Fixed 404 errors by correcting product slugs:
+  - `/products/aun-250-folding-ramp`
+  - `/products/aun-210-standard-ramp`
+  - `/products/aun-200-basic-ramp`
+
+---
+
+## Files Created/Modified
+
+### New Files
+- `src/app/(marketing)/faq/page.tsx` - FAQ page with embedded chatbot
+- `src/components/ui/ScrollToTop.tsx` - Scroll-to-top button component
+- `src/components/chat/ChatWidgetWrapper.tsx` - Wrapper to hide floating button on FAQ
+
+### Modified Files
+- `src/components/chat/UniversalChatWidget.tsx` - Complete rewrite with new features
+- `src/components/layout/Header.tsx` - Added FAQ nav link, reduced logo size
+- `src/app/(marketing)/page.tsx` - Hero slider enhancements, Featured Ramps fixes
+- `src/app/layout.tsx` - Added ScrollToTop, uses ChatWidgetWrapper
 
 ---
 
@@ -49,27 +68,42 @@
 
 ### What's Working ✓
 - Site loads at https://staging.ezcycleramp.com
-- **TypeScript strict mode enabled** (no more ignored errors)
-- **ESLint strict mode enabled** (no more ignored errors)
-- **Image optimization enabled** (remote patterns configured)
-- Build passes with 0 errors (only warnings for `any` types)
-- GitHub Actions auto-deploys on push to main
+- Chatbot with voice input/output, guiding prompts, save/print buttons
+- FAQ page with embedded chatbot and FAQ accordion
+- Scroll-to-top button appears on all pages
+- Hero slider with Ken Burns effect and crossfade transitions
+- Featured Ramps section displays images and links work
+- Build passes with 0 errors
 
-### Technical Debt Remaining (Warnings)
-- ~44 `@typescript-eslint/no-explicit-any` warnings (downgraded from errors)
-- ~10 `@typescript-eslint/no-unused-vars` warnings
-- ~3 `react-hooks/exhaustive-deps` warnings
-- Supabase credentials still have hardcoded defaults in Dockerfile
+### Known Considerations
+- Hero slider timing may differ slightly from original ezcycleramp.com
+- Voice recognition requires browser permission
+- SpeechRecognition uses `any` type due to TypeScript limitations
 
 ---
 
-## Build Status
+## Technical Details
 
-```bash
-# Build passes with 0 errors, only warnings
-npm run build
-# ✓ Linting and checking validity of types
-# ✓ Generating static pages (14/14)
+### Web Speech API Usage
+```typescript
+// Voice input (SpeechRecognition)
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+recognitionRef.current = new SpeechRecognition()
+recognitionRef.current.continuous = false
+recognitionRef.current.interimResults = false
+recognitionRef.current.lang = 'en-US'
+
+// Text-to-speech (speechSynthesis)
+const utterance = new SpeechSynthesisUtterance(text)
+window.speechSynthesis.speak(utterance)
+```
+
+### Conditional Chatbot Rendering
+```typescript
+// ChatWidgetWrapper.tsx
+const pathname = usePathname()
+const hideFloatingButton = pathname === '/faq'
+return <UniversalChatWidget hideFloatingButton={hideFloatingButton} />
 ```
 
 ---
@@ -80,17 +114,11 @@ npm run build
 # SSH to VPS
 ssh root@5.161.187.109
 
-# Deploy with custom credentials (optional)
+# Auto-deploy should trigger on git push
+# Manual deploy if needed:
 cd /opt/ezcr-staging
 git fetch origin && git reset --hard origin/main
-docker build -t ezcr-nextjs-prod:latest \
-  --build-arg NEXT_PUBLIC_SUPABASE_URL=https://your-supabase.com \
-  --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=your-key \
-  --build-arg CACHEBUST=$(date +%s) .
-
-# Or use defaults from Dockerfile
 docker build -t ezcr-nextjs-prod:latest --build-arg CACHEBUST=$(date +%s) .
-
 docker stop ezcr-nextjs && docker rm ezcr-nextjs
 docker run -d --name ezcr-nextjs --restart unless-stopped --network coolify \
   -p 3001:3000 -e NODE_ENV=production -e PORT=3000 -e HOSTNAME=0.0.0.0 \
@@ -101,19 +129,20 @@ docker run -d --name ezcr-nextjs --restart unless-stopped --network coolify \
 
 ## Next Actions
 
-### 1. UX/UI Improvements (High Priority)
-- Review and improve overall design
-- Better product card layouts
-- Mobile responsiveness checks
+### 1. Further UX/UI Improvements
+- Review overall design consistency
+- Mobile responsiveness testing
+- Product card layouts
+- Consider adjusting hero slider timing to better match ezcycleramp.com
 
-### 2. Resolve Remaining Warnings (Low Priority)
-- Gradually replace `any` types with proper types
-- Add missing useEffect dependencies
-- Remove unused variables/imports
+### 2. Chatbot Enhancements
+- Improve voice recognition accuracy
+- Add more guiding prompts based on user feedback
+- Consider storing chat history in localStorage
 
-### 3. Security
-- Consider moving credentials to GitHub Secrets + build args
-- Remove hardcoded defaults from Dockerfile when CI/CD is updated
+### 3. Content Updates
+- Add more FAQ items as needed
+- Update product descriptions/images
 
 ---
 
@@ -128,23 +157,14 @@ curl -s -o /dev/null -w '%{http_code}' https://staging.ezcycleramp.com
 
 # Build locally
 npm run build
-```
 
----
-
-## Git Status
-
-```bash
-# Uncommitted changes from this session
-git status
-
-# View changes
-git diff
+# Test FAQ page
+# Visit: https://staging.ezcycleramp.com/faq
 ```
 
 ---
 
 **Session Status**: COMPLETE
-**Technical Debt**: Significantly reduced
-**Build Status**: Passing with strict checking enabled
-**Next Session**: Commit changes, deploy, and focus on UX/UI
+**Build Status**: Passing
+**Deploy Status**: Pushed to main, auto-deploying via Coolify
+**Next Session**: Continue UX/UI improvements, testing chatbot features
