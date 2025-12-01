@@ -177,7 +177,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             <ul className="space-y-2">
               <li className="flex items-start">
                 <Check className="h-5 w-5 mr-2 text-[#0B5394] mt-0.5" />
-                <span>Free shipping on orders over $500</span>
+                <span>2 Year Neo-Dyne Manufacturers Warranty</span>
               </li>
               <li className="flex items-start">
                 <Check className="h-5 w-5 mr-2 text-[#0B5394] mt-0.5" />

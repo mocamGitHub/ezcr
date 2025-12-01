@@ -117,7 +117,7 @@ function HeroVariantB() {
           {/* Left: Text Content */}
           <div className="py-16 lg:py-0">
             <div className="inline-block bg-[#F78309]/20 text-[#F78309] px-4 py-1 rounded-full text-sm font-semibold mb-6">
-              Made in USA • Veteran Owned • A+ BBB Rating
+              Veteran Owned • A+ BBB Rating • 2 Year Warranty
             </div>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
               Load Your Bike<br />
@@ -141,13 +141,13 @@ function HeroVariantB() {
                 <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
-                Free Shipping $500+
+                2 Year Neo-Dyne Warranty
               </div>
               <div className="flex items-center gap-2">
                 <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
-                Lifetime Warranty
+                30-Day Money Back
               </div>
             </div>
           </div>
@@ -197,7 +197,7 @@ function HeroVariantC() {
             </h1>
             <p className="text-xl md:text-2xl text-gray-300 mb-8">
               Heavy-duty construction. Adjustable height.
-              Made in USA by veterans who understand quality.
+              Built by veterans who understand quality.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Button asChild size="lg" className="bg-[#F78309] hover:bg-[#F78309]/90 text-white text-lg px-10 py-6">
@@ -250,7 +250,7 @@ function HeroVariantD() {
 
             {/* Feature list */}
             <div className="grid grid-cols-2 gap-4 mb-8">
-              {['Heavy Duty Steel', 'Adjustable Height', 'Quick Setup', 'Lifetime Warranty'].map((feature) => (
+              {['Heavy Duty Steel', 'Adjustable Height', 'Quick Setup', '2 Year Warranty'].map((feature) => (
                 <div key={feature} className="flex items-center gap-2 text-blue-100">
                   <div className="w-2 h-2 bg-[#F78309] rounded-full" />
                   {feature}
@@ -280,7 +280,7 @@ function HeroVariantD() {
 
               {/* Floating badges */}
               <div className="absolute -top-4 -right-4 bg-[#F78309] text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">
-                Made in USA
+                2 Year Warranty
               </div>
               <div className="absolute -bottom-4 -left-4 bg-white text-[#0B5394] px-4 py-2 rounded-full text-sm font-bold shadow-lg">
                 A+ BBB Rating

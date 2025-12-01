@@ -568,7 +568,7 @@ function generateSuggestedQuestions(userQuestion: string, assistantResponse: str
     return [
       'How much is shipping to my location?',
       'When will my order arrive?',
-      'Do you offer free shipping?',
+      'What are your shipping options?',
     ]
   }
 

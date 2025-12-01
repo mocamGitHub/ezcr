@@ -19,17 +19,17 @@ function HeroSlider() {
 
   const slides = [
     {
-      image: `${LIVE_SITE}/revolution/assets/10.webp`,
+      image: '/images/hero/10.webp',
       headline: 'Creative + Unique + Wow',
       subtext: 'The EZ Cycle Ramp combines creativity with distinctive styling',
     },
     {
-      image: `${LIVE_SITE}/revolution/assets/11.webp`,
+      image: '/images/hero/11.webp',
       headline: 'And Then SOME',
       subtext: 'Awe-inspiring in its ease and efficiency',
     },
     {
-      image: `${LIVE_SITE}/revolution/assets/12.webp`,
+      image: '/images/hero/12.webp',
       headline: 'Revolutionizing',
       subtext: 'A safe and stress-free motorcycle loading experience',
     },
@@ -114,7 +114,7 @@ function HeroSlider() {
                     <Link href="/products">Shop Ramps</Link>
                   </Button>
                   <Button asChild size="default" variant="outline" className="text-white border-white hover:bg-white/20 text-sm sm:text-base md:text-lg px-4 sm:px-6 md:px-8 shadow-lg backdrop-blur-sm">
-                    <Link href="/configure">Find Your Ramp</Link>
+                    <Link href="/configure">Free Quote</Link>
                   </Button>
                 </div>
               </div>
@@ -172,7 +172,7 @@ function ProductShowcase() {
           {/* Left: Text Content */}
           <div>
             <div className="inline-block bg-[#F78309]/15 dark:bg-[#F78309]/20 text-[#F78309] dark:text-[#F78309] px-4 py-1 rounded-full text-sm font-semibold mb-6">
-              Made in USA • Veteran Owned • A+ BBB Rating
+              Veteran Owned • A+ BBB Rating • 2 Year Warranty
             </div>
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
               Load Your Bike<br />
@@ -196,13 +196,13 @@ function ProductShowcase() {
                 <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
-                Free Shipping $500+
+                2 Year Neo-Dyne Warranty
               </div>
               <div className="flex items-center gap-2">
                 <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
-                Lifetime Warranty
+                30-Day Money Back
               </div>
             </div>
           </div>
@@ -267,12 +267,12 @@ export default function HomePage() {
           <h2 className="text-3xl font-bold text-center mb-12">Featured Ramps</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="bg-background border rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="aspect-[4/3] relative bg-gray-100">
+              <div className="aspect-[4/3] relative bg-gray-100 flex items-center justify-center p-4">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={`${LIVE_SITE}/images/ramp6.webp`}
                   alt="AUN250 Folding Ramp"
-                  className="w-full h-full object-cover"
+                  className="max-w-[85%] max-h-[85%] object-contain"
                 />
               </div>
               <div className="p-6 text-center">
@@ -285,12 +285,12 @@ export default function HomePage() {
               </div>
             </div>
             <div className="bg-background border rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="aspect-[4/3] relative bg-gray-100">
+              <div className="aspect-[4/3] relative bg-gray-100 flex items-center justify-center p-4">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={`${LIVE_SITE}/images/ramp4.webp`}
                   alt="AUN210 Standard Ramp"
-                  className="w-full h-full object-cover"
+                  className="max-w-[85%] max-h-[85%] object-contain"
                 />
               </div>
               <div className="p-6 text-center">
@@ -303,12 +303,12 @@ export default function HomePage() {
               </div>
             </div>
             <div className="bg-background border rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="aspect-[4/3] relative bg-gray-100">
+              <div className="aspect-[4/3] relative bg-gray-100 flex items-center justify-center p-4">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={`${LIVE_SITE}/images/ramp2.webp`}
                   alt="AUN200 Basic Ramp"
-                  className="w-full h-full object-cover"
+                  className="max-w-[85%] max-h-[85%] object-contain"
                 />
               </div>
               <div className="p-6 text-center">
@@ -344,7 +344,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl font-bold mb-4">Not Sure Which Ramp Is Right?</h2>
           <p className="text-lg mb-8">Use our configurator to find the perfect ramp for your setup.</p>
-          <Button asChild size="lg" variant="outline" className="text-white border-white hover:bg-white/10">
+          <Button asChild size="lg" className="bg-white text-[#F78309] hover:bg-gray-100 font-semibold">
             <Link href="/configure">Start Configurator</Link>
           </Button>
         </div>

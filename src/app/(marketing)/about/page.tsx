@@ -18,7 +18,7 @@ export default function AboutPage() {
               About EZ Cycle Ramp
             </h1>
             <p className="text-xl text-blue-100">
-              Veteran-owned, American-made motorcycle loading solutions trusted by riders since 1999.
+              Veteran-owned motorcycle loading solutions trusted by riders since 1999.
             </p>
           </div>
         </div>
@@ -38,7 +38,7 @@ export default function AboutPage() {
                   As a veteran-owned business, we bring military-grade quality and precision to everything we do. Our ramps are engineered to handle the heaviest touring motorcycles while providing the stability and safety that riders deserve.
                 </p>
                 <p>
-                  Today, we are proud to serve thousands of satisfied customers across the country, all while maintaining our commitment to American manufacturing and exceptional customer service.
+                  Today, we are proud to serve thousands of satisfied customers across the country with our commitment to quality products and exceptional customer service.
                 </p>
               </div>
             </div>
@@ -57,8 +57,8 @@ export default function AboutPage() {
                   <div className="text-sm text-muted-foreground">BBB Rating</div>
                 </div>
                 <div>
-                  <div className="text-4xl font-bold text-[#0B5394]">100%</div>
-                  <div className="text-sm text-muted-foreground">Made in USA</div>
+                  <div className="text-4xl font-bold text-[#0B5394]">2 Year</div>
+                  <div className="text-sm text-muted-foreground">Warranty</div>
                 </div>
               </div>
             </div>
@@ -85,12 +85,12 @@ export default function AboutPage() {
             <div className="bg-background p-8 rounded-lg border">
               <div className="w-12 h-12 bg-[#0B5394] rounded-full flex items-center justify-center mb-4">
                 <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold mb-2">American Made</h3>
+              <h3 className="text-xl font-semibold mb-2">Quality Guaranteed</h3>
               <p className="text-muted-foreground">
-                All our products are designed and manufactured in the USA, supporting American workers and ensuring the highest quality standards.
+                Every product comes with a 2 Year Neo-Dyne Manufacturers Warranty, ensuring the highest quality standards and peace of mind.
               </p>
             </div>
             <div className="bg-background p-8 rounded-lg border">

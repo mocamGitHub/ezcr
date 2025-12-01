@@ -35,8 +35,8 @@ const faqCategories = [
     title: 'Ordering & Shipping',
     faqs: [
       {
-        question: 'Do you offer free shipping?',
-        answer: 'Yes! We offer free shipping on all orders over $500 within the continental United States. Orders under $500 have a flat shipping rate based on your location.',
+        question: 'What are your shipping rates?',
+        answer: 'Shipping rates vary based on your location and the products ordered. During checkout, you will see the exact shipping cost calculated for your order. We offer competitive rates and work with reliable carriers to ensure your ramp arrives safely.',
       },
       {
         question: 'How long does shipping take?',
@@ -57,7 +57,7 @@ const faqCategories = [
     faqs: [
       {
         question: 'What is your warranty policy?',
-        answer: 'All EZ Cycle Ramp products come with a lifetime warranty against manufacturing defects. This covers any issues with materials or workmanship under normal use conditions.',
+        answer: 'All EZ Cycle Ramp products come with a 2 Year Neo-Dyne Manufacturers Warranty against manufacturing defects. This covers any issues with materials or workmanship under normal use conditions.',
       },
       {
         question: 'How do I make a warranty claim?',

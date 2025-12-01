@@ -27,7 +27,7 @@ interface UniversalChatWidgetProps {
 const INITIAL_PROMPTS = [
   "What ramp do I need for my truck?",
   "How much weight can your ramps hold?",
-  "Do you offer free shipping?",
+  "What's your shipping cost?",
   "What's your warranty policy?",
 ]
 
