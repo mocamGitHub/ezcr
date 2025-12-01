@@ -43,6 +43,8 @@ export function Footer() {
             <ul className="space-y-1.5 text-xs md:text-sm">
               <li><Link href="/about" className="text-muted-foreground hover:text-[#F78309]">About Us</Link></li>
               <li><Link href="/testimonials" className="text-muted-foreground hover:text-[#F78309]">Reviews</Link></li>
+              <li><Link href="/gallery" className="text-muted-foreground hover:text-[#F78309]">Gallery</Link></li>
+              <li><Link href="/blog" className="text-muted-foreground hover:text-[#F78309]">Blog</Link></li>
             </ul>
           </div>
         </div>
@@ -73,7 +75,7 @@ export function Footer() {
 
         {/* Bottom Bar - More compact */}
         <div className="mt-6 pt-4 border-t text-center text-xs text-muted-foreground">
-          <p>&copy; 2025 NEO-DYNE, USA. All rights reserved.</p>
+          <p>&copy; 2025 EZ Cycle Ramp. All rights reserved.</p>
           <p className="mt-1">
             <Link href="/privacy" className="hover:text-[#F78309]">Privacy</Link>
             {' | '}

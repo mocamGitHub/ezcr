@@ -339,6 +339,131 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Gallery Preview Section */}
+      <section className="py-16 bg-background">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">See Our Ramps in Action</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Real customers loading real motorcycles with EZ Cycle Ramps
+            </p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="aspect-[4/3] rounded-lg overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/images/hero/10.webp"
+                alt="Motorcycle being loaded"
+                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+              />
+            </div>
+            <div className="aspect-[4/3] rounded-lg overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/images/hero/11.webp"
+                alt="EZ Cycle Ramp setup"
+                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+              />
+            </div>
+            <div className="aspect-[4/3] rounded-lg overflow-hidden hidden md:block">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/images/hero/12.webp"
+                alt="Motorcycle on ramp"
+                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+              />
+            </div>
+          </div>
+          <div className="text-center mt-8">
+            <Button asChild variant="outline">
+              <Link href="/gallery">View Full Gallery</Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Blog Preview Section */}
+      <section className="py-16 bg-muted/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">From Our Blog</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Tips, guides, and news about motorcycle loading
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <article className="bg-background border rounded-lg overflow-hidden hover:shadow-lg transition-shadow group">
+              <div className="aspect-[16/9] relative bg-gray-100 overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`${LIVE_SITE}/images/ramp6.webp`}
+                  alt="Choosing a ramp"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+                <span className="absolute top-3 left-3 bg-[#F78309] text-white text-xs font-medium px-3 py-1 rounded-full">
+                  Buying Guide
+                </span>
+              </div>
+              <div className="p-6">
+                <h3 className="text-lg font-semibold mb-2 group-hover:text-[#0B5394] transition-colors">
+                  How to Choose the Right Motorcycle Loading Ramp
+                </h3>
+                <p className="text-sm text-muted-foreground line-clamp-2">
+                  Choosing the right ramp depends on your bike&apos;s weight, truck bed height, and loading frequency.
+                </p>
+              </div>
+            </article>
+            <article className="bg-background border rounded-lg overflow-hidden hover:shadow-lg transition-shadow group">
+              <div className="aspect-[16/9] relative bg-gray-100 overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`${LIVE_SITE}/images/ramp4.webp`}
+                  alt="Safety tips"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+                <span className="absolute top-3 left-3 bg-[#F78309] text-white text-xs font-medium px-3 py-1 rounded-full">
+                  Safety
+                </span>
+              </div>
+              <div className="p-6">
+                <h3 className="text-lg font-semibold mb-2 group-hover:text-[#0B5394] transition-colors">
+                  10 Essential Safety Tips for Loading Your Motorcycle
+                </h3>
+                <p className="text-sm text-muted-foreground line-clamp-2">
+                  Loading a motorcycle can be dangerous. Follow these tips to protect yourself and your bike.
+                </p>
+              </div>
+            </article>
+            <article className="bg-background border rounded-lg overflow-hidden hover:shadow-lg transition-shadow group">
+              <div className="aspect-[16/9] relative bg-gray-100 overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`${LIVE_SITE}/images/ramp2.webp`}
+                  alt="Folding vs standard"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+                <span className="absolute top-3 left-3 bg-[#F78309] text-white text-xs font-medium px-3 py-1 rounded-full">
+                  Comparison
+                </span>
+              </div>
+              <div className="p-6">
+                <h3 className="text-lg font-semibold mb-2 group-hover:text-[#0B5394] transition-colors">
+                  Folding vs Standard Ramps: Which Is Right for You?
+                </h3>
+                <p className="text-sm text-muted-foreground line-clamp-2">
+                  Both folding and standard ramps have advantages. Learn the pros and cons of each type.
+                </p>
+              </div>
+            </article>
+          </div>
+          <div className="text-center mt-8">
+            <Button asChild variant="outline">
+              <Link href="/blog">View All Articles</Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="bg-[#F78309] text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
