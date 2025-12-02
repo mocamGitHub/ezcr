@@ -31,19 +31,22 @@ export function ConfiguratorHeader() {
         <nav className="flex h-16 items-center justify-between gap-4 flex-wrap">
           {/* Title */}
           <div className="flex items-center gap-2 shrink-0">
-            <h1 className="text-xl font-semibold text-foreground">Ramp Configurator</h1>
+            <h1 className="text-xl font-semibold">
+              <span className="text-[hsl(var(--primary))]">Ramp</span>{' '}
+              <span className="text-[hsl(var(--secondary))]">Configurator</span>
+            </h1>
           </div>
 
           {/* Actions */}
           <div className="flex items-center gap-3 flex-wrap">
             {/* Unit Toggle */}
-            <div className="flex items-center gap-1 rounded-full bg-secondary/10 p-1">
+            <div className="flex items-center gap-1 rounded-full bg-gray-200 dark:bg-secondary/10 p-1">
               <button
                 onClick={() => units === 'metric' && toggleUnits()}
                 className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
                   units === 'imperial'
                     ? 'bg-primary text-white'
-                    : 'text-muted-foreground hover:text-foreground'
+                    : 'text-gray-600 dark:text-muted-foreground hover:text-gray-900 dark:hover:text-foreground'
                 }`}
               >
                 Imperial
@@ -53,7 +56,7 @@ export function ConfiguratorHeader() {
                 className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
                   units === 'metric'
                     ? 'bg-primary text-white'
-                    : 'text-muted-foreground hover:text-foreground'
+                    : 'text-gray-600 dark:text-muted-foreground hover:text-gray-900 dark:hover:text-foreground'
                 }`}
               >
                 Metric

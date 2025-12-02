@@ -42,7 +42,9 @@ export function Step1VehicleType() {
   return (
     <div className="animate-in fade-in duration-300">
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold mb-3">Let&apos;s Get Started</h2>
+        <h2 className="text-3xl font-bold mb-3">
+          Let&apos;s <span className="text-[hsl(var(--secondary))]">Get Started</span>
+        </h2>
         <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
           We&apos;ll help you configure the perfect ramp for your needs. First, tell us about your vehicle
           and optionally provide your contact information.
@@ -51,8 +53,8 @@ export function Step1VehicleType() {
 
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Contact Information (Optional) */}
-        <div className="bg-card rounded-xl p-6 border border-border">
-          <h3 className="text-xl font-semibold mb-4">Contact Information (Optional)</h3>
+        <div className="bg-card rounded-xl p-6 border border-[hsl(var(--primary)/30%)]">
+          <h3 className="text-xl font-semibold mb-4 text-[hsl(var(--primary))]">Contact Information (Optional)</h3>
           <p className="text-sm text-muted-foreground mb-6">
             Providing your information now will save time later and allow us to save your configuration.
           </p>
@@ -123,7 +125,7 @@ export function Step1VehicleType() {
         {/* Vehicle Selection (Required) */}
         <div>
           <h3 className="text-xl font-semibold mb-4">
-            Select Your Vehicle Type <span className="text-destructive">*</span>
+            Select Your <span className="text-[hsl(var(--secondary))]">Vehicle Type</span> <span className="text-destructive">*</span>
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -131,7 +133,11 @@ export function Step1VehicleType() {
               <button
                 key={vehicle.type}
                 type="button"
-                onClick={() => selectVehicle(vehicle.type)}
+                onClick={() => {
+                  selectVehicle(vehicle.type)
+                  // Auto-advance to step 2 after a brief delay for visual feedback
+                  setTimeout(() => nextStep(), 300)
+                }}
                 className={`
                   group relative p-6 rounded-xl border-2 transition-all duration-300
                   hover:shadow-lg hover:-translate-y-1

@@ -33,7 +33,9 @@ export function Step4Configuration() {
   return (
     <div className="animate-in fade-in duration-300">
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold mb-3">Ramp Configuration</h2>
+        <h2 className="text-3xl font-bold mb-3">
+          Ramp <span className="text-[hsl(var(--secondary))]">Configuration</span>
+        </h2>
         <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
           Based on your specifications, we recommend the AUN250 ramp model with Extension 1.
           You can customize your selection below.
@@ -42,8 +44,8 @@ export function Step4Configuration() {
 
       <div className="max-w-6xl mx-auto space-y-8">
         {/* Configuration Summary */}
-        <div className="bg-card rounded-xl p-6 border border-border">
-          <h3 className="text-xl font-semibold mb-4">Your Configuration Summary</h3>
+        <div className="bg-card rounded-xl p-6 border border-[hsl(var(--primary)/30%)]">
+          <h3 className="text-xl font-semibold mb-4 text-[hsl(var(--primary))]">Your Configuration Summary</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <p className="text-sm text-muted-foreground">Vehicle Type</p>
@@ -97,7 +99,7 @@ export function Step4Configuration() {
 
         {/* Ramp Model Selection */}
         <div>
-          <h3 className="text-xl font-semibold mb-4">Select Ramp Model</h3>
+          <h3 className="text-xl font-semibold mb-4">Select <span className="text-[hsl(var(--secondary))]">Ramp Model</span></h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* AUN250 */}
             <button
@@ -172,7 +174,7 @@ export function Step4Configuration() {
 
         {/* Ramp Extensions */}
         <div>
-          <h3 className="text-xl font-semibold mb-4">Ramp Extensions</h3>
+          <h3 className="text-xl font-semibold mb-4">Ramp <span className="text-[hsl(var(--secondary))]">Extensions</span></h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               { id: 'no-ext', name: PRODUCT_NAMES.extensions['no-ext'], price: PRICING.extensions['no-ext'], recommended: false },
@@ -212,7 +214,7 @@ export function Step4Configuration() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Delivery Options */}
           <div>
-            <h3 className="text-xl font-semibold mb-4">Delivery Options</h3>
+            <h3 className="text-xl font-semibold mb-4"><span className="text-[hsl(var(--primary))]">Delivery</span> Options</h3>
             <div className="space-y-3">
               {[
                 { id: 'pickup', name: PRODUCT_NAMES.delivery.pickup, price: PRICING.delivery.pickup },
@@ -254,7 +256,7 @@ export function Step4Configuration() {
 
           {/* Services */}
           <div>
-            <h3 className="text-xl font-semibold mb-4">Services</h3>
+            <h3 className="text-xl font-semibold mb-4"><span className="text-[hsl(var(--primary))]">Services</span></h3>
             <div className="space-y-3">
               {[
                 { id: 'not-assembled', name: PRODUCT_NAMES.services['not-assembled'], price: PRICING.services['not-assembled'] },
@@ -289,7 +291,7 @@ export function Step4Configuration() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Boltless Tiedown Kit */}
           <div>
-            <h3 className="text-xl font-semibold mb-4">Boltless Tiedown Kit</h3>
+            <h3 className="text-xl font-semibold mb-4"><span className="text-[hsl(var(--secondary))]">Boltless</span> Tiedown Kit</h3>
             <div className="space-y-3">
               {[
                 { id: 'no-kit', name: PRODUCT_NAMES.boltlessKit['no-kit'], price: PRICING.boltlessKit['no-kit'] },
@@ -320,7 +322,7 @@ export function Step4Configuration() {
 
           {/* Tie-Down Accessories */}
           <div>
-            <h3 className="text-xl font-semibold mb-4">Tie-Down Accessories</h3>
+            <h3 className="text-xl font-semibold mb-4"><span className="text-[hsl(var(--secondary))]">Tie-Down</span> Accessories</h3>
             <div className="space-y-3">
               {[
                 { id: 'no-tiedown', name: PRODUCT_NAMES.tiedown['no-tiedown'], price: PRICING.tiedown['no-tiedown'], recommended: false },

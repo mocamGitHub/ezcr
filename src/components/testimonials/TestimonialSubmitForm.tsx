@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { StarRating } from '@/components/ui/star-rating';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { CheckCircle, AlertCircle, Loader2, LogIn } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 // =====================================================
 // TYPES
@@ -32,6 +34,7 @@ export function TestimonialSubmitForm({
   onSuccess,
   className,
 }: TestimonialSubmitFormProps) {
+  const { user, isLoading: authLoading } = useAuth();
   const [formData, setFormData] = useState<FormData>({
     rating: 5,
     review_text: '',
@@ -40,6 +43,47 @@ export function TestimonialSubmitForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Show loading state while checking auth
+  if (authLoading) {
+    return (
+      <div className={className}>
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+        </div>
+      </div>
+    );
+  }
+
+  // Show login prompt if not authenticated
+  if (!user) {
+    return (
+      <div className={className}>
+        <div className="text-center py-8 px-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+          <LogIn className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+            Sign in to Leave a Review
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
+            Please log in to your account to share your experience with us.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link href="/login?redirect=/testimonials">
+              <Button className="bg-[#0B5394] hover:bg-[#0B5394]/90">
+                <LogIn className="h-4 w-4 mr-2" />
+                Sign In
+              </Button>
+            </Link>
+            <Link href="/register?redirect=/testimonials">
+              <Button variant="outline">
+                Create Account
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Handle rating change
   const handleRatingChange = (rating: number) => {

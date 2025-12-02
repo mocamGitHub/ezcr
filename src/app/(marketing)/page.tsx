@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { TestimonialCarousel } from '@/components/testimonials/TestimonialCarousel'
+import { TestimonialShowcase } from '@/components/testimonials/TestimonialShowcase'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 // Base URL for images from live site
@@ -202,7 +202,7 @@ function ProductShowcase() {
                 <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
-                30-Day Money Back
+                BBB A+ Rated
               </div>
             </div>
           </div>
@@ -324,15 +324,20 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section className="py-16 bg-gray-50">
+      {/* Testimonials Section - Marquee on Desktop, Cards on Mobile */}
+      <section className="py-16 bg-gray-50 dark:bg-gray-900 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center mb-12">
-            What Our Customers Say
-          </h2>
-          <TestimonialCarousel />
-          <div className="text-center mt-8">
-            <Button asChild variant="outline">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">
+              What Our <span className="text-[#F78309]">Customers</span> Say
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+              Join thousands of satisfied riders who trust EZ Cycle Ramp
+            </p>
+          </div>
+          <TestimonialShowcase />
+          <div className="text-center mt-10">
+            <Button asChild variant="outline" className="border-[#0B5394] text-[#0B5394] hover:bg-[#0B5394]/10 dark:border-white dark:text-white dark:hover:bg-white/10">
               <Link href="/testimonials">View All Testimonials</Link>
             </Button>
           </div>
@@ -378,6 +383,64 @@ export default function HomePage() {
             <Button asChild variant="outline">
               <Link href="/gallery">View Full Gallery</Link>
             </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section - Option A: Split Layout with Image */}
+      <section className="bg-gradient-to-r from-[#F78309] to-[#e06d00] text-white py-12 md:py-16 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+            {/* Left: Content */}
+            <div className="text-center lg:text-left">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4">
+                Not Sure Which Ramp Is Right?
+              </h2>
+              <p className="text-base sm:text-lg mb-6 opacity-90 max-w-md mx-auto lg:mx-0">
+                Use our intelligent configurator to find the perfect ramp for your motorcycle, vehicle, and loading setup.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
+                <Button asChild size="lg" className="bg-white text-[#F78309] hover:bg-gray-100 font-semibold shadow-lg">
+                  <Link href="/configure">Start Configurator</Link>
+                </Button>
+                <Button asChild size="lg" variant="outline" className="border-2 border-white text-white hover:bg-white/20 font-semibold">
+                  <Link href="tel:800-687-4410">Call 800-687-4410</Link>
+                </Button>
+              </div>
+              {/* Trust signals */}
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 mt-6 text-sm opacity-80">
+                <span className="flex items-center gap-1">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  Free Quotes
+                </span>
+                <span className="flex items-center gap-1">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  Expert Advice
+                </span>
+                <span className="flex items-center gap-1">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  2-Year Warranty
+                </span>
+              </div>
+            </div>
+            {/* Right: Image - Hidden on mobile for cleaner look */}
+            <div className="hidden lg:flex justify-center lg:justify-end">
+              <div className="relative">
+                <div className="absolute inset-0 bg-white/20 blur-3xl rounded-full scale-75" />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`${LIVE_SITE}/images/ramp6.webp`}
+                  alt="EZ Cycle Ramp"
+                  className="relative z-10 max-h-[300px] object-contain drop-shadow-2xl"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -461,17 +524,6 @@ export default function HomePage() {
               <Link href="/blog">View All Articles</Link>
             </Button>
           </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="bg-[#F78309] text-white py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold mb-4">Not Sure Which Ramp Is Right?</h2>
-          <p className="text-lg mb-8">Use our configurator to find the perfect ramp for your setup.</p>
-          <Button asChild size="lg" className="bg-white text-[#F78309] hover:bg-gray-100 font-semibold">
-            <Link href="/configure">Start Configurator</Link>
-          </Button>
         </div>
       </section>
     </div>

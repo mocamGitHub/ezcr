@@ -92,6 +92,11 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
   const [pendingAction, setPendingAction] = useState<'cart' | 'email' | 'print' | null>(null)
   const [savedConfigId, setSavedConfigId] = useState<string | null>(null)
 
+  // Scroll to top when step changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [currentStep])
+
   const [configData, setConfigData] = useState<ConfigData>({
     vehicle: null,
     contact: {
@@ -99,7 +104,7 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
       lastName: '',
       email: '',
       phone: '',
-      smsOptIn: false,
+      smsOptIn: true,
     },
     measurements: {
       loadHeight: 0,
@@ -229,7 +234,8 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
   // Navigation
   const goToStep = (step: number) => {
     if (step < 1 || step > 5) return
-    if (step > 1 && !completedSteps.includes(step - 1)) return // Can't skip ahead
+    // Allow going to completed steps, current step, or next step if previous is completed
+    if (step > 1 && !completedSteps.includes(step - 1) && step !== currentStep) return // Can't skip ahead
     setCurrentStep(step)
   }
 

@@ -9,7 +9,7 @@ import { CartButton } from '@/components/cart/CartButton'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/contexts/AuthContext'
 import Image from 'next/image'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 
 export function Header() {
   const { theme, toggleTheme } = useTheme()
@@ -20,6 +20,12 @@ export function Header() {
   const [showMobileMenu, setShowMobileMenu] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
   const [searchQuery, setSearchQuery] = useState(searchParams?.get('q') || '')
+  const [mounted, setMounted] = useState(false)
+
+  // Prevent hydration mismatch by only rendering theme-dependent UI after mount
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const handleSignOut = async () => {
     await signOut()
@@ -85,24 +91,27 @@ export function Header() {
           </Button>
 
           {/* Theme Toggle Switch - Hidden on very small screens */}
-          <button
-            onClick={toggleTheme}
-            className="relative hidden sm:inline-flex h-8 w-14 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            style={{ backgroundColor: theme === 'dark' ? '#3b82f6' : '#94a3b8' }}
-            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-          >
-            <span
-              className={`inline-flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-lg transition-transform ${
-                theme === 'dark' ? 'translate-x-7' : 'translate-x-1'
+          {mounted && (
+            <button
+              onClick={toggleTheme}
+              className={`relative hidden sm:inline-flex h-8 w-14 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                theme === 'dark' ? 'bg-blue-500' : 'bg-slate-400'
               }`}
+              aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
             >
-              {theme === 'dark' ? (
-                <Moon className="h-3.5 w-3.5 text-blue-600" />
-              ) : (
-                <Sun className="h-3.5 w-3.5 text-amber-500" />
-              )}
-            </span>
-          </button>
+              <span
+                className={`inline-flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-lg transition-transform ${
+                  theme === 'dark' ? 'translate-x-7' : 'translate-x-1'
+                }`}
+              >
+                {theme === 'dark' ? (
+                  <Moon className="h-3.5 w-3.5 text-blue-600" />
+                ) : (
+                  <Sun className="h-3.5 w-3.5 text-amber-500" />
+                )}
+              </span>
+            </button>
+          )}
 
           {/* User Account */}
           {user && profile ? (
@@ -237,26 +246,29 @@ export function Header() {
               )}
 
               {/* Theme toggle for mobile */}
-              <div className="flex items-center justify-between py-2">
-                <span className="text-lg font-medium">Dark Mode</span>
-                <button
-                  onClick={toggleTheme}
-                  className="relative inline-flex h-8 w-14 items-center rounded-full transition-colors"
-                  style={{ backgroundColor: theme === 'dark' ? '#3b82f6' : '#94a3b8' }}
-                >
-                  <span
-                    className={`inline-flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-lg transition-transform ${
-                      theme === 'dark' ? 'translate-x-7' : 'translate-x-1'
+              {mounted && (
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-lg font-medium">Dark Mode</span>
+                  <button
+                    onClick={toggleTheme}
+                    className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
+                      theme === 'dark' ? 'bg-blue-500' : 'bg-slate-400'
                     }`}
                   >
-                    {theme === 'dark' ? (
-                      <Moon className="h-3.5 w-3.5 text-blue-600" />
-                    ) : (
-                      <Sun className="h-3.5 w-3.5 text-amber-500" />
-                    )}
-                  </span>
-                </button>
-              </div>
+                    <span
+                      className={`inline-flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-lg transition-transform ${
+                        theme === 'dark' ? 'translate-x-7' : 'translate-x-1'
+                      }`}
+                    >
+                      {theme === 'dark' ? (
+                        <Moon className="h-3.5 w-3.5 text-blue-600" />
+                      ) : (
+                        <Sun className="h-3.5 w-3.5 text-amber-500" />
+                      )}
+                    </span>
+                  </button>
+                </div>
+              )}
             </div>
           </nav>
         </div>

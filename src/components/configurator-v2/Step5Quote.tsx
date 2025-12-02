@@ -209,7 +209,9 @@ export function Step5Quote() {
   return (
     <div className="animate-in fade-in duration-300">
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold mb-3">Your Custom Quote</h2>
+        <h2 className="text-3xl font-bold mb-3">
+          Your Custom <span className="text-[hsl(var(--secondary))]">Quote</span>
+        </h2>
         <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
           Review your configuration and pricing below. When you&apos;re ready, add to cart or contact us for assistance.
         </p>
@@ -220,8 +222,8 @@ export function Step5Quote() {
           {/* Left Column: Details */}
           <div className="lg:col-span-2 space-y-6">
             {/* Customer Information */}
-            <div className="bg-card rounded-xl p-6 border border-border">
-              <h3 className="text-xl font-semibold mb-4">Customer Information</h3>
+            <div className="bg-card rounded-xl p-6 border border-[hsl(var(--primary)/30%)]">
+              <h3 className="text-xl font-semibold mb-4 text-[hsl(var(--primary))]">Customer Information</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Name</p>
@@ -247,8 +249,8 @@ export function Step5Quote() {
             </div>
 
             {/* Vehicle & Motorcycle Details */}
-            <div className="bg-card rounded-xl p-6 border border-border">
-              <h3 className="text-xl font-semibold mb-4">Vehicle & Motorcycle Details</h3>
+            <div className="bg-card rounded-xl p-6 border border-[hsl(var(--secondary)/30%)]">
+              <h3 className="text-xl font-semibold mb-4">Vehicle & <span className="text-[hsl(var(--secondary))]">Motorcycle</span> Details</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Vehicle Type</p>
@@ -303,8 +305,8 @@ export function Step5Quote() {
             </div>
 
             {/* Selected Configuration */}
-            <div className="bg-card rounded-xl p-6 border border-border">
-              <h3 className="text-xl font-semibold mb-4">Selected Configuration</h3>
+            <div className="bg-card rounded-xl p-6 border border-[hsl(var(--primary)/30%)]">
+              <h3 className="text-xl font-semibold mb-4">Selected <span className="text-[hsl(var(--primary))]">Configuration</span></h3>
               <div className="space-y-3">
                 <div className="flex justify-between items-center py-2 border-b border-border">
                   <span className="font-medium">{configData.selectedModel.name}</span>
@@ -346,8 +348,8 @@ export function Step5Quote() {
 
           {/* Right Column: Quote Summary */}
           <div className="lg:col-span-1">
-            <div className="bg-card rounded-xl p-6 border border-border sticky top-24">
-              <h3 className="text-xl font-semibold mb-6">Quote Summary</h3>
+            <div className="bg-card rounded-xl p-6 border-2 border-[hsl(var(--secondary))] sticky top-24">
+              <h3 className="text-xl font-semibold mb-6 text-[hsl(var(--secondary))]">Quote Summary</h3>
 
               {/* Price Breakdown */}
               <div className="space-y-3 mb-6">
@@ -366,7 +368,7 @@ export function Step5Quote() {
                 <div className="h-px bg-border my-3" />
                 <div className="flex justify-between text-lg">
                   <span className="font-bold">Total</span>
-                  <span className="font-bold text-2xl">${total.toFixed(2)}</span>
+                  <span className="font-bold text-2xl text-[hsl(var(--secondary))]">${total.toFixed(2)}</span>
                 </div>
               </div>
 

@@ -133,7 +133,7 @@ export function ProductFilters() {
             checked={availableOnly}
             onCheckedChange={handleAvailableToggle}
             disabled={isPending}
-            className={availableOnly ? 'border-green-500 data-[state=checked]:bg-green-500' : ''}
+            className={availableOnly ? 'border-green-500 data-[state=checked]:bg-green-500 data-[state=checked]:text-white' : ''}
           />
           <Label htmlFor="available" className={`cursor-pointer font-medium ${availableOnly ? 'text-green-700 dark:text-green-300' : ''}`}>
             Available Now {availableOnly && '✓'}

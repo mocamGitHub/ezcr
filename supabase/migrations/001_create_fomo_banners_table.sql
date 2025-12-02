@@ -1,0 +1,21 @@
+CREATE TABLE fomo_banners (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  enabled BOOLEAN NOT NULL DEFAULT true,
+  type TEXT NOT NULL,
+  message TEXT NOT NULL,
+  end_date TIMESTAMPTZ,
+  stock_count INTEGER,
+  stock_threshold INTEGER,
+  recent_purchases JSONB,
+  visitor_count INTEGER,
+  background_color TEXT DEFAULT '#FEF3C7',
+  text_color TEXT DEFAULT '#92400E',
+  accent_color TEXT DEFAULT '#F78309',
+  position TEXT NOT NULL DEFAULT 'top',
+  dismissible BOOLEAN NOT NULL DEFAULT true,
+  show_icon BOOLEAN NOT NULL DEFAULT true,
+  start_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  priority INTEGER NOT NULL DEFAULT 1,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
