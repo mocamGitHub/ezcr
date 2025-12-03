@@ -199,12 +199,15 @@ export async function getProductCategories() {
   return data as ProductCategory[]
 }
 
+export type ProductSortOption = 'featured' | 'price-asc' | 'price-desc' | 'newest'
+
 export interface ProductFilters {
   category?: string
   search?: string
   minPrice?: number
   maxPrice?: number
   availableOnly?: boolean
+  sort?: ProductSortOption
 }
 
 /**
@@ -260,11 +263,25 @@ export async function searchProducts(filters: ProductFilters) {
     query = query.gt('inventory_count', 0).eq('coming_soon', false)
   }
 
-  // Order results
-  query = query
-    .order('is_featured', { ascending: false })
-    .order('display_order', { ascending: true })
-    .order('created_at', { ascending: false })
+  // Order results based on sort option
+  switch (filters.sort) {
+    case 'price-asc':
+      query = query.order('base_price', { ascending: true })
+      break
+    case 'price-desc':
+      query = query.order('base_price', { ascending: false })
+      break
+    case 'newest':
+      query = query.order('created_at', { ascending: false })
+      break
+    case 'featured':
+    default:
+      query = query
+        .order('is_featured', { ascending: false })
+        .order('display_order', { ascending: true })
+        .order('created_at', { ascending: false })
+      break
+  }
 
   const { data, error } = await query
 

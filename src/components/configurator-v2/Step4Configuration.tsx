@@ -34,7 +34,7 @@ export function Step4Configuration() {
     <div className="animate-in fade-in duration-300">
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold mb-3">
-          Ramp <span className="text-[hsl(var(--secondary))]">Configuration</span>
+          Ramp <span className="text-[#F78309]">Configuration</span>
         </h2>
         <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
           Based on your specifications, we recommend the AUN250 ramp model with Extension 1.
@@ -44,8 +44,8 @@ export function Step4Configuration() {
 
       <div className="max-w-6xl mx-auto space-y-8">
         {/* Configuration Summary */}
-        <div className="bg-card rounded-xl p-6 border border-[hsl(var(--primary)/30%)]">
-          <h3 className="text-xl font-semibold mb-4 text-[hsl(var(--primary))]">Your Configuration Summary</h3>
+        <div className="bg-card rounded-xl p-6 border border-[#0B5394]/30">
+          <h3 className="text-xl font-semibold mb-4 text-[#0B5394]">Your Configuration Summary</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <p className="text-sm text-muted-foreground">Vehicle Type</p>
@@ -99,7 +99,7 @@ export function Step4Configuration() {
 
         {/* Ramp Model Selection */}
         <div>
-          <h3 className="text-xl font-semibold mb-4">Select <span className="text-[hsl(var(--secondary))]">Ramp Model</span></h3>
+          <h3 className="text-xl font-semibold mb-4">Select <span className="text-[#F78309]">Ramp Model</span></h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* AUN250 */}
             <button
@@ -110,8 +110,8 @@ export function Step4Configuration() {
                 hover:shadow-lg
                 ${
                   configData.selectedModel.id === 'AUN250'
-                    ? 'border-secondary bg-secondary/5'
-                    : 'border-border bg-card hover:border-secondary/50'
+                    ? 'border-[#F78309] bg-[#F78309]/5'
+                    : 'border-border bg-card hover:border-[#F78309]/50'
                 }
               `}
             >
@@ -145,8 +145,8 @@ export function Step4Configuration() {
                 hover:shadow-lg
                 ${
                   configData.selectedModel.id === 'AUN210'
-                    ? 'border-secondary bg-secondary/5'
-                    : 'border-border bg-card hover:border-secondary/50'
+                    ? 'border-[#F78309] bg-[#F78309]/5'
+                    : 'border-border bg-card hover:border-[#F78309]/50'
                 }
               `}
             >
@@ -174,7 +174,7 @@ export function Step4Configuration() {
 
         {/* Ramp Extensions */}
         <div>
-          <h3 className="text-xl font-semibold mb-4">Ramp <span className="text-[hsl(var(--secondary))]">Extensions</span></h3>
+          <h3 className="text-xl font-semibold mb-4">Ramp <span className="text-[#F78309]">Extensions</span></h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               { id: 'no-ext', name: PRODUCT_NAMES.extensions['no-ext'], price: PRICING.extensions['no-ext'], recommended: false },
@@ -191,8 +191,8 @@ export function Step4Configuration() {
                   hover:shadow-md
                   ${
                     configData.extension.id === ext.id
-                      ? 'border-secondary bg-secondary/5'
-                      : 'border-border bg-card hover:border-secondary/50'
+                      ? 'border-[#F78309] bg-[#F78309]/5'
+                      : 'border-border bg-card hover:border-[#F78309]/50'
                   }
                 `}
               >
@@ -214,7 +214,7 @@ export function Step4Configuration() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Delivery Options */}
           <div>
-            <h3 className="text-xl font-semibold mb-4"><span className="text-[hsl(var(--primary))]">Delivery</span> Options</h3>
+            <h3 className="text-xl font-semibold mb-4"><span className="text-[#0B5394]">Delivery</span> Options</h3>
             <div className="space-y-3">
               {[
                 { id: 'pickup', name: PRODUCT_NAMES.delivery.pickup, price: PRICING.delivery.pickup },
@@ -230,8 +230,8 @@ export function Step4Configuration() {
                     hover:shadow-md
                     ${
                       configData.delivery.id === delivery.id
-                        ? 'border-secondary bg-secondary/5'
-                        : 'border-border bg-card hover:border-secondary/50'
+                        ? 'border-[#F78309] bg-[#F78309]/5'
+                        : 'border-border bg-card hover:border-[#F78309]/50'
                     }
                     ${delivery.id === 'ship' && showDeliveryWarning ? 'opacity-50 cursor-not-allowed' : ''}
                   `}
@@ -245,8 +245,8 @@ export function Step4Configuration() {
             </div>
 
             {showDeliveryWarning && (
-              <div className="mt-3 bg-secondary/10 border border-secondary rounded-lg p-3 flex gap-2 text-sm">
-                <Info className="w-4 h-4 text-secondary shrink-0 mt-0.5" />
+              <div className="mt-3 bg-[#F78309]/10 border border-[#F78309] rounded-lg p-3 flex gap-2 text-sm">
+                <Info className="w-4 h-4 text-[#F78309] shrink-0 mt-0.5" />
                 <p className="text-muted-foreground">
                   ⚠️ Shipping is not available with Demo service. Please select Not Assembled or Assembly Service.
                 </p>
@@ -256,7 +256,7 @@ export function Step4Configuration() {
 
           {/* Services */}
           <div>
-            <h3 className="text-xl font-semibold mb-4"><span className="text-[hsl(var(--primary))]">Services</span></h3>
+            <h3 className="text-xl font-semibold mb-4"><span className="text-[#0B5394]">Services</span></h3>
             <div className="space-y-3">
               {[
                 { id: 'not-assembled', name: PRODUCT_NAMES.services['not-assembled'], price: PRICING.services['not-assembled'] },
@@ -272,8 +272,8 @@ export function Step4Configuration() {
                     hover:shadow-md
                     ${
                       configData.service.id === service.id
-                        ? 'border-secondary bg-secondary/5'
-                        : 'border-border bg-card hover:border-secondary/50'
+                        ? 'border-[#F78309] bg-[#F78309]/5'
+                        : 'border-border bg-card hover:border-[#F78309]/50'
                     }
                   `}
                 >
@@ -291,7 +291,7 @@ export function Step4Configuration() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Boltless Tiedown Kit */}
           <div>
-            <h3 className="text-xl font-semibold mb-4"><span className="text-[hsl(var(--secondary))]">Boltless</span> Tiedown Kit</h3>
+            <h3 className="text-xl font-semibold mb-4"><span className="text-[#F78309]">Boltless</span> Tiedown Kit</h3>
             <div className="space-y-3">
               {[
                 { id: 'no-kit', name: PRODUCT_NAMES.boltlessKit['no-kit'], price: PRICING.boltlessKit['no-kit'] },
@@ -306,8 +306,8 @@ export function Step4Configuration() {
                     hover:shadow-md
                     ${
                       configData.boltlessKit.id === kit.id
-                        ? 'border-secondary bg-secondary/5'
-                        : 'border-border bg-card hover:border-secondary/50'
+                        ? 'border-[#F78309] bg-[#F78309]/5'
+                        : 'border-border bg-card hover:border-[#F78309]/50'
                     }
                   `}
                 >
@@ -322,7 +322,7 @@ export function Step4Configuration() {
 
           {/* Tie-Down Accessories */}
           <div>
-            <h3 className="text-xl font-semibold mb-4"><span className="text-[hsl(var(--secondary))]">Tie-Down</span> Accessories</h3>
+            <h3 className="text-xl font-semibold mb-4"><span className="text-[#F78309]">Tie-Down</span> Accessories</h3>
             <div className="space-y-3">
               {[
                 { id: 'no-tiedown', name: PRODUCT_NAMES.tiedown['no-tiedown'], price: PRICING.tiedown['no-tiedown'], recommended: false },
@@ -339,8 +339,8 @@ export function Step4Configuration() {
                     hover:shadow-md
                     ${
                       configData.tiedown.id === tiedown.id
-                        ? 'border-secondary bg-secondary/5'
-                        : 'border-border bg-card hover:border-secondary/50'
+                        ? 'border-[#F78309] bg-[#F78309]/5'
+                        : 'border-border bg-card hover:border-[#F78309]/50'
                     }
                   `}
                 >
@@ -375,8 +375,7 @@ export function Step4Configuration() {
           <Button
             type="button"
             onClick={nextStep}
-            className="rounded-full px-8"
-            style={{ backgroundColor: 'hsl(203 79% 57%)' }}
+            className="rounded-full px-8 bg-[#0B5394] hover:bg-[#0B5394]/90 text-white"
           >
             Continue to Quote
           </Button>

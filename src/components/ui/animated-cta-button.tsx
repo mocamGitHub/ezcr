@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, ShoppingCart } from 'lucide-react'
 
 interface AnimatedCTAButtonProps {
   href: string
@@ -9,9 +9,24 @@ interface AnimatedCTAButtonProps {
   className?: string
 }
 
-export function AnimatedCTAButton({ href, children, className = '' }: AnimatedCTAButtonProps) {
+interface AnimatedCTAActionButtonProps {
+  onClick: () => void
+  children: React.ReactNode
+  className?: string
+  icon?: 'arrow' | 'cart'
+  disabled?: boolean
+}
+
+// Shared inner content component
+function AnimatedButtonContent({
+  children,
+  icon = 'arrow'
+}: {
+  children: React.ReactNode
+  icon?: 'arrow' | 'cart'
+}) {
   return (
-    <Link href={href} className={`group relative inline-flex items-center justify-center ${className}`}>
+    <>
       {/* Outer container with rotating border */}
       <div className="relative rounded-lg p-[2px] overflow-hidden">
         {/* Rotating conic gradient border beam */}
@@ -34,16 +49,49 @@ export function AnimatedCTAButton({ href, children, className = '' }: AnimatedCT
 
         {/* Inner button content */}
         <div className="relative flex items-center gap-2 rounded-lg bg-gray-200 dark:bg-slate-900 border border-[#0B5394] px-8 py-3 h-[52px] text-lg font-medium text-foreground transition-all duration-300 group-hover:bg-gray-300 dark:group-hover:bg-slate-800">
+          {/* Icon */}
+          {icon === 'cart' ? (
+            <ShoppingCart className="relative z-10 w-5 h-5" />
+          ) : null}
+
           {/* Text content */}
           <span className="relative z-10">{children}</span>
 
           {/* Arrow icon */}
-          <ArrowRight className="relative z-10 w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
+          {icon === 'arrow' ? (
+            <ArrowRight className="relative z-10 w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
+          ) : null}
         </div>
       </div>
 
       {/* External glow on hover */}
       <div className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl bg-gradient-to-r from-[#F78309]/30 to-[#0B5394]/30 -z-10 scale-110" />
+    </>
+  )
+}
+
+export function AnimatedCTAButton({ href, children, className = '' }: AnimatedCTAButtonProps) {
+  return (
+    <Link href={href} className={`group relative inline-flex items-center justify-center ${className}`}>
+      <AnimatedButtonContent icon="arrow">{children}</AnimatedButtonContent>
     </Link>
+  )
+}
+
+export function AnimatedCTAActionButton({
+  onClick,
+  children,
+  className = '',
+  icon = 'arrow',
+  disabled = false
+}: AnimatedCTAActionButtonProps) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`group relative inline-flex items-center justify-center ${className} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+    >
+      <AnimatedButtonContent icon={icon}>{children}</AnimatedButtonContent>
+    </button>
   )
 }

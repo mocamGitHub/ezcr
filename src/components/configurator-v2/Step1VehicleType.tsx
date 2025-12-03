@@ -43,7 +43,7 @@ export function Step1VehicleType() {
     <div className="animate-in fade-in duration-300">
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold mb-3">
-          Let&apos;s <span className="text-[hsl(var(--secondary))]">Get Started</span>
+          Let&apos;s <span className="text-[#F78309]">Get Started</span>
         </h2>
         <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
           We&apos;ll help you configure the perfect ramp for your needs. First, tell us about your vehicle
@@ -53,8 +53,8 @@ export function Step1VehicleType() {
 
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Contact Information (Optional) */}
-        <div className="bg-card rounded-xl p-6 border border-[hsl(var(--primary)/30%)]">
-          <h3 className="text-xl font-semibold mb-4 text-[hsl(var(--primary))]">Contact Information (Optional)</h3>
+        <div className="bg-card rounded-xl p-6 border border-[#0B5394]/30">
+          <h3 className="text-xl font-semibold mb-4 text-[#0B5394]">Contact Information <span className="text-[#F78309]">(Optional, but Helpful)</span></h3>
           <p className="text-sm text-muted-foreground mb-6">
             Providing your information now will save time later and allow us to save your configuration.
           </p>
@@ -125,7 +125,7 @@ export function Step1VehicleType() {
         {/* Vehicle Selection (Required) */}
         <div>
           <h3 className="text-xl font-semibold mb-4">
-            Select Your <span className="text-[hsl(var(--secondary))]">Vehicle Type</span> <span className="text-destructive">*</span>
+            Select Your <span className="text-[#F78309]">Vehicle Type</span> <span className="text-destructive">*</span>
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -143,8 +143,8 @@ export function Step1VehicleType() {
                   hover:shadow-lg hover:-translate-y-1
                   ${
                     configData.vehicle === vehicle.type
-                      ? 'border-primary bg-primary/10 shadow-lg shadow-primary/20'
-                      : 'border-border bg-card hover:border-primary/50'
+                      ? 'border-[#F78309] bg-[#F78309]/10 shadow-lg shadow-[#F78309]/20'
+                      : 'border-border bg-card hover:border-[#F78309]/50'
                   }
                 `}
               >
@@ -155,7 +155,7 @@ export function Step1VehicleType() {
                 </div>
 
                 {configData.vehicle === vehicle.type && (
-                  <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                  <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-[#F78309] flex items-center justify-center">
                     <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                     </svg>
@@ -171,8 +171,7 @@ export function Step1VehicleType() {
           <Button
             type="submit"
             disabled={!configData.vehicle}
-            className="rounded-full px-8"
-            style={{ backgroundColor: configData.vehicle ? 'hsl(203 79% 57%)' : undefined }}
+            className={`rounded-full px-8 ${configData.vehicle ? 'bg-[#0B5394] hover:bg-[#0B5394]/90 text-white' : ''}`}
           >
             Continue
           </Button>

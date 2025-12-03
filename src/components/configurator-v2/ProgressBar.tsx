@@ -66,8 +66,8 @@ export function ProgressBar() {
                     className={`
                       relative flex items-center justify-center w-10 h-10 rounded-full
                       font-semibold text-sm transition-all duration-300
-                      ${state === 'current' ? 'scale-125 shadow-lg shadow-primary/50 animate-pulse' : ''}
-                      ${state === 'current' ? 'bg-primary text-white' : ''}
+                      ${state === 'current' ? 'scale-125 shadow-lg shadow-[#0B5394]/50 animate-pulse' : ''}
+                      ${state === 'current' ? 'bg-[#0B5394] text-white' : ''}
                       ${state === 'completed' ? 'bg-green-500 text-white hover:scale-110' : ''}
                       ${state === 'disabled' ? 'bg-muted text-muted-foreground opacity-60' : ''}
                       ${clickable ? 'cursor-pointer' : 'cursor-not-allowed'}
@@ -84,7 +84,7 @@ export function ProgressBar() {
                   <span
                     className={`
                       mt-2 text-sm font-medium transition-all duration-300
-                      ${state === 'current' ? 'text-primary font-bold underline' : ''}
+                      ${state === 'current' ? 'text-[#0B5394] font-bold underline' : ''}
                       ${state === 'completed' ? 'text-foreground font-medium' : ''}
                       ${state === 'disabled' ? 'text-muted-foreground' : ''}
                     `}
@@ -106,7 +106,7 @@ export function ProgressBar() {
           className="w-full px-4 py-4 flex items-center justify-between"
         >
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-white font-semibold text-sm">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#0B5394] text-white font-semibold text-sm">
               {currentStep}
             </div>
             <div className="text-left">
@@ -149,7 +149,7 @@ export function ProgressBar() {
                   disabled={!clickable}
                   className={`
                     w-full flex items-center gap-3 p-3 rounded-lg transition-all
-                    ${state === 'current' ? 'bg-primary/20 border border-primary' : ''}
+                    ${state === 'current' ? 'bg-[#0B5394]/20 border border-[#0B5394]' : ''}
                     ${state === 'completed' ? 'bg-green-500/10 hover:bg-green-500/20' : ''}
                     ${state === 'disabled' ? 'opacity-50' : ''}
                     ${clickable ? 'cursor-pointer' : 'cursor-not-allowed'}
@@ -158,7 +158,7 @@ export function ProgressBar() {
                   <div
                     className={`
                       flex items-center justify-center w-7 h-7 rounded-full text-sm font-semibold
-                      ${state === 'current' ? 'bg-primary text-white' : ''}
+                      ${state === 'current' ? 'bg-[#0B5394] text-white' : ''}
                       ${state === 'completed' ? 'bg-green-500 text-white' : ''}
                       ${state === 'disabled' ? 'bg-muted text-muted-foreground' : ''}
                     `}
@@ -172,7 +172,7 @@ export function ProgressBar() {
                   <span
                     className={`
                       text-sm font-medium
-                      ${state === 'current' ? 'text-primary font-bold' : ''}
+                      ${state === 'current' ? 'text-[#0B5394] font-bold' : ''}
                       ${state === 'completed' ? 'text-foreground' : ''}
                       ${state === 'disabled' ? 'text-muted-foreground' : ''}
                     `}

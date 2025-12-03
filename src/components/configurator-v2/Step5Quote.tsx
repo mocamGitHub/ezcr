@@ -3,14 +3,17 @@
 import React, { useState } from 'react'
 import { useConfigurator } from './ConfiguratorProvider'
 import { useCart } from '@/contexts/CartContext'
+import { useToast } from '@/components/ui/toast'
 import { Button } from '@/components/ui/button'
+import { AnimatedCTAActionButton } from '@/components/ui/animated-cta-button'
 import { FEES, CONTACT } from '@/types/configurator-v2'
-import { ShoppingCart, Phone, Mail, Printer, Share2, Check, Copy } from 'lucide-react'
+import { Phone, Mail, Printer, Share2, Check, Copy } from 'lucide-react'
 import { generateQuotePDF } from '@/lib/utils/pdf-quote'
 
 export function Step5Quote() {
   const { configData, units, previousStep, setShowContactModal, setPendingAction, saveConfiguration, savedConfigId } = useConfigurator()
-  const { addItem } = useCart()
+  const { addItem, openCart } = useCart()
+  const { showToast } = useToast()
   const [showShareDialog, setShowShareDialog] = useState(false)
   const [shareLink, setShareLink] = useState('')
   const [copied, setCopied] = useState(false)
@@ -46,20 +49,7 @@ export function Step5Quote() {
       return
     }
 
-    // Build configuration description for cart
-    const configItems = [
-      configData.selectedModel.name,
-      configData.extension.price > 0 ? configData.extension.name : null,
-      configData.boltlessKit.price > 0 ? configData.boltlessKit.name : null,
-      configData.tiedown.price > 0 ? configData.tiedown.name : null,
-      configData.service.price > 0 ? configData.service.name : null,
-      configData.delivery.price > 0 ? configData.delivery.name : null,
-    ].filter(Boolean)
-
-    const productName = `Custom Configuration - ${configData.selectedModel.name}`
-    const productDescription = configItems.join(' + ')
-
-    // Save configuration to database
+    // Save configuration to database (don't block cart addition)
     try {
       await fetch('/api/configurator/save', {
         method: 'POST',
@@ -73,21 +63,105 @@ export function Step5Quote() {
       })
     } catch (error) {
       console.error('Error saving configuration:', error)
-      // Don't block cart addition if save fails
     }
 
-    // Add configured product to cart
-    addItem({
-      productId: `config-${Date.now()}`, // Unique ID for custom configuration
-      productName,
-      productSlug: 'custom-configuration',
+    // Build list of items to add to cart
+    const itemsToAdd: Array<{
+      productId: string
+      productName: string
+      productSlug: string
+      productImage: string | null
+      price: number
+      sku: string
+    }> = []
+
+    // Add the main ramp model
+    itemsToAdd.push({
+      productId: configData.selectedModel.id,
+      productName: configData.selectedModel.name,
+      productSlug: configData.selectedModel.id.toLowerCase(), // e.g., 'aun250'
       productImage: null,
-      price: total,
-      sku: `CONFIG-${configData.selectedModel.id}-${configData.vehicle?.toUpperCase() || 'UNKNOWN'}`,
+      price: configData.selectedModel.price,
+      sku: configData.selectedModel.id,
     })
 
-    // Show success message
-    alert(`✓ Configuration added to cart!\n\n${productDescription}\n\nTotal: $${total.toFixed(2)}`)
+    // Add extension if selected
+    if (configData.extension.price > 0) {
+      itemsToAdd.push({
+        productId: configData.extension.id,
+        productName: configData.extension.name,
+        productSlug: configData.extension.id, // e.g., 'ext1'
+        productImage: null,
+        price: configData.extension.price,
+        sku: configData.extension.id.toUpperCase(),
+      })
+    }
+
+    // Add boltless kit if selected
+    if (configData.boltlessKit.price > 0) {
+      itemsToAdd.push({
+        productId: configData.boltlessKit.id,
+        productName: configData.boltlessKit.name,
+        productSlug: configData.boltlessKit.id,
+        productImage: null,
+        price: configData.boltlessKit.price,
+        sku: 'BOLTLESS-KIT',
+      })
+    }
+
+    // Add tiedown if selected
+    if (configData.tiedown.price > 0) {
+      itemsToAdd.push({
+        productId: configData.tiedown.id,
+        productName: configData.tiedown.name,
+        productSlug: configData.tiedown.id,
+        productImage: null,
+        price: configData.tiedown.price,
+        sku: configData.tiedown.id.toUpperCase(),
+      })
+    }
+
+    // Add service if selected
+    if (configData.service.price > 0) {
+      itemsToAdd.push({
+        productId: configData.service.id,
+        productName: configData.service.name,
+        productSlug: configData.service.id,
+        productImage: null,
+        price: configData.service.price,
+        sku: configData.service.id.toUpperCase(),
+      })
+    }
+
+    // Add delivery if selected (shipping)
+    if (configData.delivery.price > 0) {
+      itemsToAdd.push({
+        productId: configData.delivery.id,
+        productName: configData.delivery.name,
+        productSlug: configData.delivery.id,
+        productImage: null,
+        price: configData.delivery.price,
+        sku: 'SHIPPING',
+      })
+    }
+
+    // Add each item to the cart
+    itemsToAdd.forEach((item) => {
+      addItem(item)
+    })
+
+    // Build summary for toast
+    const itemNames = itemsToAdd.map((item) => item.productName)
+
+    // Show success toast and open cart
+    showToast(
+      `${itemNames.join(', ')}\n\n${itemsToAdd.length} item(s) added`,
+      'success',
+      'Items Added to Cart!'
+    )
+
+    // Open the cart drawer after a brief delay
+    setTimeout(() => openCart(), 300)
   }
 
   const handleEmailQuote = async () => {
@@ -124,14 +198,14 @@ export function Step5Quote() {
       })
 
       if (response.ok) {
-        alert(`✓ Quote successfully sent to ${configData.contact.email}!\n\nPlease check your inbox.`)
+        showToast(`Please check your inbox at ${configData.contact.email}`, 'success', 'Quote Sent Successfully!')
       } else {
         const error = await response.json()
-        alert(`✗ Failed to send email: ${error.error || 'Unknown error'}`)
+        showToast(error.error || 'Unknown error occurred', 'error', 'Failed to Send Email')
       }
     } catch (error) {
       console.error('Error sending email:', error)
-      alert('✗ Failed to send email. Please try again or call us at 800-687-4410.')
+      showToast('Please try again or call us at 800-687-4410', 'error', 'Failed to Send Email')
     }
   }
 
@@ -169,10 +243,10 @@ export function Step5Quote() {
         processingFee,
         total,
       })
-      alert('✓ PDF quote generated successfully!\n\nCheck your downloads folder.')
+      showToast('Check your downloads folder for the PDF', 'success', 'PDF Quote Generated!')
     } catch (error) {
       console.error('Error generating PDF:', error)
-      alert('✗ Failed to generate PDF. Please try again or email us for a quote.')
+      showToast('Please try again or email us for a quote', 'error', 'Failed to Generate PDF')
     }
   }
 
@@ -183,7 +257,7 @@ export function Step5Quote() {
       if (!configId) {
         const result = await saveConfiguration(true)
         if (!result.success || !result.id) {
-          alert('Failed to generate share link')
+          showToast('Unable to create shareable link', 'error', 'Failed to Generate Share Link')
           return
         }
         configId = result.id
@@ -196,7 +270,7 @@ export function Step5Quote() {
       setShowShareDialog(true)
     } catch (error) {
       console.error('Error generating share link:', error)
-      alert('Failed to generate share link')
+      showToast('Unable to create shareable link', 'error', 'Failed to Generate Share Link')
     }
   }
 
@@ -374,14 +448,13 @@ export function Step5Quote() {
 
               {/* Actions */}
               <div className="space-y-3">
-                <Button
+                <AnimatedCTAActionButton
                   onClick={handleAddToCart}
-                  className="w-full bg-secondary hover:bg-secondary-dark text-white gap-2"
-                  size="lg"
+                  icon="cart"
+                  className="w-full"
                 >
-                  <ShoppingCart className="w-5 h-5" />
                   Add to Cart
-                </Button>
+                </AnimatedCTAActionButton>
 
                 <Button
                   onClick={() => window.location.href = `tel:${CONTACT.phone}`}
@@ -475,7 +548,7 @@ export function Step5Quote() {
         )}
 
         {/* Navigation */}
-        <div className="flex justify-between items-center pt-8">
+        <div className="flex justify-start items-center pt-8">
           <Button
             type="button"
             onClick={previousStep}
@@ -483,13 +556,6 @@ export function Step5Quote() {
             className="rounded-full"
           >
             Previous
-          </Button>
-
-          <Button
-            onClick={handleAddToCart}
-            className="rounded-full bg-success hover:bg-success-dark text-white px-8"
-          >
-            Complete Configuration
           </Button>
         </div>
       </div>

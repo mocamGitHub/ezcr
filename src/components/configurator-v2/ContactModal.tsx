@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react'
 import { useConfigurator } from './ConfiguratorProvider'
+import { useCart } from '@/contexts/CartContext'
+import { useToast } from '@/components/ui/toast'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,6 +12,8 @@ import { AlertCircle } from 'lucide-react'
 
 export function ContactModal() {
   const { showContactModal, setShowContactModal, updateContact, configData, pendingAction, setPendingAction } = useConfigurator()
+  const { addItem, openCart } = useCart()
+  const { showToast } = useToast()
 
   const [firstName, setFirstName] = useState(configData.contact.firstName || '')
   const [lastName, setLastName] = useState(configData.contact.lastName || '')
@@ -58,14 +62,132 @@ export function ContactModal() {
 
     // Execute pending action
     if (pendingAction === 'cart') {
-      alert('✓ Configuration added to cart!')
+      // Automatically add items to cart
+      addItemsToCart()
     } else if (pendingAction === 'email') {
-      alert(`Quote will be emailed to ${email}`)
+      showToast(`Your contact info has been saved. Click Email again.`, 'success', 'Contact Info Saved!')
     } else if (pendingAction === 'print') {
-      window.print()
+      showToast('Your contact info has been saved. Click Print again.', 'success', 'Contact Info Saved!')
     }
 
     setPendingAction(null)
+  }
+
+  // Function to add all configured items to cart
+  const addItemsToCart = async () => {
+    // Save configuration to database (don't block cart addition)
+    try {
+      await fetch('/api/configurator/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          configuration: configData,
+          total: 0, // We'll calculate the total from items
+        }),
+      })
+    } catch (error) {
+      console.error('Error saving configuration:', error)
+    }
+
+    // Build list of items to add to cart
+    const itemsToAdd: Array<{
+      productId: string
+      productName: string
+      productSlug: string
+      productImage: string | null
+      price: number
+      sku: string
+    }> = []
+
+    // Add the main ramp model
+    itemsToAdd.push({
+      productId: configData.selectedModel.id,
+      productName: configData.selectedModel.name,
+      productSlug: configData.selectedModel.id.toLowerCase(),
+      productImage: null,
+      price: configData.selectedModel.price,
+      sku: configData.selectedModel.id,
+    })
+
+    // Add extension if selected
+    if (configData.extension.price > 0) {
+      itemsToAdd.push({
+        productId: configData.extension.id,
+        productName: configData.extension.name,
+        productSlug: configData.extension.id,
+        productImage: null,
+        price: configData.extension.price,
+        sku: configData.extension.id.toUpperCase(),
+      })
+    }
+
+    // Add boltless kit if selected
+    if (configData.boltlessKit.price > 0) {
+      itemsToAdd.push({
+        productId: configData.boltlessKit.id,
+        productName: configData.boltlessKit.name,
+        productSlug: configData.boltlessKit.id,
+        productImage: null,
+        price: configData.boltlessKit.price,
+        sku: 'BOLTLESS-KIT',
+      })
+    }
+
+    // Add tiedown if selected
+    if (configData.tiedown.price > 0) {
+      itemsToAdd.push({
+        productId: configData.tiedown.id,
+        productName: configData.tiedown.name,
+        productSlug: configData.tiedown.id,
+        productImage: null,
+        price: configData.tiedown.price,
+        sku: configData.tiedown.id.toUpperCase(),
+      })
+    }
+
+    // Add service if selected
+    if (configData.service.price > 0) {
+      itemsToAdd.push({
+        productId: configData.service.id,
+        productName: configData.service.name,
+        productSlug: configData.service.id,
+        productImage: null,
+        price: configData.service.price,
+        sku: configData.service.id.toUpperCase(),
+      })
+    }
+
+    // Add delivery if selected (shipping)
+    if (configData.delivery.price > 0) {
+      itemsToAdd.push({
+        productId: configData.delivery.id,
+        productName: configData.delivery.name,
+        productSlug: configData.delivery.id,
+        productImage: null,
+        price: configData.delivery.price,
+        sku: 'SHIPPING',
+      })
+    }
+
+    // Add each item to the cart
+    itemsToAdd.forEach((item) => {
+      addItem(item)
+    })
+
+    // Build summary for toast
+    const itemNames = itemsToAdd.map((item) => item.productName)
+
+    // Show success toast and open cart
+    showToast(
+      `${itemNames.join(', ')}\n\n${itemsToAdd.length} item(s) added`,
+      'success',
+      'Items Added to Cart!'
+    )
+
+    // Open the cart drawer after a brief delay
+    setTimeout(() => openCart(), 300)
   }
 
   const handleClose = () => {
@@ -199,7 +321,7 @@ export function ContactModal() {
             </Button>
             <Button
               type="submit"
-              className="flex-1 bg-primary hover:bg-primary-dark"
+              className="flex-1 bg-[#0B5394] hover:bg-[#0B5394]/90 text-white"
             >
               Save & Continue
             </Button>

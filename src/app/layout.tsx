@@ -10,6 +10,7 @@ import { CartSheet } from '@/components/cart/CartSheet'
 import { ChatWidgetWrapper } from '@/components/chat/ChatWidgetWrapper'
 import { ScrollToTop } from '@/components/ui/ScrollToTop'
 import { FOMOBanner } from '@/components/marketing/FOMOBanner'
+import { ToastProvider } from '@/components/ui/toast'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -61,15 +62,17 @@ export default function RootLayout({
         <ThemeProvider>
           <AuthProvider>
             <CartProvider>
-              <FOMOBanner />
-              <Header />
-              <main className="min-h-[calc(100vh-4rem)]">
-                {children}
-              </main>
-              <Footer />
-              <CartSheet />
-              <ScrollToTop />
-              <ChatWidgetWrapper />
+              <ToastProvider>
+                <FOMOBanner />
+                <Header />
+                <main className="min-h-[calc(100vh-4rem)]">
+                  {children}
+                </main>
+                <Footer />
+                <CartSheet />
+                <ScrollToTop />
+                <ChatWidgetWrapper />
+              </ToastProvider>
             </CartProvider>
           </AuthProvider>
         </ThemeProvider>

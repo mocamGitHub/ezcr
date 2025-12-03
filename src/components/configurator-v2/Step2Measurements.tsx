@@ -421,8 +421,7 @@ export function Step2Measurements() {
 
           <Button
             type="submit"
-            className="rounded-full px-8"
-            style={{ backgroundColor: 'hsl(203 79% 57%)' }}
+            className="rounded-full px-8 bg-[#0B5394] hover:bg-[#0B5394]/90 text-white"
           >
             Continue
           </Button>

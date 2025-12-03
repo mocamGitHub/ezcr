@@ -139,8 +139,8 @@ export function Step3Motorcycle() {
                   hover:shadow-lg hover:-translate-y-1
                   ${
                     configData.motorcycle.type === bike.type
-                      ? 'border-primary bg-primary/10 shadow-lg shadow-primary/20'
-                      : 'border-border bg-card hover:border-primary/50'
+                      ? 'border-[#F78309] bg-[#F78309]/10 shadow-lg shadow-[#F78309]/20'
+                      : 'border-border bg-card hover:border-[#F78309]/50'
                   }
                 `}
               >
@@ -151,7 +151,7 @@ export function Step3Motorcycle() {
                 </div>
 
                 {configData.motorcycle.type === bike.type && (
-                  <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                  <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-[#F78309] flex items-center justify-center">
                     <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                     </svg>
@@ -263,8 +263,7 @@ export function Step3Motorcycle() {
 
           <Button
             type="submit"
-            className="rounded-full px-8"
-            style={{ backgroundColor: 'hsl(203 79% 57%)' }}
+            className="rounded-full px-8 bg-[#0B5394] hover:bg-[#0B5394]/90 text-white"
           >
             Continue
           </Button>

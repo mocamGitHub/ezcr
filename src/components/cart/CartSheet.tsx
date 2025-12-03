@@ -16,12 +16,20 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Minus, Plus, Trash2, ShoppingCart } from 'lucide-react'
 
+// Product slugs that have actual product pages
+const LINKABLE_PRODUCT_SLUGS = ['aun250', 'aun210']
+
+// Check if a product slug should be a clickable link
+function isLinkableProduct(slug: string): boolean {
+  return LINKABLE_PRODUCT_SLUGS.includes(slug.toLowerCase())
+}
+
 export function CartSheet() {
   const { cart, isOpen, closeCart, updateQuantity, removeItem } = useCart()
 
   return (
     <Sheet open={isOpen} onOpenChange={closeCart}>
-      <SheetContent className="flex flex-col w-full sm:max-w-lg p-6">
+      <SheetContent className="flex flex-col w-full sm:max-w-lg p-6 h-full max-h-screen">
         <SheetHeader className="mb-6">
           <SheetTitle className="flex items-center gap-2">
             <ShoppingCart className="h-5 w-5" />
@@ -42,7 +50,7 @@ export function CartSheet() {
           </div>
         ) : (
           <>
-            <ScrollArea className="flex-1 -mx-6 px-6">
+            <ScrollArea className="flex-1 -mx-6 px-6 overflow-y-auto">
               <div className="space-y-4">
                 {cart.items.map((item) => (
                   <div key={item.productId} className="flex gap-4">
@@ -64,13 +72,19 @@ export function CartSheet() {
 
                     {/* Product Details */}
                     <div className="flex-1 min-w-0">
-                      <Link
-                        href={`/products/${item.productSlug}`}
-                        onClick={closeCart}
-                        className="font-medium hover:text-[#0B5394] line-clamp-2"
-                      >
-                        {item.productName}
-                      </Link>
+                      {isLinkableProduct(item.productSlug) ? (
+                        <Link
+                          href={`/products/${item.productSlug}`}
+                          onClick={closeCart}
+                          className="font-medium hover:text-[#0B5394] line-clamp-2"
+                        >
+                          {item.productName}
+                        </Link>
+                      ) : (
+                        <span className="font-medium line-clamp-2">
+                          {item.productName}
+                        </span>
+                      )}
                       {item.sku && (
                         <p className="text-xs text-muted-foreground mt-1">
                           SKU: {item.sku}
