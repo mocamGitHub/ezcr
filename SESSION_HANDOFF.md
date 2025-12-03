@@ -1,7 +1,7 @@
-# Session Handoff - Configurator UX & Light Mode Fixes
+# Session Handoff - Database-Driven Content & Animated CTA
 
-**Date**: December 1, 2025
-**Latest Commit**: `4aefa71` - feat: Improve configurator UX, testimonials, and light mode styling
+**Date**: December 3, 2025
+**Latest Commit**: `e7e1ed4` - feat: Add database-driven content sections and animated CTA button
 **Branch**: main
 **Staging URL**: https://staging.ezcycleramp.com
 **VPS**: 5.161.187.109 (SSH as root)
@@ -10,65 +10,76 @@
 
 ## What Was Accomplished This Session
 
-### 1. Testimonial Marquee
-- Fixed smooth infinite scrolling with CSS keyframe animations
-- Changed from hardcoded data to database fetch (featured testimonials only)
-- Created `supabase/testimonials_seed.sql` with 14 sample testimonials
+### 1. Database-Driven Homepage Sections
+- **FeaturedProducts**: Created server component that fetches featured products from Supabase
+- **BlogPreview**: Created server component for blog posts from database with fallback data
+- **Restructured page.tsx**: Split into server component (page.tsx) and client components (HomePageClient.tsx)
 
-### 2. Testimonial Authentication
-- Added login requirement to submit testimonials
-- Shows "Sign in to Leave a Review" prompt for unauthenticated users
-- File: `src/components/testimonials/TestimonialSubmitForm.tsx`
+### 2. Blog Database Infrastructure
+- Created `blog_posts` table migration: `supabase/migrations/20241203_create_blog_posts.sql`
+- Added blog query functions to `src/lib/supabase/queries.ts`:
+  - `getBlogPosts(limit?)` - Get all published posts
+  - `getFeaturedBlogPosts(limit)` - Get featured posts
+  - `getBlogPostBySlug(slug)` - Get single post
+  - `getBlogPostsByCategory(category)` - Filter by category
+- Sample blog posts included in migration
 
-### 3. FOMO Banner
-- Created FOMOBanner component for homepage
-- Added API endpoint: `/api/fomo-banner`
-- Created database migration files in `supabase/migrations/`
+### 3. Animated CTA Button
+- Created `src/components/ui/animated-cta-button.tsx`
+- Rotating border beam effect with orange/white gradient
+- Used in "Not Sure Which Ramp Is Right?" section
+- Background matches section: `bg-gray-200 dark:bg-slate-900`
 
-### 4. Configurator UX Improvements
-- **Scroll-to-top** on step change (via useEffect in ConfiguratorProvider)
-- **Green checkmarks** for completed steps (changed `bg-success` to `bg-green-500`)
-- **Fixed step 5 navigation** via progress bar (updated `canClickStep` logic)
-- **Auto-advance** from step 1 to step 2 when vehicle selected
-- **SMS opt-in** checkbox checked by default (`smsOptIn: true`)
+### 4. Bug Fixes
+- **FAQ Page Scroll Issue**: Fixed chat widget causing page to scroll on load
+  - Changed from `scrollIntoView()` to `scrollTop` on container
+  - File: `src/components/chat/UniversalChatWidget.tsx`
 
-### 5. Light Mode Styling Fixes
-- Fixed checkbox visibility when checked (`bg-[#0B5394]` brand blue)
-- Fixed Imperial/Metric toggle visibility (`bg-gray-200` for light mode)
-- Fixed "Available Now" checkbox on products page
-
-### 6. Screenshots Tooling
-- Added `take-screenshots.js` for AI review
-- Created `screenshots/` directory with desktop and mobile captures
+### 5. Styling Updates
+- Various button styling adjustments (transparent backgrounds, consistent sizing)
+- Header theme support improvements
 
 ---
 
-## Key Files Modified
+## Key Files Created/Modified
 
-- `src/components/configurator-v2/ConfiguratorProvider.tsx` - scroll-to-top, smsOptIn default
-- `src/components/configurator-v2/ProgressBar.tsx` - green checkmarks, step 5 fix
-- `src/components/configurator-v2/Step1VehicleType.tsx` - auto-advance on vehicle select
-- `src/components/configurator-v2/ConfiguratorHeader.tsx` - light mode toggle fix
-- `src/components/ui/checkbox.tsx` - light mode visibility fix
-- `src/components/products/ProductFilters.tsx` - Available Now checkbox fix
-- `src/components/testimonials/TestimonialShowcase.tsx` - marquee animation
-- `src/components/testimonials/TestimonialSubmitForm.tsx` - auth requirement
+### New Files
+- `src/components/products/FeaturedProducts.tsx` - Server component for featured products
+- `src/components/blog/BlogPreview.tsx` - Server component for blog preview
+- `src/components/marketing/HomePageClient.tsx` - Client components extracted from homepage
+- `src/components/ui/animated-cta-button.tsx` - Animated button with border beam
+- `supabase/migrations/20241203_create_blog_posts.sql` - Blog table migration
+
+### Modified Files
+- `src/app/(marketing)/page.tsx` - Now a server component importing both server and client components
+- `src/app/(marketing)/blog/page.tsx` - Uses database with fallback
+- `src/components/chat/UniversalChatWidget.tsx` - Fixed scroll issue
+- `src/lib/supabase/queries.ts` - Added blog query functions
+- `src/components/layout/Header.tsx` - Theme styling updates
+- `tailwind.config.ts` - Added beam animation keyframes
+- `src/app/globals.css` - Added beam-rotate animation
+
+---
+
+## Database Setup Required
+
+The blog_posts table needs to be created in Supabase:
+
+```sql
+-- Run in Supabase SQL Editor:
+-- Copy contents of: supabase/migrations/20241203_create_blog_posts.sql
+```
+
+Until the migration is run, the site uses fallback data and will work normally.
 
 ---
 
 ## Current Status
 
-- **Build Status**: Passing (deployed to staging via Vercel)
-- **Dev Server**: May be running on port 3002 (restart if needed)
-
-### Database Setup (If Not Done)
-
-```sql
--- Run in Supabase SQL Editor:
--- 1. supabase/testimonials_seed.sql (replace YOUR_TENANT_ID and YOUR_USER_ID)
--- 2. supabase/migrations/001_create_fomo_banners_table.sql
--- 3. supabase/migrations/002_seed_fomo_banners.sql
-```
+- **Build Status**: Passing
+- **Dev Server**: Running on port 3002 (or default 3000)
+- **Blog Database**: Migration created, needs to be run in Supabase
+- **Fallback Data**: In place for all database-driven sections
 
 ---
 
@@ -80,8 +91,11 @@ Manual task: Edit these images to blur visible license plates:
 - `/public/images/hero/11.webp`
 - `/public/images/hero/12.webp`
 
-### 2. Blog Article Detail Pages (Optional)
-Blog cards link to `/blog/[slug]` but those pages don't exist yet.
+### 2. Blog Article Detail Pages
+Blog cards link to `/blog/[slug]` - individual post pages may need content
+
+### 3. Run Database Migration
+Execute `supabase/migrations/20241203_create_blog_posts.sql` in Supabase SQL Editor
 
 ---
 
@@ -114,14 +128,16 @@ cat SESSION_HANDOFF.md
 # 2. Start dev server if needed
 npm run dev
 
-# 3. Review key files
-# src/components/configurator-v2/ConfiguratorProvider.tsx
-# src/components/ui/checkbox.tsx
+# 3. Review key new files
+# src/components/products/FeaturedProducts.tsx
+# src/components/blog/BlogPreview.tsx
+# src/components/marketing/HomePageClient.tsx
+# supabase/migrations/20241203_create_blog_posts.sql
 ```
 
 ---
 
 **Session Status**: COMPLETE
 **Build Status**: Passing
-**Deploy Status**: Deployed to staging
-**Next Session**: Verify light mode fixes on staging, run database seeds if needed
+**Deploy Status**: Ready for push
+**Next Session**: Run blog_posts migration in Supabase, verify database-driven content
