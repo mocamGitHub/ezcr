@@ -1,101 +1,118 @@
-# Session Handoff - Database-Driven Content & Animated CTA
+# Session Handoff - Configurator UX & Cart Improvements
 
 **Date**: December 3, 2025
-**Latest Commit**: `e7e1ed4` - feat: Add database-driven content sections and animated CTA button
+**Time**: Evening Session
+**Previous Commit**: `311c560` - docs: Update session handoff for database-driven content
+**Current Commit**: `052a02c` - feat: Improve configurator UX with toast notifications and cart fixes
+**Current Status**: All features working
 **Branch**: main
-**Staging URL**: https://staging.ezcycleramp.com
-**VPS**: 5.161.187.109 (SSH as root)
+**Dev Server**: Running at http://localhost:3004
 
 ---
 
 ## What Was Accomplished This Session
 
-### 1. Database-Driven Homepage Sections
-- **FeaturedProducts**: Created server component that fetches featured products from Supabase
-- **BlogPreview**: Created server component for blog posts from database with fallback data
-- **Restructured page.tsx**: Split into server component (page.tsx) and client components (HomePageClient.tsx)
+### 1. Toast Notification System
+- Created custom toast component (`src/components/ui/toast.tsx`)
+- Replaced JavaScript `alert()` calls with smooth toast notifications
+- Added ToastProvider to root layout
+- Supports success, error, warning, and info types with icons
 
-### 2. Blog Database Infrastructure
-- Created `blog_posts` table migration: `supabase/migrations/20241203_create_blog_posts.sql`
-- Added blog query functions to `src/lib/supabase/queries.ts`:
-  - `getBlogPosts(limit?)` - Get all published posts
-  - `getFeaturedBlogPosts(limit)` - Get featured posts
-  - `getBlogPostBySlug(slug)` - Get single post
-  - `getBlogPostsByCategory(category)` - Filter by category
-- Sample blog posts included in migration
+### 2. Cart Improvements
+- Fixed cart sheet scrollability with proper height constraints
+- Cart now adds individual items from configurator (not bundled as "custom-configuration")
+- Fixed 404 error when clicking cart items - only AUN250/AUN210 are linkable
+- Cart slideout is now fully scrollable for many items
 
-### 3. Animated CTA Button
-- Created `src/components/ui/animated-cta-button.tsx`
-- Rotating border beam effect with orange/white gradient
-- Used in "Not Sure Which Ramp Is Right?" section
-- Background matches section: `bg-gray-200 dark:bg-slate-900`
+### 3. Configurator UX Enhancements
+- Auto-add items to cart after contact info is saved (no need to click Add to Cart again)
+- Added animated "Add to Cart" button with rotating beam effect
+- Updated ConfiguratorHeader title size (text-3xl) to match "Let's Get Started"
+- Changed "(Optional, but Helpful)" to orange color
 
-### 4. Bug Fixes
-- **FAQ Page Scroll Issue**: Fixed chat widget causing page to scroll on load
-  - Changed from `scrollIntoView()` to `scrollTop` on container
-  - File: `src/components/chat/UniversalChatWidget.tsx`
+### 4. Products Page Updates
+- Changed search from auto-filter to button-triggered search
+- Improved product card layout with consistent heights
+- Fixed badge visibility with solid backgrounds
 
-### 5. Styling Updates
-- Various button styling adjustments (transparent backgrounds, consistent sizing)
-- Header theme support improvements
+### Files Modified This Session (23 files)
 
----
+**New Files:**
+1. `src/components/ui/toast.tsx` - Custom toast notification system
+2. `src/components/products/ProductFilterBar.tsx` - New filter bar component
+3. `src/app/(marketing)/blog/[slug]/page.tsx` - Blog post detail page
 
-## Key Files Created/Modified
+**Modified Files:**
+1. `src/components/cart/CartSheet.tsx` - Scrollability, individual item handling
+2. `src/components/configurator-v2/ContactModal.tsx` - Auto-add to cart after contact save
+3. `src/components/configurator-v2/Step5Quote.tsx` - Individual items, animated button
+4. `src/components/ui/animated-cta-button.tsx` - Added AnimatedCTAActionButton
+5. `src/components/configurator-v2/ConfiguratorHeader.tsx` - Title size, toasts
+6. `src/components/configurator-v2/Step1VehicleType.tsx` - Orange optional label
+7. `src/components/products/ProductSearch.tsx` - Button-triggered search
+8. `src/components/products/ProductCard.tsx` - Layout fixes, badge visibility
+9. `src/app/(shop)/products/page.tsx` - Full-width header
+10. `src/app/layout.tsx` - Added ToastProvider
 
-### New Files
-- `src/components/products/FeaturedProducts.tsx` - Server component for featured products
-- `src/components/blog/BlogPreview.tsx` - Server component for blog preview
-- `src/components/marketing/HomePageClient.tsx` - Client components extracted from homepage
-- `src/components/ui/animated-cta-button.tsx` - Animated button with border beam
-- `supabase/migrations/20241203_create_blog_posts.sql` - Blog table migration
-
-### Modified Files
-- `src/app/(marketing)/page.tsx` - Now a server component importing both server and client components
-- `src/app/(marketing)/blog/page.tsx` - Uses database with fallback
-- `src/components/chat/UniversalChatWidget.tsx` - Fixed scroll issue
-- `src/lib/supabase/queries.ts` - Added blog query functions
-- `src/components/layout/Header.tsx` - Theme styling updates
-- `tailwind.config.ts` - Added beam animation keyframes
-- `src/app/globals.css` - Added beam-rotate animation
+**Deleted Files:**
+- `src/components/products/CategoryFilter.tsx`
+- `src/components/products/ProductFilters.tsx`
 
 ---
 
-## Database Setup Required
+## Current State
 
-The blog_posts table needs to be created in Supabase:
+### What's Working
+- Toast notifications throughout configurator
+- Cart adds individual items from configurator
+- Cart is scrollable for many items
+- Animated "Add to Cart" button with rotating beam
+- Auto-add to cart after contact info saved
+- Product search with button trigger
+- Configurator styling matches design
 
-```sql
--- Run in Supabase SQL Editor:
--- Copy contents of: supabase/migrations/20241203_create_blog_posts.sql
+### What's NOT Working / Pending
+- Database save for configurations still fails (product_id constraint)
+- Email and Print actions still require re-clicking after contact info
+
+---
+
+## Next Immediate Actions
+
+### 1. Fix Configuration Save API
+The save API fails with:
+```
+null value in column "product_id" of relation "product_configurations" violates not-null constraint
+```
+Need to either:
+- Make product_id nullable in database
+- Or provide a default product_id for configurations
+
+### 2. Auto-Execute Email/Print After Contact Save
+Similar to cart, these actions should execute automatically after contact info is provided.
+
+---
+
+## How to Resume After /clear
+
+Run the `/resume` command or:
+
+```bash
+# Check current state
+git log --oneline -5
+git status
+npm run dev  # If server not running
+
+# Read handoff document
+cat SESSION_HANDOFF.md
 ```
 
-Until the migration is run, the site uses fallback data and will work normally.
-
 ---
 
-## Current Status
+## Known Issues / Blockers
 
-- **Build Status**: Passing
-- **Dev Server**: Running on port 3002 (or default 3000)
-- **Blog Database**: Migration created, needs to be run in Supabase
-- **Fallback Data**: In place for all database-driven sections
-
----
-
-## Pending Tasks from Previous Sessions
-
-### 1. Blur License Plates in Hero Images
-Manual task: Edit these images to blur visible license plates:
-- `/public/images/hero/10.webp`
-- `/public/images/hero/11.webp`
-- `/public/images/hero/12.webp`
-
-### 2. Blog Article Detail Pages
-Blog cards link to `/blog/[slug]` - individual post pages may need content
-
-### 3. Run Database Migration
-Execute `supabase/migrations/20241203_create_blog_posts.sql` in Supabase SQL Editor
+1. **Configuration Save API**: Fails due to product_id constraint - configurations save to database but error is shown
+2. **Turbopack Panics**: Occasional file write errors on Windows (doesn't affect functionality)
 
 ---
 
@@ -117,27 +134,8 @@ docker run -d --name ezcr-nextjs --restart unless-stopped --network coolify \
 
 ---
 
-## How to Resume
-
-After running `/clear`:
-
-```bash
-# 1. Read this handoff document
-cat SESSION_HANDOFF.md
-
-# 2. Start dev server if needed
-npm run dev
-
-# 3. Review key new files
-# src/components/products/FeaturedProducts.tsx
-# src/components/blog/BlogPreview.tsx
-# src/components/marketing/HomePageClient.tsx
-# supabase/migrations/20241203_create_blog_posts.sql
-```
-
----
-
 **Session Status**: COMPLETE
-**Build Status**: Passing
-**Deploy Status**: Ready for push
-**Next Session**: Run blog_posts migration in Supabase, verify database-driven content
+**Next Session**: Fix configuration save API, add auto-execute for email/print
+**Handoff Complete**: 2025-12-03
+
+All work committed and pushed to GitHub!
