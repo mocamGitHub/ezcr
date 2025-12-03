@@ -51,6 +51,7 @@ export function UniversalChatWidget({ pageContext = { page: 'unknown' }, embedde
   const [isListening, setIsListening] = useState(false)
   const [speechSupported, setSpeechSupported] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null)
@@ -84,9 +85,12 @@ export function UniversalChatWidget({ pageContext = { page: 'unknown' }, embedde
     }
   }, [])
 
-  // Auto-scroll to bottom
+  // Auto-scroll to bottom within the chat container (not the whole page)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (messagesContainerRef.current && messagesEndRef.current) {
+      // Use scrollTop on the container instead of scrollIntoView to avoid scrolling the page
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
+    }
   }, [messages])
 
   // Focus input when opened
@@ -353,7 +357,7 @@ export function UniversalChatWidget({ pageContext = { page: 'unknown' }, embedde
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-900">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-900">
         {messages.map((message, index) => (
           <div key={index}>
             <div

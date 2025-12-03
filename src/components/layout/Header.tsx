@@ -275,13 +275,16 @@ export function Header() {
       )}
 
       {/* Trust Badges Bar */}
-      <div className="border-t bg-muted/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-center py-2 space-x-8 text-xs">
-          <div className="flex items-center space-x-2">
-            <span className="font-medium">Veteran Owned</span>
+      <div className="border-t bg-gray-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-center py-2 space-x-3 text-xs">
+          <div className="border border-green-500 rounded-full px-3 py-1">
+            <span className="font-medium text-green-500">Veteran owned</span>
           </div>
-          <div className="flex items-center space-x-2">
-            <span className="font-medium">BBB A+ Rating</span>
+          <div className="border border-yellow-500 rounded-full px-3 py-1">
+            <span className="font-medium text-yellow-500">Neo-Dyne powered systems</span>
+          </div>
+          <div className="border border-blue-500 rounded-full px-3 py-1">
+            <span className="font-medium text-blue-500">BBB A+ rating</span>
           </div>
         </div>
       </div>
