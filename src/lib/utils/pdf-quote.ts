@@ -1,6 +1,14 @@
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
+// Format currency with thousand separators
+const formatCurrency = (amount: number): string => {
+  return amount.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+}
+
 interface QuoteData {
   contact: {
     firstName: string
@@ -199,21 +207,21 @@ export function generateQuotePDF(data: QuoteData) {
   yPosition += 5
 
   const configItems = [
-    [data.selectedModel.name, `$${data.selectedModel.price.toFixed(2)}`],
+    [data.selectedModel.name, `$${formatCurrency(data.selectedModel.price)}`],
     ...(data.extension.price > 0
-      ? [[data.extension.name, `$${data.extension.price.toFixed(2)}`]]
+      ? [[data.extension.name, `$${formatCurrency(data.extension.price)}`]]
       : []),
     ...(data.boltlessKit.price > 0
-      ? [[data.boltlessKit.name, `$${data.boltlessKit.price.toFixed(2)}`]]
+      ? [[data.boltlessKit.name, `$${formatCurrency(data.boltlessKit.price)}`]]
       : []),
     ...(data.tiedown.price > 0
-      ? [[data.tiedown.name, `$${data.tiedown.price.toFixed(2)}`]]
+      ? [[data.tiedown.name, `$${formatCurrency(data.tiedown.price)}`]]
       : []),
     ...(data.service.price > 0
-      ? [[data.service.name, `$${data.service.price.toFixed(2)}`]]
+      ? [[data.service.name, `$${formatCurrency(data.service.price)}`]]
       : []),
     ...(data.delivery.price > 0
-      ? [[data.delivery.name, `$${data.delivery.price.toFixed(2)}`]]
+      ? [[data.delivery.name, `$${formatCurrency(data.delivery.price)}`]]
       : []),
   ]
 
@@ -253,9 +261,9 @@ export function generateQuotePDF(data: QuoteData) {
   doc.setTextColor(darkGray)
 
   const priceBreakdown = [
-    ['Subtotal:', `$${data.subtotal.toFixed(2)}`],
-    ['Sales Tax (8.9%):', `$${data.salesTax.toFixed(2)}`],
-    ['Processing Fee (3%):', `$${data.processingFee.toFixed(2)}`],
+    ['Subtotal:', `$${formatCurrency(data.subtotal)}`],
+    ['Sales Tax (8.9%):', `$${formatCurrency(data.salesTax)}`],
+    ['Processing Fee (3%):', `$${formatCurrency(data.processingFee)}`],
   ]
 
   priceBreakdown.forEach(([label, value]) => {
@@ -275,7 +283,7 @@ export function generateQuotePDF(data: QuoteData) {
   doc.setFontSize(16)
   doc.setFont('helvetica', 'bold')
   doc.text('Total:', 25, priceY)
-  doc.text(`$${data.total.toFixed(2)}`, 190, priceY, { align: 'right' })
+  doc.text(`$${formatCurrency(data.total)}`, 190, priceY, { align: 'right' })
 
   // Footer
   const footerY = 270

@@ -10,6 +10,14 @@ import { FEES, CONTACT } from '@/types/configurator-v2'
 import { Phone, Mail, Printer, Share2, Check, Copy } from 'lucide-react'
 import { generateQuotePDF } from '@/lib/utils/pdf-quote'
 
+// Format currency with thousand separators
+const formatCurrency = (amount: number): string => {
+  return amount.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+}
+
 export function Step5Quote() {
   const { configData, units, previousStep, setShowContactModal, setPendingAction, saveConfiguration, savedConfigId } = useConfigurator()
   const { addItem, openCart } = useCart()
@@ -282,46 +290,10 @@ export function Step5Quote() {
 
   return (
     <div className="animate-in fade-in duration-300">
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold mb-3">
-          Your Custom <span className="text-[hsl(var(--secondary))]">Quote</span>
-        </h2>
-        <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
-          Review your configuration and pricing below. When you&apos;re ready, add to cart or contact us for assistance.
-        </p>
-      </div>
-
       <div className="max-w-6xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column: Details */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Customer Information */}
-            <div className="bg-card rounded-xl p-6 border border-[hsl(var(--primary)/30%)]">
-              <h3 className="text-xl font-semibold mb-4 text-[hsl(var(--primary))]">Customer Information</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Name</p>
-                  <p className="font-medium">
-                    {configData.contact.firstName || configData.contact.lastName
-                      ? `${configData.contact.firstName} ${configData.contact.lastName}`.trim()
-                      : 'Not provided'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Email</p>
-                  <p className="font-medium">{configData.contact.email || 'Not provided'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Phone</p>
-                  <p className="font-medium">{configData.contact.phone || 'Not provided'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Shipping Address</p>
-                  <p className="font-medium text-muted-foreground">To be provided</p>
-                </div>
-              </div>
-            </div>
-
             {/* Vehicle & Motorcycle Details */}
             <div className="bg-card rounded-xl p-6 border border-[hsl(var(--secondary)/30%)]">
               <h3 className="text-xl font-semibold mb-4">Vehicle & <span className="text-[hsl(var(--secondary))]">Motorcycle</span> Details</h3>
@@ -384,36 +356,36 @@ export function Step5Quote() {
               <div className="space-y-3">
                 <div className="flex justify-between items-center py-2 border-b border-border">
                   <span className="font-medium">{configData.selectedModel.name}</span>
-                  <span className="font-bold">${configData.selectedModel.price.toFixed(2)}</span>
+                  <span className="font-bold">${formatCurrency(configData.selectedModel.price)}</span>
                 </div>
                 {configData.extension.price > 0 && (
                   <div className="flex justify-between items-center py-2 border-b border-border">
                     <span className="font-medium">{configData.extension.name}</span>
-                    <span className="font-bold">${configData.extension.price.toFixed(2)}</span>
+                    <span className="font-bold">${formatCurrency(configData.extension.price)}</span>
                   </div>
                 )}
                 {configData.boltlessKit.price > 0 && (
                   <div className="flex justify-between items-center py-2 border-b border-border">
                     <span className="font-medium">{configData.boltlessKit.name}</span>
-                    <span className="font-bold">${configData.boltlessKit.price.toFixed(2)}</span>
+                    <span className="font-bold">${formatCurrency(configData.boltlessKit.price)}</span>
                   </div>
                 )}
                 {configData.tiedown.price > 0 && (
                   <div className="flex justify-between items-center py-2 border-b border-border">
                     <span className="font-medium">{configData.tiedown.name}</span>
-                    <span className="font-bold">${configData.tiedown.price.toFixed(2)}</span>
+                    <span className="font-bold">${formatCurrency(configData.tiedown.price)}</span>
                   </div>
                 )}
                 {configData.service.price > 0 && (
                   <div className="flex justify-between items-center py-2 border-b border-border">
                     <span className="font-medium">{configData.service.name}</span>
-                    <span className="font-bold">${configData.service.price.toFixed(2)}</span>
+                    <span className="font-bold">${formatCurrency(configData.service.price)}</span>
                   </div>
                 )}
                 {configData.delivery.price > 0 && (
                   <div className="flex justify-between items-center py-2 border-b border-border">
                     <span className="font-medium">{configData.delivery.name}</span>
-                    <span className="font-bold">${configData.delivery.price.toFixed(2)}</span>
+                    <span className="font-bold">${formatCurrency(configData.delivery.price)}</span>
                   </div>
                 )}
               </div>
@@ -429,20 +401,20 @@ export function Step5Quote() {
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span className="font-medium">${subtotal.toFixed(2)}</span>
+                  <span className="font-medium">${formatCurrency(subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Sales Tax (8.9%)</span>
-                  <span className="font-medium">${salesTax.toFixed(2)}</span>
+                  <span className="font-medium">${formatCurrency(salesTax)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Processing (3%)</span>
-                  <span className="font-medium">${processingFee.toFixed(2)}</span>
+                  <span className="font-medium">${formatCurrency(processingFee)}</span>
                 </div>
                 <div className="h-px bg-border my-3" />
                 <div className="flex justify-between text-lg">
                   <span className="font-bold">Total</span>
-                  <span className="font-bold text-2xl text-[hsl(var(--secondary))]">${total.toFixed(2)}</span>
+                  <span className="font-bold text-2xl text-[hsl(var(--secondary))]">${formatCurrency(total)}</span>
                 </div>
               </div>
 
@@ -452,6 +424,7 @@ export function Step5Quote() {
                   onClick={handleAddToCart}
                   icon="cart"
                   className="w-full"
+                  variant="orange"
                 >
                   Add to Cart
                 </AnimatedCTAActionButton>

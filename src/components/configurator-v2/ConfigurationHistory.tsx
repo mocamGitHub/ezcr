@@ -130,7 +130,7 @@ export function ConfigurationHistory() {
                 {/* Price */}
                 <div className="flex items-center gap-2 text-2xl font-bold text-primary mb-4">
                   <DollarSign className="h-5 w-5" />
-                  {config.calculated_price.toFixed(2)}
+                  {config.calculated_price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
 
                 {/* Meta Info */}

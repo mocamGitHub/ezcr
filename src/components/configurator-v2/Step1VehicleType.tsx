@@ -1,11 +1,8 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { useConfigurator } from './ConfiguratorProvider'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Checkbox } from '@/components/ui/checkbox'
 import { VehicleType } from '@/types/configurator-v2'
 
 const VEHICLES = [
@@ -29,103 +26,101 @@ const VEHICLES = [
   },
 ]
 
+const TONNEAU_TYPES = [
+  { id: 'rollup', name: 'Roll-Up', icon: '🔄', description: 'Soft or hard roll-up cover' },
+  { id: 'folding', name: 'Folding', icon: '📁', description: 'Tri-fold or bi-fold cover' },
+  { id: 'retractable', name: 'Retractable', icon: '⏪', description: 'Slides into canister' },
+  { id: 'hinged', name: 'Hinged', icon: '📦', description: 'One-piece hard cover' },
+]
+
+const ROLLUP_POSITIONS = [
+  { id: 'on_top', name: 'On Top of Bed', icon: '⬆️', description: 'Rolls up and sits on top of the bed rails' },
+  { id: 'inside', name: 'Inside the Bed', icon: '⬇️', description: 'Rolls up inside the bed near the cab' },
+]
+
 export function Step1VehicleType() {
-  const { configData, updateContact, selectVehicle, nextStep, canProceedFromStep } = useConfigurator()
+  const { configData, selectVehicle, nextStep, canProceedFromStep, updateConfigData } = useConfigurator()
+
+  // Tonneau cover state
+  const [hasTonneau, setHasTonneau] = useState<boolean | null>(null)
+  const [tonneauType, setTonneauType] = useState<string | null>(null)
+  const [rollupPosition, setRollupPosition] = useState<string | null>(null)
+
+  const isPickupSelected = configData.vehicle === 'pickup'
+
+  // Determine if tonneau questions are complete
+  const tonneauComplete =
+    !isPickupSelected ||
+    hasTonneau === false ||
+    (hasTonneau === true && tonneauType !== null && (tonneauType !== 'rollup' || rollupPosition !== null))
+
+  const handleVehicleSelect = (vehicleType: VehicleType) => {
+    selectVehicle(vehicleType)
+
+    // Reset tonneau state when changing vehicle
+    if (vehicleType !== 'pickup') {
+      setHasTonneau(null)
+      setTonneauType(null)
+      setRollupPosition(null)
+      // Auto-advance for non-pickup vehicles
+      setTimeout(() => nextStep(), 300)
+    } else {
+      // If pickup is already selected and clicked again, show tonneau question
+      if (configData.vehicle === 'pickup' && hasTonneau === null) {
+        // Already showing tonneau question, do nothing
+      } else if (configData.vehicle === 'pickup') {
+        // Reset to show tonneau question again
+        setHasTonneau(null)
+        setTonneauType(null)
+        setRollupPosition(null)
+      }
+    }
+  }
+
+  const handleTonneauAnswer = (answer: boolean) => {
+    setHasTonneau(answer)
+    updateConfigData({ hasTonneauCover: answer })
+
+    if (!answer) {
+      setTonneauType(null)
+      setRollupPosition(null)
+      // No tonneau, advance to next step
+      setTimeout(() => nextStep(), 300)
+    }
+  }
+
+  const handleTonneauTypeSelect = (type: string) => {
+    setTonneauType(type)
+    updateConfigData({ tonneauType: type })
+
+    if (type !== 'rollup') {
+      setRollupPosition(null)
+      // Non-rollup type selected, advance
+      setTimeout(() => nextStep(), 300)
+    }
+  }
+
+  const handleRollupPositionSelect = (position: string) => {
+    setRollupPosition(position)
+    updateConfigData({ rollupPosition: position })
+    // All questions answered, advance
+    setTimeout(() => nextStep(), 300)
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (canProceedFromStep(1)) {
+    if (canProceedFromStep(1) && tonneauComplete) {
       nextStep()
     }
   }
 
   return (
     <div className="animate-in fade-in duration-300">
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold mb-3">
-          Let&apos;s <span className="text-[#F78309]">Get Started</span>
-        </h2>
-        <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
-          We&apos;ll help you configure the perfect ramp for your needs. First, tell us about your vehicle
-          and optionally provide your contact information.
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Contact Information (Optional) */}
-        <div className="bg-card rounded-xl p-6 border border-[#0B5394]/30">
-          <h3 className="text-xl font-semibold mb-4 text-[#0B5394]">Contact Information <span className="text-[#F78309]">(Optional, but Helpful)</span></h3>
-          <p className="text-sm text-muted-foreground mb-6">
-            Providing your information now will save time later and allow us to save your configuration.
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="firstName">First Name</Label>
-              <Input
-                id="firstName"
-                type="text"
-                placeholder="John"
-                value={configData.contact.firstName}
-                onChange={(e) => updateContact({ firstName: e.target.value })}
-                className="mt-1.5"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="lastName">Last Name</Label>
-              <Input
-                id="lastName"
-                type="text"
-                placeholder="Doe"
-                value={configData.contact.lastName}
-                onChange={(e) => updateContact({ lastName: e.target.value })}
-                className="mt-1.5"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="email">Email Address</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="john@example.com"
-                value={configData.contact.email}
-                onChange={(e) => updateContact({ email: e.target.value })}
-                className="mt-1.5"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="phone">Phone Number</Label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="(555) 123-4567"
-                value={configData.contact.phone}
-                onChange={(e) => updateContact({ phone: e.target.value })}
-                className="mt-1.5"
-              />
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3 mt-4">
-            <Checkbox
-              id="smsOptIn"
-              checked={configData.contact.smsOptIn}
-              onCheckedChange={(checked) => updateContact({ smsOptIn: checked as boolean })}
-            />
-            <Label htmlFor="smsOptIn" className="text-sm leading-relaxed cursor-pointer">
-              I agree to receive SMS notifications about my order. Standard messaging rates may apply.
-              You can opt out at any time by replying STOP.
-            </Label>
-          </div>
-        </div>
-
-        {/* Vehicle Selection (Required) */}
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Vehicle Selection */}
         <div>
           <h3 className="text-xl font-semibold mb-4">
-            Select Your <span className="text-[#F78309]">Vehicle Type</span> <span className="text-destructive">*</span>
+            Select Your <span className="text-[#F78309]">Vehicle Type</span>
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -133,11 +128,7 @@ export function Step1VehicleType() {
               <button
                 key={vehicle.type}
                 type="button"
-                onClick={() => {
-                  selectVehicle(vehicle.type)
-                  // Auto-advance to step 2 after a brief delay for visual feedback
-                  setTimeout(() => nextStep(), 300)
-                }}
+                onClick={() => handleVehicleSelect(vehicle.type)}
                 className={`
                   group relative p-6 rounded-xl border-2 transition-all duration-300
                   hover:shadow-lg hover:-translate-y-1
@@ -166,16 +157,127 @@ export function Step1VehicleType() {
           </div>
         </div>
 
-        {/* Navigation */}
-        <div className="flex justify-end items-center pt-6">
-          <Button
-            type="submit"
-            disabled={!configData.vehicle}
-            className={`rounded-full px-8 ${configData.vehicle ? 'bg-[#0B5394] hover:bg-[#0B5394]/90 text-white' : ''}`}
-          >
-            Continue
-          </Button>
-        </div>
+        {/* Tonneau Cover Question - Only for Pickup */}
+        {isPickupSelected && hasTonneau === null && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-300 pt-4 border-t border-border">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <h3 className="text-lg font-semibold whitespace-nowrap">
+                Do you have a <span className="text-[#F78309]">Tonneau Cover</span>?
+              </h3>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleTonneauAnswer(true)}
+                  className="px-6 py-3 rounded-xl border-2 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 border-border bg-card hover:border-[#F78309]/50"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">✅</span>
+                    <span className="font-semibold">Yes</span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleTonneauAnswer(false)}
+                  className="px-6 py-3 rounded-xl border-2 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 border-border bg-card hover:border-[#F78309]/50"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">❌</span>
+                    <span className="font-semibold">No</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tonneau Type Question */}
+        {isPickupSelected && hasTonneau === true && tonneauType === null && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-300 pt-4 border-t border-border">
+            <div className="flex flex-col md:flex-row items-center justify-center gap-4">
+              <h3 className="text-lg font-semibold whitespace-nowrap">
+                What type of <span className="text-[#F78309]">Tonneau Cover</span>?
+              </h3>
+
+              <div className="flex flex-wrap justify-center gap-3">
+                {TONNEAU_TYPES.map((type) => (
+                  <button
+                    key={type.id}
+                    type="button"
+                    onClick={() => handleTonneauTypeSelect(type.id)}
+                    className="px-4 py-3 rounded-xl border-2 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 border-border bg-card hover:border-[#F78309]/50"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">{type.icon}</span>
+                      <span className="font-semibold text-sm">{type.name}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="text-center mt-4">
+              <button
+                type="button"
+                onClick={() => setHasTonneau(null)}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                ← Back
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Roll-Up Position Question */}
+        {isPickupSelected && hasTonneau === true && tonneauType === 'rollup' && rollupPosition === null && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-300 pt-4 border-t border-border">
+            <div className="flex flex-col md:flex-row items-center justify-center gap-4">
+              <h3 className="text-lg font-semibold whitespace-nowrap">
+                Where does it <span className="text-[#F78309]">roll up</span>?
+              </h3>
+
+              <div className="flex flex-wrap justify-center gap-3">
+                {ROLLUP_POSITIONS.map((pos) => (
+                  <button
+                    key={pos.id}
+                    type="button"
+                    onClick={() => handleRollupPositionSelect(pos.id)}
+                    className="px-4 py-3 rounded-xl border-2 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 border-border bg-card hover:border-[#F78309]/50"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">{pos.icon}</span>
+                      <span className="font-semibold text-sm">{pos.name}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="text-center mt-4">
+              <button
+                type="button"
+                onClick={() => setTonneauType(null)}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                ← Back
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Navigation - only show if no vehicle selected yet */}
+        {!configData.vehicle && (
+          <div className="flex justify-end items-center pt-6">
+            <Button
+              type="submit"
+              disabled={true}
+              className="rounded-full px-8"
+            >
+              Continue
+            </Button>
+          </div>
+        )}
       </form>
     </div>
   )

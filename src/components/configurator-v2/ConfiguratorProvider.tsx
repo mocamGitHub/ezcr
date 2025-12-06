@@ -12,6 +12,11 @@ import {
   PRODUCT_NAMES,
   MEASUREMENT_RANGES,
 } from '@/types/configurator-v2'
+import {
+  getSharedConfiguratorData,
+  mapBikeWeightToLbs,
+  mapBikeWeightToType,
+} from '@/lib/configurator-shared-data'
 
 interface ConfiguratorContextType {
   // State
@@ -38,6 +43,9 @@ interface ConfiguratorContextType {
 
   // Vehicle
   selectVehicle: (vehicle: VehicleType) => void
+
+  // Generic config data update
+  updateConfigData: (data: Partial<ConfigData>) => void
 
   // Measurements
   updateMeasurements: (measurements: Partial<ConfigData['measurements']>) => void
@@ -92,10 +100,6 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
   const [pendingAction, setPendingAction] = useState<'cart' | 'email' | 'print' | null>(null)
   const [savedConfigId, setSavedConfigId] = useState<string | null>(null)
 
-  // Scroll to top when step changes
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }, [currentStep])
 
   const [configData, setConfigData] = useState<ConfigData>({
     vehicle: null,
@@ -149,6 +153,61 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
       price: PRICING.delivery.pickup,
     },
   })
+
+  // Load shared data from Quick Configurator on mount
+  useEffect(() => {
+    const sharedData = getSharedConfiguratorData()
+    if (sharedData && sharedData.source === 'quick') {
+      // Pre-populate based on Quick Configurator answers
+      setConfigData((prev) => {
+        const updated = { ...prev }
+
+        // Set vehicle type (Quick Configurator assumes pickup)
+        if (sharedData.vehicleType) {
+          updated.vehicle = sharedData.vehicleType
+        }
+
+        // Pre-set tonneau cover info if available
+        if (sharedData.hasTonneau !== undefined) {
+          updated.hasTonneauCover = sharedData.hasTonneau === 'yes'
+          if (sharedData.tonneauType) {
+            updated.tonneauType = sharedData.tonneauType
+          }
+          if (sharedData.rollDirection) {
+            updated.tonneauRollDirection = sharedData.rollDirection
+          }
+        }
+
+        // Pre-set motorcycle type and weight estimate
+        if (sharedData.bikeWeight) {
+          const weightRange = mapBikeWeightToLbs(sharedData.bikeWeight)
+          const avgWeight = (weightRange.min + weightRange.max) / 2
+          updated.motorcycle = {
+            ...prev.motorcycle,
+            type: mapBikeWeightToType(sharedData.bikeWeight) as BikeType,
+            weight: avgWeight,
+          }
+        }
+
+        // Pre-select recommended model from Quick Configurator
+        if (sharedData.recommendation) {
+          const modelId = sharedData.recommendation
+          updated.selectedModel = {
+            id: modelId,
+            name: PRODUCT_NAMES.models[modelId as keyof typeof PRODUCT_NAMES.models],
+            price: PRICING.models[modelId as keyof typeof PRICING.models],
+          }
+        }
+
+        return updated
+      })
+
+      // If vehicle is already set, mark step 1 as completed
+      if (sharedData.vehicleType) {
+        setCompletedSteps([1])
+      }
+    }
+  }, [])
 
 
   // Conversion helpers
@@ -271,6 +330,14 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
         requiredAC001: null,
         requiresCargoExtension: false,
       },
+    }))
+  }
+
+  // Generic config data update (for tonneau cover info, etc.)
+  const updateConfigData = (data: Partial<ConfigData>) => {
+    setConfigData((prev) => ({
+      ...prev,
+      ...data,
     }))
   }
 
@@ -497,6 +564,7 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
     setShowContactModal,
     setPendingAction,
     selectVehicle,
+    updateConfigData,
     updateMeasurements,
     calculateAC001Extension,
     checkCargoExtension,

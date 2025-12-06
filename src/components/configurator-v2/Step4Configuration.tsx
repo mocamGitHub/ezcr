@@ -32,16 +32,6 @@ export function Step4Configuration() {
 
   return (
     <div className="animate-in fade-in duration-300">
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold mb-3">
-          Ramp <span className="text-[#F78309]">Configuration</span>
-        </h2>
-        <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
-          Based on your specifications, we recommend the AUN250 ramp model with Extension 1.
-          You can customize your selection below.
-        </p>
-      </div>
-
       <div className="max-w-6xl mx-auto space-y-8">
         {/* Configuration Summary */}
         <div className="bg-card rounded-xl p-6 border border-[#0B5394]/30">

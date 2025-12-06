@@ -248,29 +248,22 @@ export function Step2Measurements() {
 
   return (
     <div className="animate-in fade-in duration-300">
-      <div className="text-center mb-8">
-        <h2 className="text-2xl font-medium text-muted-foreground mb-6">
-          Accurate measurements ensure your ramp fits <span className="text-[hsl(var(--secondary))] font-semibold">perfectly</span>
-        </h2>
-      </div>
-
       <form onSubmit={handleSubmit} className="max-w-5xl mx-auto space-y-8">
         {/* Measurement Guide (for Pickup) */}
         {isPickup && (
-          <div className="mb-12">
-            <h3 className="text-2xl font-bold mb-6">How to Measure Your <span className="text-[hsl(var(--primary))]">Pickup Truck</span></h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="text-center p-8 bg-black/40 rounded-xl border border-[hsl(var(--primary)/30%)]">
-                <div className="text-6xl mb-4">📏</div>
-                <p className="text-base font-semibold mb-2">Measure from bulkhead to end of closed tailgate</p>
+          <div className="mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="text-center p-4 bg-muted/50 rounded-xl border border-border">
+                <div className="text-4xl mb-2">📏</div>
+                <p className="text-sm font-medium">Bulkhead to closed tailgate</p>
               </div>
-              <div className="text-center p-8 bg-black/40 rounded-xl border border-[hsl(var(--primary)/30%)]">
-                <div className="text-6xl mb-4">📐</div>
-                <p className="text-base font-semibold mb-2">Measure from bulkhead to end of open tailgate</p>
+              <div className="text-center p-4 bg-muted/50 rounded-xl border border-border">
+                <div className="text-4xl mb-2">📐</div>
+                <p className="text-sm font-medium">Bulkhead to open tailgate</p>
               </div>
-              <div className="text-center p-8 bg-black/40 rounded-xl border border-[hsl(var(--primary)/30%)]">
-                <div className="text-6xl mb-4">📊</div>
-                <p className="text-base font-semibold mb-2">Measure ground to top of open tailgate</p>
+              <div className="text-center p-4 bg-muted/50 rounded-xl border border-border">
+                <div className="text-4xl mb-2">📊</div>
+                <p className="text-sm font-medium">Ground to open tailgate</p>
               </div>
             </div>
           </div>

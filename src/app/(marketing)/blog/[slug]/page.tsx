@@ -620,7 +620,7 @@ export default async function BlogPostPage({ params }: PageProps) {
       {/* CTA Section */}
       <section className="py-16 bg-[#0B5394] text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold mb-4">Ready to Find Your Perfect Ramp?</h2>
+          <h2 className="text-3xl font-bold mb-4">Ready to Find Your <span className="text-[#F78309]">Perfect Ramp</span>?</h2>
           <p className="text-lg text-blue-100 mb-8">
             Browse our selection of premium motorcycle loading ramps.
           </p>

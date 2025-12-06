@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { StaticStarRating } from '@/components/ui/star-rating'
-import { Quote, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface Testimonial {
@@ -124,18 +124,22 @@ const SAMPLE_TESTIMONIALS: Testimonial[] = [
 function TestimonialCard({ testimonial, variant = 'default' }: { testimonial: Testimonial; variant?: 'default' | 'marquee' }) {
   const isMarquee = variant === 'marquee'
 
+  // Format the date for "Verified Customer since {date}"
+  const purchaseDate = new Date(testimonial.created_at)
+  const formattedDate = purchaseDate.toLocaleDateString('en-US', {
+    month: 'short',
+    year: 'numeric'
+  })
+
   return (
     <div
       className={cn(
         'bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700',
         'transition-all duration-300 hover:shadow-xl',
-        isMarquee ? 'w-[350px] flex-shrink-0' : 'w-full'
+        isMarquee ? 'w-[350px] h-[260px] flex-shrink-0' : 'w-full'
       )}
     >
-      <div className="p-6">
-        {/* Quote icon */}
-        <Quote className="w-8 h-8 text-[#F78309]/30 mb-4" />
-
+      <div className={cn('p-6 flex flex-col', isMarquee && 'h-full')}>
         {/* Rating */}
         <div className="mb-3">
           <StaticStarRating rating={testimonial.rating} size="sm" />
@@ -143,7 +147,7 @@ function TestimonialCard({ testimonial, variant = 'default' }: { testimonial: Te
 
         {/* Review text */}
         <p className={cn(
-          'text-gray-700 dark:text-gray-300 leading-relaxed',
+          'text-gray-700 dark:text-gray-300 leading-relaxed flex-grow',
           isMarquee ? 'line-clamp-4 text-sm' : 'text-base'
         )}>
           &quot;{testimonial.review_text}&quot;
@@ -166,7 +170,7 @@ function TestimonialCard({ testimonial, variant = 'default' }: { testimonial: Te
             <p className="font-semibold text-gray-900 dark:text-white text-sm">
               {testimonial.customer_name}
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Verified Customer</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Verified Customer since {formattedDate}</p>
           </div>
         </div>
       </div>
@@ -352,10 +356,10 @@ export function TestimonialShowcase({ testimonials: initialTestimonials, classNa
           }
         }
         .animate-marquee-left {
-          animation: marquee-left 60s linear infinite;
+          animation: marquee-left 90s linear infinite;
         }
         .animate-marquee-right {
-          animation: marquee-right 60s linear infinite;
+          animation: marquee-right 90s linear infinite;
         }
       `}</style>
     </div>

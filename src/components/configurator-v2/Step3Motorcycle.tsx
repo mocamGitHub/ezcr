@@ -99,15 +99,6 @@ export function Step3Motorcycle() {
 
   return (
     <div className="animate-in fade-in duration-300">
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold mb-3">
-          <span className="text-[hsl(var(--secondary))]">Motorcycle</span> Information
-        </h2>
-        <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
-          Tell us about your motorcycle so we can ensure the ramp can safely handle its weight and dimensions.
-        </p>
-      </div>
-
       <form onSubmit={handleSubmit} className="max-w-4xl mx-auto space-y-8">
         {/* Motorcycle Type Error Banner */}
         {showTypeError && (
@@ -164,7 +155,6 @@ export function Step3Motorcycle() {
 
         {/* Motorcycle Details */}
         <div className="bg-card rounded-xl p-6 border border-[hsl(var(--primary)/30%)]">
-          <h3 className="text-xl font-semibold mb-6 text-[hsl(var(--primary))]">Motorcycle Details</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {/* Weight */}

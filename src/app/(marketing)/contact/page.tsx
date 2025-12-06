@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Phone, Mail, MapPin, Clock } from 'lucide-react'
+import { ChatCTA } from '@/components/chat/ChatCTA'
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -124,6 +125,16 @@ export default function ContactPage() {
                     </p>
                   </div>
                 </div>
+              </div>
+
+              {/* Chat CTA */}
+              <div className="mt-8">
+                <ChatCTA
+                  variant="card"
+                  title="Need Instant Help?"
+                  description="Chat with our AI assistant 24/7 for quick answers about products, shipping, and more."
+                  buttonText="Start Chat"
+                />
               </div>
             </div>
 

@@ -24,7 +24,7 @@ export function Footer() {
             <h3 className="font-semibold mb-3 text-sm md:text-base">Products</h3>
             <ul className="space-y-1.5 text-xs md:text-sm">
               <li><Link href="/products" className="text-muted-foreground hover:text-[#F78309]">All Products</Link></li>
-              <li><Link href="/configure" className="text-muted-foreground hover:text-[#F78309]">Configurator</Link></li>
+              <li><Link href="/configure-smooth" className="text-muted-foreground hover:text-[#F78309]">Configurator</Link></li>
             </ul>
           </div>
 

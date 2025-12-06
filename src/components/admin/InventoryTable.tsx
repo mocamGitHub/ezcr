@@ -128,10 +128,10 @@ export function InventoryTable({ products, loading, onRefresh }: InventoryTableP
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    ${product.base_price.toFixed(2)}
+                    ${product.base_price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </TableCell>
                   <TableCell className="text-right font-medium">
-                    ${totalValue.toFixed(2)}
+                    ${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">

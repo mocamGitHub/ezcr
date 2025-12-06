@@ -43,7 +43,7 @@ export function Header() {
 
   const navLinks = [
     { href: '/products', label: 'Products' },
-    { href: '/configure', label: 'Configurator' },
+    { href: '/configure-smooth', label: 'Configurator' },
     { href: '/faq', label: 'FAQ' },
     { href: '/testimonials', label: 'Reviews' },
     { href: '/about', label: 'About' },
@@ -52,21 +52,21 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex h-20 items-center">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-1 sm:py-2 flex h-16 sm:h-20 items-center">
         {/* Logo */}
-        <Link href="/" className="mr-6 flex items-center flex-shrink-0 p-2">
+        <Link href="/" className="mr-4 lg:mr-6 flex items-center flex-shrink-0 p-1 sm:p-2">
           <Image
             src="/logo.png"
             alt="EZ Cycle Ramp Logo"
             width={140}
             height={46}
             priority
-            className="h-auto w-auto max-w-[110px] sm:max-w-[140px]"
+            className="h-auto w-auto max-w-[100px] sm:max-w-[120px] lg:max-w-[140px]"
           />
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
+        <nav className="hidden md:flex items-center space-x-3 lg:space-x-6 text-sm font-medium">
           {navLinks.map((link) => (
             <Link
               key={link.href}
@@ -274,17 +274,19 @@ export function Header() {
         </div>
       )}
 
-      {/* Trust Badges Bar */}
-      <div className="border-t bg-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-center py-2 space-x-3 text-xs">
-          <div className="border border-green-500 rounded-full px-3 py-1">
-            <span className="font-medium text-green-500">Veteran owned</span>
+      {/* Trust Badges Bar - Hidden on mobile for cleaner look */}
+      <div className="hidden sm:block border-t bg-gray-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-center py-1.5 gap-2 sm:gap-3 text-[10px] sm:text-xs">
+          <div className="relative rounded-full px-2 sm:px-3 py-0.5 sm:py-1 overflow-hidden bg-gradient-to-r from-red-600 via-white to-blue-600 p-[1px]">
+            <div className="bg-gray-800 rounded-full px-2 sm:px-3 py-0.5">
+              <span className="font-medium bg-gradient-to-r from-red-400 via-white to-blue-400 bg-clip-text text-transparent">Veteran Owned</span>
+            </div>
           </div>
-          <div className="border border-yellow-500 rounded-full px-3 py-1">
-            <span className="font-medium text-yellow-500">Neo-Dyne powered systems</span>
+          <div className="border border-yellow-500 rounded-full px-2 sm:px-3 py-0.5 sm:py-1 hidden md:block">
+            <span className="font-medium text-yellow-500">NEO-DYNE Engineered</span>
           </div>
-          <div className="border border-blue-500 rounded-full px-3 py-1">
-            <span className="font-medium text-blue-500">BBB A+ rating</span>
+          <div className="border border-blue-500 rounded-full px-2 sm:px-3 py-0.5 sm:py-1">
+            <span className="font-medium text-blue-500">BBB A+</span>
           </div>
         </div>
       </div>

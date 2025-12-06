@@ -15,16 +15,21 @@ interface AnimatedCTAActionButtonProps {
   className?: string
   icon?: 'arrow' | 'cart'
   disabled?: boolean
+  variant?: 'default' | 'orange'
 }
 
 // Shared inner content component
 function AnimatedButtonContent({
   children,
-  icon = 'arrow'
+  icon = 'arrow',
+  variant = 'default'
 }: {
   children: React.ReactNode
   icon?: 'arrow' | 'cart'
+  variant?: 'default' | 'orange'
 }) {
+  const isOrange = variant === 'orange'
+
   return (
     <>
       {/* Outer container with rotating border */}
@@ -48,7 +53,11 @@ function AnimatedButtonContent({
         </div>
 
         {/* Inner button content */}
-        <div className="relative flex items-center gap-2 rounded-lg bg-gray-200 dark:bg-slate-900 border border-[#0B5394] px-8 py-3 h-[52px] text-lg font-medium text-foreground transition-all duration-300 group-hover:bg-gray-300 dark:group-hover:bg-slate-800">
+        <div className={`relative flex items-center gap-2 rounded-lg px-8 py-3 h-[52px] text-lg font-medium transition-all duration-300 ${
+          isOrange
+            ? 'bg-[#F78309] border border-[#F78309] text-white group-hover:bg-[#e07308]'
+            : 'bg-gray-200 dark:bg-slate-900 border border-[#0B5394] text-foreground group-hover:bg-gray-300 dark:group-hover:bg-slate-800'
+        }`}>
           {/* Icon */}
           {icon === 'cart' ? (
             <ShoppingCart className="relative z-10 w-5 h-5" />
@@ -83,7 +92,8 @@ export function AnimatedCTAActionButton({
   children,
   className = '',
   icon = 'arrow',
-  disabled = false
+  disabled = false,
+  variant = 'default'
 }: AnimatedCTAActionButtonProps) {
   return (
     <button
@@ -91,7 +101,7 @@ export function AnimatedCTAActionButton({
       disabled={disabled}
       className={`group relative inline-flex items-center justify-center ${className} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
     >
-      <AnimatedButtonContent icon={icon}>{children}</AnimatedButtonContent>
+      <AnimatedButtonContent icon={icon} variant={variant}>{children}</AnimatedButtonContent>
     </button>
   )
 }

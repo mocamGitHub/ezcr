@@ -1,12 +1,10 @@
 'use client'
 
 import React, { useState } from 'react'
-import Link from 'next/link'
 import { useConfigurator } from './ConfiguratorProvider'
 import { useToast } from '@/components/ui/toast'
 import { Button } from '@/components/ui/button'
-import { CONTACT } from '@/types/configurator-v2'
-import { X, Save, Check } from 'lucide-react'
+import { Save, Check } from 'lucide-react'
 
 export function ConfiguratorHeader() {
   const { units, toggleUnits, saveConfiguration, savedConfigId } = useConfigurator()
@@ -86,16 +84,6 @@ export function ConfiguratorHeader() {
               )}
             </Button>
 
-            {/* Exit Button */}
-            <Link href={CONTACT.exitUrl}>
-              <Button
-                variant="outline"
-                className="rounded-full gap-2"
-              >
-                <X className="h-4 w-4" />
-                Exit
-              </Button>
-            </Link>
           </div>
         </nav>
       </div>

@@ -1,11 +1,12 @@
 // src/components/marketing/HomePageClient.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { AnimatedCTAButton } from '@/components/ui/animated-cta-button'
 import { TestimonialShowcase } from '@/components/testimonials/TestimonialShowcase'
+import { ChatCTA } from '@/components/chat/ChatCTA'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 // Base URL for images from live site
@@ -116,7 +117,7 @@ export function HeroSlider() {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
                   <Button asChild size="default" className="bg-[#F78309] hover:bg-[#F78309]/90 text-white text-sm sm:text-base md:text-lg px-4 sm:px-6 md:px-8 shadow-lg">
-                    <Link href="/configure">Check Ramp Fit</Link>
+                    <Link href="#configurator">Quick Ramp Finder</Link>
                   </Button>
                   <Button asChild size="default" variant="outline" className="bg-transparent text-white border-white hover:bg-white/20 text-sm sm:text-base md:text-lg px-4 sm:px-6 md:px-8 shadow-lg backdrop-blur-sm">
                     <Link href="/products">Shop Ramps</Link>
@@ -167,15 +168,88 @@ export function HeroSlider() {
 }
 
 // ============================================
-// Product Showcase Section (Variant B style - Light/Dark mode)
+// Product Showcase Section (Variant B style - Light/Dark mode with Parallax)
 // ============================================
 export function ProductShowcase() {
+  const sectionRef = useRef<HTMLElement>(null)
+  const [parallaxOffset, setParallaxOffset] = useState(0)
+  const [isVisible, setIsVisible] = useState(false)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (sectionRef.current) {
+        const rect = sectionRef.current.getBoundingClientRect()
+        const windowHeight = window.innerHeight
+
+        // Check if section is in view
+        if (rect.top < windowHeight && rect.bottom > 0) {
+          setIsVisible(true)
+          // Calculate parallax: how far into view the section is
+          const scrollProgress = 1 - (rect.top / windowHeight)
+          const offset = scrollProgress * 60 // Subtle parallax
+          setParallaxOffset(offset)
+        } else {
+          setIsVisible(false)
+        }
+      }
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    handleScroll() // Initial call
+
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
   return (
-    <section className="relative py-16 lg:py-24 bg-gradient-to-br from-gray-200 via-orange-50 to-gray-200 dark:from-slate-900 dark:via-[#0B5394] dark:to-slate-900">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section ref={sectionRef} className="relative py-16 lg:py-24 overflow-hidden">
+      {/* Parallax Background - Light Mode */}
+      <div
+        className="absolute inset-0 w-full h-[150%] -top-[25%] dark:hidden"
+        style={{
+          transform: `translateY(${parallaxOffset}px)`,
+          willChange: 'transform',
+          transition: 'transform 0.1s ease-out',
+        }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-200 via-orange-50 to-gray-200" />
+        {/* Geometric pattern */}
+        <div
+          className="absolute inset-0 opacity-20"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.06'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+          }}
+        />
+      </div>
+
+      {/* Parallax Background - Dark Mode */}
+      <div
+        className="absolute inset-0 w-full h-[150%] -top-[25%] hidden dark:block"
+        style={{
+          transform: `translateY(${parallaxOffset}px)`,
+          willChange: 'transform',
+          transition: 'transform 0.1s ease-out',
+        }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-[#0B5394] to-slate-900" />
+        {/* Subtle grid pattern */}
+        <div
+          className="absolute inset-0 opacity-20"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.1' fill-rule='evenodd'%3E%3Cpath d='M0 0h40v1H0zM0 0h1v40H0z'/%3E%3C/g%3E%3C/svg%3E")`,
+          }}
+        />
+      </div>
+
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           {/* Left: Text Content */}
-          <div>
+          <div
+            style={{
+              opacity: isVisible ? 1 : 0,
+              transform: isVisible ? 'translateY(0)' : 'translateY(30px)',
+              transition: 'all 0.8s ease-out',
+            }}
+          >
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
               Safely load heavy motorcycles into tall trucks —{' '}
               <span className="text-[#F78309]">even solo.</span>
@@ -197,14 +271,14 @@ export function ProductShowcase() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-gray-900 dark:text-white mt-1">•</span>
-                  <span>Backed by Neo-Dyne 2-year warranty and veteran-owned support.</span>
+                  <span>Backed by a full 2-year warranty on NEO-DYNE ramps and accessories.</span>
                 </li>
               </ul>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 mb-6 items-center">
-              <AnimatedCTAButton href="/configure">
-                Find My Perfect Ramp
+              <AnimatedCTAButton href="/configure-smooth">
+                Full Configurator
               </AnimatedCTAButton>
               <Button asChild size="lg" className="bg-[#F78309] hover:bg-[#F78309]/90 text-white text-lg px-8 py-6 min-w-[180px]">
                 <Link href="/products">Shop Ramps</Link>
@@ -212,17 +286,22 @@ export function ProductShowcase() {
             </div>
 
             <p className="text-sm text-gray-500 dark:text-blue-200">
-              <Link href="/configure" className="hover:underline">
-                Not sure where to start? Our Ramp Finder checks your truck, bike, and loading style and gives you a recommendation in about 2 minutes.
+              <Link href="#configurator" className="hover:underline">
+                Not sure where to start? Try our <span className="font-medium text-[#F78309]">Quick Ramp Finder</span> below for a recommendation in under a minute.
               </Link>
             </p>
           </div>
 
           {/* Right: Product Image */}
-          <div className="relative flex items-center justify-center">
+          <div
+            className="relative flex items-center justify-center"
+            style={{
+              opacity: isVisible ? 1 : 0,
+              transform: isVisible ? 'translateY(0)' : 'translateY(30px)',
+              transition: 'all 0.8s ease-out 0.2s',
+            }}
+          >
             <div className="relative">
-              {/* Glow effect */}
-              <div className="absolute inset-0 bg-[#F78309]/15 dark:bg-[#F78309]/20 blur-3xl rounded-full scale-75" />
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={`${LIVE_SITE}/images/ramp6.webp`}
@@ -267,8 +346,18 @@ export function WhyRidersTrust() {
           </div>
           <div className="bg-white dark:bg-slate-900 rounded-lg p-6 shadow-sm">
             <h3 className="font-semibold text-base uppercase tracking-wide text-gray-900 dark:text-white mb-3">2-YEAR WARRANTY</h3>
-            <p className="text-base text-gray-600 dark:text-gray-300">Backed by a full Neo-Dyne 2-year warranty on ramps and system.</p>
+            <p className="text-base text-gray-600 dark:text-gray-300">Backed by a full 2-year warranty on NEO-DYNE ramps and accessories.</p>
           </div>
+        </div>
+
+        {/* Chat CTA */}
+        <div className="mt-10">
+          <ChatCTA
+            variant="banner"
+            title="Still Have Questions?"
+            description="Our AI assistant can help you find the right ramp, check shipping costs, and more."
+            buttonText="Chat Now"
+          />
         </div>
       </div>
     </section>
@@ -364,11 +453,11 @@ export function CTASection() {
               Not Sure Which Ramp Is Right?
             </h2>
             <p className="text-base sm:text-lg mb-6 opacity-90 max-w-md mx-auto lg:mx-0">
-              Use our intelligent configurator to find the perfect ramp for your motorcycle, vehicle, and loading setup.
+              Use our Full Configurator with exact measurements to get your complete quote with all options.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
               <Button asChild size="lg" className="bg-white text-[#F78309] hover:bg-gray-100 font-semibold shadow-lg">
-                <Link href="/configure">Start Configurator</Link>
+                <Link href="/configure-smooth">Full Configurator</Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="bg-transparent border-2 border-white text-white hover:bg-white/20 font-semibold">
                 <Link href="tel:800-687-4410">Call 800-687-4410</Link>
