@@ -1,79 +1,87 @@
-# Session Handoff - Configurator UX & Cart Improvements
+# Session Handoff - Configurator UX, Testimonials & Chatbot CTAs
 
-**Date**: December 3, 2025
+**Date**: December 5, 2025
 **Time**: Evening Session
-**Previous Commit**: `311c560` - docs: Update session handoff for database-driven content
-**Current Commit**: `052a02c` - feat: Improve configurator UX with toast notifications and cart fixes
-**Current Status**: All features working
+**Previous Commit**: `3f054c0` - docs: Update session handoff for configurator UX improvements
+**Current Commit**: `683b4c4` - feat: Improve configurator UX, testimonials, and add chatbot CTAs
+**Current Status**: All features working, deployed to staging
 **Branch**: main
-**Dev Server**: Running at http://localhost:3004
+**Dev Server**: Running at http://localhost:3000 ✅
 
 ---
 
 ## What Was Accomplished This Session
 
-### 1. Toast Notification System
-- Created custom toast component (`src/components/ui/toast.tsx`)
-- Replaced JavaScript `alert()` calls with smooth toast notifications
-- Added ToastProvider to root layout
-- Supports success, error, warning, and info types with icons
+### 1. Quick Configurator Navigation Fix
+- Fixed Result step navigation - now clickable when all questions are answered
+- Converted static div to clickable button in StepNavigator
 
-### 2. Cart Improvements
-- Fixed cart sheet scrollability with proper height constraints
-- Cart now adds individual items from configurator (not bundled as "custom-configuration")
-- Fixed 404 error when clicking cart items - only AUN250/AUN210 are linkable
-- Cart slideout is now fully scrollable for many items
+### 2. ProductShowcase Cleanup
+- Removed ambient glow spots from dark mode background
+- Removed glow effect behind product image
+- Kept the parallax scroll effect
 
-### 3. Configurator UX Enhancements
-- Auto-add items to cart after contact info is saved (no need to click Add to Cart again)
-- Added animated "Add to Cart" button with rotating beam effect
-- Updated ConfiguratorHeader title size (text-3xl) to match "Let's Get Started"
-- Changed "(Optional, but Helpful)" to orange color
+### 3. Smooth Scroll Behavior
+- Added `scroll-behavior: smooth` to HTML element in globals.css
+- "Quick Ramp Finder" link now smoothly scrolls to configurator section
 
-### 4. Products Page Updates
-- Changed search from auto-filter to button-triggered search
-- Improved product card layout with consistent heights
-- Fixed badge visibility with solid backgrounds
+### 4. USA Theme for Veteran Owned Pill
+- Added red-white-blue gradient border
+- Added gradient text effect
+- Creates patriotic appearance in header trust badges
 
-### Files Modified This Session (23 files)
+### 5. Neo-Dyne Text Updates
+- Changed "Neo-Dyne powered" to "NEO-DYNE Engineered" in header
+- Updated warranty text: "Backed by a full 2-year warranty on NEO-DYNE ramps and accessories." (2 places)
+
+### 6. Testimonial Card Improvements
+- Removed Quote icon from upper left of cards
+- Slowed marquee scroll from 60s to 90s for better readability
+- Added "Verified Customer since {date}" with formatted purchase date
+- Fixed card sizing with consistent 260px height for marquee cards
+- Added flexbox layout to ensure uniform card appearance
+
+### 7. "Perfect Ramp" Orange Styling
+- Updated "Find Your Perfect Ramp" header to have "Perfect Ramp" in orange (#F78309)
+- Applied to: QuickConfigurator, blog page, blog [slug] page
+
+### 8. Chatbot CTA Component
+- Created new `ChatCTA` component with 3 variants: inline, card, banner
+- Opens the existing chat widget when clicked
+- Added chat CTA banner to "Why Riders Trust" section on home page
+- Added chat CTA card to Contact page
+
+### Files Modified This Session (13 files)
 
 **New Files:**
-1. `src/components/ui/toast.tsx` - Custom toast notification system
-2. `src/components/products/ProductFilterBar.tsx` - New filter bar component
-3. `src/app/(marketing)/blog/[slug]/page.tsx` - Blog post detail page
+1. `src/components/chat/ChatCTA.tsx` - Reusable chat call-to-action component
 
 **Modified Files:**
-1. `src/components/cart/CartSheet.tsx` - Scrollability, individual item handling
-2. `src/components/configurator-v2/ContactModal.tsx` - Auto-add to cart after contact save
-3. `src/components/configurator-v2/Step5Quote.tsx` - Individual items, animated button
-4. `src/components/ui/animated-cta-button.tsx` - Added AnimatedCTAActionButton
-5. `src/components/configurator-v2/ConfiguratorHeader.tsx` - Title size, toasts
-6. `src/components/configurator-v2/Step1VehicleType.tsx` - Orange optional label
-7. `src/components/products/ProductSearch.tsx` - Button-triggered search
-8. `src/components/products/ProductCard.tsx` - Layout fixes, badge visibility
-9. `src/app/(shop)/products/page.tsx` - Full-width header
-10. `src/app/layout.tsx` - Added ToastProvider
-
-**Deleted Files:**
-- `src/components/products/CategoryFilter.tsx`
-- `src/components/products/ProductFilters.tsx`
+1. `src/app/globals.css` - Added smooth scroll behavior
+2. `src/components/layout/Header.tsx` - USA theme for Veteran pill, NEO-DYNE text
+3. `src/components/marketing/HomePageClient.tsx` - Removed glow, added ChatCTA, updated warranty text
+4. `src/components/marketing/QuickConfigurator.tsx` - Fixed Result step navigation, orange "Perfect Ramp"
+5. `src/components/testimonials/TestimonialShowcase.tsx` - Removed quote icon, slower scroll, date display, fixed sizing
+6. `src/app/(marketing)/contact/page.tsx` - Added ChatCTA card
+7. `src/app/(marketing)/blog/page.tsx` - Orange "Perfect Ramp"
+8. `src/app/(marketing)/blog/[slug]/page.tsx` - Orange "Perfect Ramp"
 
 ---
 
 ## Current State
 
-### What's Working
-- Toast notifications throughout configurator
-- Cart adds individual items from configurator
-- Cart is scrollable for many items
-- Animated "Add to Cart" button with rotating beam
-- Auto-add to cart after contact info saved
-- Product search with button trigger
-- Configurator styling matches design
+### What's Working ✅
+- ✅ Quick Configurator navigation to all steps including Result
+- ✅ Smooth scroll for anchor links
+- ✅ USA-themed Veteran Owned pill
+- ✅ Testimonial cards with dates and consistent sizing
+- ✅ Chat CTA components on home and contact pages
+- ✅ All Neo-Dyne/warranty text updates
+- ✅ Orange "Perfect Ramp" headers
 
 ### What's NOT Working / Pending
-- Database save for configurations still fails (product_id constraint)
-- Email and Print actions still require re-clicking after contact info
+- ⏳ Database save for configurations still fails (product_id constraint)
+- ⏳ Email and Print actions still require re-clicking after contact info
 
 ---
 
@@ -90,6 +98,12 @@ Need to either:
 
 ### 2. Auto-Execute Email/Print After Contact Save
 Similar to cart, these actions should execute automatically after contact info is provided.
+
+### 3. Consider More Chat CTA Placements
+Could add ChatCTA to:
+- FAQ page
+- Products page (sidebar or after products grid)
+- Individual product pages
 
 ---
 
@@ -111,18 +125,22 @@ cat SESSION_HANDOFF.md
 
 ## Known Issues / Blockers
 
-1. **Configuration Save API**: Fails due to product_id constraint - configurations save to database but error is shown
+1. **Configuration Save API**: Fails due to product_id constraint
 2. **Turbopack Panics**: Occasional file write errors on Windows (doesn't affect functionality)
 
 ---
 
-## Deployment Commands
+## Deployment Info
+
+**Staging**: https://staging.ezcycleramp.com
+- Auto-deploys on push to main via GitHub Actions
+- Uses Docker on Hetzner VPS at 5.161.187.109
 
 ```bash
-# SSH to VPS
+# SSH to VPS (if needed)
 ssh root@5.161.187.109
 
-# Manual deploy if needed:
+# Manual deploy:
 cd /opt/ezcr-staging
 git fetch origin && git reset --hard origin/main
 docker build -t ezcr-nextjs-prod:latest --build-arg CACHEBUST=$(date +%s) .
@@ -134,8 +152,9 @@ docker run -d --name ezcr-nextjs --restart unless-stopped --network coolify \
 
 ---
 
-**Session Status**: COMPLETE
+**Session Status**: ✅ COMPLETE
+**Deployment**: Auto-deployed to staging via GitHub Actions
 **Next Session**: Fix configuration save API, add auto-execute for email/print
-**Handoff Complete**: 2025-12-03
+**Handoff Complete**: 2025-12-05
 
-All work committed and pushed to GitHub!
+🎉 All work committed, pushed, and deploying to staging.ezcycleramp.com!
