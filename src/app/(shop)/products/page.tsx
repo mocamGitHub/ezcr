@@ -3,6 +3,7 @@ import { searchProducts, getProductCategories, ProductSortOption } from '@/lib/s
 import { ProductCard } from '@/components/products/ProductCard'
 import { ProductSearch } from '@/components/products/ProductSearch'
 import { ProductFilterBar } from '@/components/products/ProductFilterBar'
+import { ChatCTA } from '@/components/chat/ChatCTA'
 
 export const metadata = {
   title: 'All Products - EZ Cycle Ramp',
@@ -101,6 +102,16 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
             )}
           </div>
         )}
+      </div>
+
+      {/* Chat CTA */}
+      <div className="mt-12">
+        <ChatCTA
+          variant="card"
+          title="Need Help Choosing?"
+          description="Not sure which ramp is right for your setup? Chat with our AI assistant for personalized recommendations."
+          buttonText="Get Recommendations"
+        />
       </div>
     </div>
     </>

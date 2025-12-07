@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button'
 import { AnimatedCTAActionButton } from '@/components/ui/animated-cta-button'
 import { FEES, CONTACT } from '@/types/configurator-v2'
 import { Phone, Mail, Printer, Share2, Check, Copy } from 'lucide-react'
-import { generateQuotePDF } from '@/lib/utils/pdf-quote'
 
 // Format currency with thousand separators
 const formatCurrency = (amount: number): string => {
@@ -19,7 +18,7 @@ const formatCurrency = (amount: number): string => {
 }
 
 export function Step5Quote() {
-  const { configData, units, previousStep, setShowContactModal, setPendingAction, saveConfiguration, savedConfigId } = useConfigurator()
+  const { configData, units, previousStep, setShowContactModal, setPendingAction, saveConfiguration, savedConfigId, executeEmailQuote, executePrintQuote } = useConfigurator()
   const { addItem, openCart } = useCart()
   const { showToast } = useToast()
   const [showShareDialog, setShowShareDialog] = useState(false)
@@ -179,41 +178,11 @@ export function Step5Quote() {
       return
     }
 
-    try {
-      const response = await fetch('/api/quote/email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: configData.contact.email,
-          firstName: configData.contact.firstName,
-          lastName: configData.contact.lastName,
-          vehicle: configData.vehicle,
-          measurements: configData.measurements,
-          motorcycle: configData.motorcycle,
-          selectedModel: configData.selectedModel,
-          extension: configData.extension,
-          boltlessKit: configData.boltlessKit,
-          tiedown: configData.tiedown,
-          service: configData.service,
-          delivery: configData.delivery,
-          subtotal,
-          salesTax,
-          processingFee,
-          total,
-        }),
-      })
-
-      if (response.ok) {
-        showToast(`Please check your inbox at ${configData.contact.email}`, 'success', 'Quote Sent Successfully!')
-      } else {
-        const error = await response.json()
-        showToast(error.error || 'Unknown error occurred', 'error', 'Failed to Send Email')
-      }
-    } catch (error) {
-      console.error('Error sending email:', error)
-      showToast('Please try again or call us at 800-687-4410', 'error', 'Failed to Send Email')
+    const result = await executeEmailQuote()
+    if (result.success) {
+      showToast(`Please check your inbox at ${configData.contact.email}`, 'success', 'Quote Sent Successfully!')
+    } else {
+      showToast(result.message || 'Please try again or call us at 800-687-4410', 'error', 'Failed to Send Email')
     }
   }
 
@@ -224,37 +193,11 @@ export function Step5Quote() {
       return
     }
 
-    try {
-      generateQuotePDF({
-        contact: {
-          firstName: configData.contact.firstName || '',
-          lastName: configData.contact.lastName || '',
-          email: configData.contact.email || '',
-          phone: configData.contact.phone,
-        },
-        vehicle: configData.vehicle || '',
-        measurements: configData.measurements,
-        motorcycle: {
-          type: configData.motorcycle.type || '',
-          weight: configData.motorcycle.weight,
-          wheelbase: configData.motorcycle.wheelbase,
-          length: configData.motorcycle.length,
-        },
-        selectedModel: configData.selectedModel,
-        extension: configData.extension,
-        boltlessKit: configData.boltlessKit,
-        tiedown: configData.tiedown,
-        service: configData.service,
-        delivery: configData.delivery,
-        subtotal,
-        salesTax,
-        processingFee,
-        total,
-      })
+    const result = executePrintQuote()
+    if (result.success) {
       showToast('Check your downloads folder for the PDF', 'success', 'PDF Quote Generated!')
-    } catch (error) {
-      console.error('Error generating PDF:', error)
-      showToast('Please try again or email us for a quote', 'error', 'Failed to Generate PDF')
+    } else {
+      showToast(result.message || 'Please try again or email us for a quote', 'error', 'Failed to Generate PDF')
     }
   }
 

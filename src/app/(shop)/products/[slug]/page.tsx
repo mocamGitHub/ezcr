@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { formatPrice } from '@/lib/utils/format'
 import { ArrowLeft, Check, X } from 'lucide-react'
+import { ChatCTA } from '@/components/chat/ChatCTA'
 
 interface ProductPageProps {
   params: Promise<{
@@ -212,6 +213,16 @@ export default async function ProductPage({ params }: ProductPageProps) {
           </div>
         </div>
       )}
+
+      {/* Chat CTA */}
+      <div className="mt-12">
+        <ChatCTA
+          variant="banner"
+          title={`Questions about the ${product.name}?`}
+          description="Get instant answers about compatibility, specifications, and more."
+          buttonText="Chat Now"
+        />
+      </div>
     </div>
   )
 }

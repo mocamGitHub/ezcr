@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label'
 import { AlertCircle } from 'lucide-react'
 
 export function ContactModal() {
-  const { showContactModal, setShowContactModal, updateContact, configData, pendingAction, setPendingAction } = useConfigurator()
+  const { showContactModal, setShowContactModal, updateContact, configData, pendingAction, setPendingAction, executeEmailQuote, executePrintQuote } = useConfigurator()
   const { addItem, openCart } = useCart()
   const { showToast } = useToast()
 
@@ -65,9 +65,22 @@ export function ContactModal() {
       // Automatically add items to cart
       addItemsToCart()
     } else if (pendingAction === 'email') {
-      showToast(`Your contact info has been saved. Click Email again.`, 'success', 'Contact Info Saved!')
+      // Automatically send email quote
+      executeEmailQuote().then((result) => {
+        if (result.success) {
+          showToast(result.message, 'success', 'Quote Sent Successfully!')
+        } else {
+          showToast(result.message, 'error', 'Failed to Send Email')
+        }
+      })
     } else if (pendingAction === 'print') {
-      showToast('Your contact info has been saved. Click Print again.', 'success', 'Contact Info Saved!')
+      // Automatically generate PDF
+      const result = executePrintQuote()
+      if (result.success) {
+        showToast(result.message, 'success', 'PDF Quote Generated!')
+      } else {
+        showToast(result.message, 'error', 'Failed to Generate PDF')
+      }
     }
 
     setPendingAction(null)

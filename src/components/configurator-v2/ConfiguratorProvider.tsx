@@ -11,7 +11,9 @@ import {
   PRICING,
   PRODUCT_NAMES,
   MEASUREMENT_RANGES,
+  FEES,
 } from '@/types/configurator-v2'
+import { generateQuotePDF } from '@/lib/utils/pdf-quote'
 import {
   getSharedConfiguratorData,
   mapBikeWeightToLbs,
@@ -70,6 +72,10 @@ interface ConfiguratorContextType {
   // Save/Load
   saveConfiguration: (isComplete?: boolean) => Promise<{ success: boolean; id?: string; message: string }>
   loadConfiguration: (id: string) => Promise<boolean>
+
+  // Quote actions
+  executeEmailQuote: () => Promise<{ success: boolean; message: string }>
+  executePrintQuote: () => { success: boolean; message: string }
 
   // Conversion helpers
   convertToInches: (value: number) => number
@@ -548,6 +554,119 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
     }
   }
 
+  // Calculate totals for email/print
+  const calculateTotals = () => {
+    const subtotal =
+      configData.selectedModel.price +
+      configData.extension.price +
+      configData.boltlessKit.price +
+      configData.tiedown.price +
+      configData.service.price +
+      configData.delivery.price
+
+    const salesTax = subtotal * FEES.salesTaxRate
+    const processingFee = subtotal * FEES.processingFeeRate
+    const total = subtotal + salesTax + processingFee
+
+    return { subtotal, salesTax, processingFee, total }
+  }
+
+  // Execute email quote action
+  const executeEmailQuote = async (): Promise<{ success: boolean; message: string }> => {
+    try {
+      const { subtotal, salesTax, processingFee, total } = calculateTotals()
+
+      const response = await fetch('/api/quote/email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: configData.contact.email,
+          firstName: configData.contact.firstName,
+          lastName: configData.contact.lastName,
+          vehicle: configData.vehicle,
+          measurements: configData.measurements,
+          motorcycle: configData.motorcycle,
+          selectedModel: configData.selectedModel,
+          extension: configData.extension,
+          boltlessKit: configData.boltlessKit,
+          tiedown: configData.tiedown,
+          service: configData.service,
+          delivery: configData.delivery,
+          subtotal,
+          salesTax,
+          processingFee,
+          total,
+        }),
+      })
+
+      if (response.ok) {
+        return {
+          success: true,
+          message: `Quote sent to ${configData.contact.email}`,
+        }
+      } else {
+        const error = await response.json()
+        return {
+          success: false,
+          message: error.error || 'Failed to send email',
+        }
+      }
+    } catch (error) {
+      console.error('Error sending email:', error)
+      return {
+        success: false,
+        message: 'Failed to send email. Please try again.',
+      }
+    }
+  }
+
+  // Execute print quote action
+  const executePrintQuote = (): { success: boolean; message: string } => {
+    try {
+      const { subtotal, salesTax, processingFee, total } = calculateTotals()
+
+      generateQuotePDF({
+        contact: {
+          firstName: configData.contact.firstName || '',
+          lastName: configData.contact.lastName || '',
+          email: configData.contact.email || '',
+          phone: configData.contact.phone,
+        },
+        vehicle: configData.vehicle || '',
+        measurements: configData.measurements,
+        motorcycle: {
+          type: configData.motorcycle.type || '',
+          weight: configData.motorcycle.weight,
+          wheelbase: configData.motorcycle.wheelbase,
+          length: configData.motorcycle.length,
+        },
+        selectedModel: configData.selectedModel,
+        extension: configData.extension,
+        boltlessKit: configData.boltlessKit,
+        tiedown: configData.tiedown,
+        service: configData.service,
+        delivery: configData.delivery,
+        subtotal,
+        salesTax,
+        processingFee,
+        total,
+      })
+
+      return {
+        success: true,
+        message: 'PDF quote generated - check your downloads',
+      }
+    } catch (error) {
+      console.error('Error generating PDF:', error)
+      return {
+        success: false,
+        message: 'Failed to generate PDF. Please try again.',
+      }
+    }
+  }
+
   const value: ConfiguratorContextType = {
     currentStep,
     completedSteps,
@@ -579,6 +698,8 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
     canProceedFromStep,
     saveConfiguration,
     loadConfiguration,
+    executeEmailQuote,
+    executePrintQuote,
     convertToInches,
     convertToCm,
     convertToLbs,

@@ -1,6 +1,7 @@
 // src/app/(marketing)/faq/page.tsx
 import { Metadata } from 'next'
 import { UniversalChatWidget } from '@/components/chat/UniversalChatWidget'
+import { ChatCTA } from '@/components/chat/ChatCTA'
 import { ChevronDown } from 'lucide-react'
 
 export const metadata: Metadata = {
@@ -182,6 +183,18 @@ export default function FAQPage() {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Chat CTA Banner */}
+      <section className="py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <ChatCTA
+            variant="banner"
+            title="Can't find your answer?"
+            description="Our AI assistant can help you find what you're looking for instantly."
+            buttonText="Ask a Question"
+          />
         </div>
       </section>
 
