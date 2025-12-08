@@ -19,7 +19,7 @@ export function ChatWidget() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: "Hi! I'm here to help you configure the perfect ramp for your motorcycle. What type of vehicle will you be loading from?",
+      content: "Hi! I'm Charli, and I'm here to help you configure the perfect ramp for your motorcycle. What type of vehicle will you be loading from?",
       timestamp: new Date(),
     },
   ])
@@ -202,7 +202,7 @@ export function ChatWidget() {
         <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
         <div className="absolute bottom-full right-0 mb-2 px-3 py-2 bg-card text-card-foreground text-sm rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
           <Sparkles className="w-4 h-4 inline mr-1" />
-          Need help? Chat with AI
+          Need help? Ask Charli!
         </div>
       </button>
     )
@@ -215,8 +215,8 @@ export function ChatWidget() {
         <div className="flex items-center gap-2">
           <Sparkles className="w-5 h-5" />
           <div>
-            <h3 className="font-semibold">AI Configuration Assistant</h3>
-            <p className="text-xs opacity-90">Powered by GPT-4</p>
+            <h3 className="font-semibold">Charli</h3>
+            <p className="text-xs opacity-90">Configuration Assistant</p>
           </div>
         </div>
         <button

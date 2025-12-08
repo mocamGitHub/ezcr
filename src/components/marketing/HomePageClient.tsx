@@ -254,13 +254,13 @@ export function ProductShowcase() {
               Safely load heavy motorcycles into tall trucks —{' '}
               <span className="text-[#F78309]">even solo.</span>
             </h2>
-            <p className="text-lg text-gray-600 dark:text-blue-100 mb-8 max-w-lg">
+            <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 max-w-lg">
               EZ Cycle Ramp combines Neo-Dyne&apos;s powered loading system with precision-fit ramps so you can load into pickups, vans, and trailers with less stress and more control.
             </p>
 
             <div className="mb-8">
               <p className="font-semibold text-gray-900 dark:text-white mb-4">Built for real riders:</p>
-              <ul className="space-y-2 text-gray-600 dark:text-blue-100">
+              <ul className="space-y-2 text-gray-600 dark:text-gray-300">
                 <li className="flex items-start gap-2">
                   <span className="text-gray-900 dark:text-white mt-1">•</span>
                   <span>Handles large touring and cruiser bikes when configured correctly.</span>
@@ -285,11 +285,23 @@ export function ProductShowcase() {
               </Button>
             </div>
 
-            <p className="text-sm text-gray-500 dark:text-blue-200">
-              <Link href="#configurator" className="hover:underline">
-                Not sure where to start? Try our <span className="font-medium text-[#F78309]">Quick Ramp Finder</span> below for a recommendation in under a minute.
+            {/* Quick Ramp Finder Button with Tooltip */}
+            <div className="relative group inline-block">
+              <Link
+                href="#configurator"
+                className="inline-flex items-center gap-2 text-[#0B5394] dark:text-[#4A9FDC] hover:text-[#F78309] dark:hover:text-[#F78309] font-medium transition-colors"
+              >
+                <span className="text-lg">Quick Ramp Finder</span>
+                <span className="text-sm bg-[#F78309]/10 text-[#F78309] px-2 py-0.5 rounded-full">&lt; 1 min</span>
               </Link>
-            </p>
+              {/* Tooltip */}
+              <div className="absolute left-0 top-full mt-2 w-72 p-3 bg-gray-900 text-white text-sm rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                <p className="font-semibold mb-1">Quick vs Full Configurator</p>
+                <p className="text-gray-300">Quick Finder: Answer 3 simple questions for a fast recommendation.</p>
+                <p className="text-gray-300 mt-1">Full Configurator: Enter exact measurements for a precise configuration.</p>
+                <div className="absolute -top-2 left-4 w-0 h-0 border-l-8 border-r-8 border-b-8 border-transparent border-b-gray-900"></div>
+              </div>
+            </div>
           </div>
 
           {/* Right: Product Image */}
@@ -354,9 +366,10 @@ export function WhyRidersTrust() {
         <div className="mt-10">
           <ChatCTA
             variant="banner"
-            title="Still Have Questions?"
-            description="Our AI assistant can help you find the right ramp, check shipping costs, and more."
-            buttonText="Chat Now"
+            title="Have Any Questions?"
+            description="Our assistant, Charli, can help you find the right ramp, check shipping costs, and more."
+            buttonText="Chat with Charli Now"
+            showIcon={true}
           />
         </div>
       </div>

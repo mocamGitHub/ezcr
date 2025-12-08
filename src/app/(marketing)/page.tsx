@@ -11,6 +11,7 @@ import { FeaturedProducts } from '@/components/products/FeaturedProducts'
 import { ComparisonTable } from '@/components/marketing/ComparisonTable'
 import { QuickConfigurator } from '@/components/marketing/QuickConfigurator'
 import { BlogPreview } from '@/components/blog/BlogPreview'
+import { AccessoriesExplainer } from '@/components/marketing/AccessoriesExplainer'
 
 export default function HomePage() {
   return (
@@ -32,6 +33,9 @@ export default function HomePage() {
 
       {/* Comparison Table */}
       <ComparisonTable />
+
+      {/* Accessories Explainer - Understanding when accessories are needed */}
+      <AccessoriesExplainer />
 
       {/* Testimonials Section */}
       <TestimonialsSection />

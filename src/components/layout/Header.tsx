@@ -3,9 +3,10 @@
 
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Search, Menu, User, Sun, Moon, LogOut, Settings, X } from 'lucide-react'
+import { Search, Menu, User, Sun, Moon, LogOut, Settings, X, Heart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { CartButton } from '@/components/cart/CartButton'
+import { WishlistHeaderButton } from '@/components/wishlist/WishlistHeaderButton'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/contexts/AuthContext'
 import Image from 'next/image'
@@ -95,7 +96,7 @@ export function Header() {
             <button
               onClick={toggleTheme}
               className={`relative hidden sm:inline-flex h-8 w-14 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-                theme === 'dark' ? 'bg-blue-500' : 'bg-slate-400'
+                theme === 'dark' ? 'bg-[#0B5394]' : 'bg-gray-300'
               }`}
               aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
             >
@@ -105,9 +106,9 @@ export function Header() {
                 }`}
               >
                 {theme === 'dark' ? (
-                  <Moon className="h-3.5 w-3.5 text-blue-600" />
+                  <Moon className="h-3.5 w-3.5 text-[#0B5394]" />
                 ) : (
-                  <Sun className="h-3.5 w-3.5 text-amber-500" />
+                  <Sun className="h-3.5 w-3.5 text-[#F78309]" />
                 )}
               </span>
             </button>
@@ -176,7 +177,26 @@ export function Header() {
               </Button>
             </Link>
           )}
+
+          {/* Wishlist Button */}
+          <WishlistHeaderButton />
+
           <CartButton />
+
+          {/* Mobile Theme Toggle - Compact button visible in header */}
+          {mounted && (
+            <button
+              onClick={toggleTheme}
+              className="sm:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            >
+              {theme === 'dark' ? (
+                <Sun className="h-5 w-5 text-[#F78309]" />
+              ) : (
+                <Moon className="h-5 w-5 text-[#0B5394]" />
+              )}
+            </button>
+          )}
 
           {/* Mobile Menu Button */}
           <Button
@@ -252,7 +272,7 @@ export function Header() {
                   <button
                     onClick={toggleTheme}
                     className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
-                      theme === 'dark' ? 'bg-blue-500' : 'bg-slate-400'
+                      theme === 'dark' ? 'bg-[#0B5394]' : 'bg-gray-300'
                     }`}
                   >
                     <span
@@ -261,9 +281,9 @@ export function Header() {
                       }`}
                     >
                       {theme === 'dark' ? (
-                        <Moon className="h-3.5 w-3.5 text-blue-600" />
+                        <Moon className="h-3.5 w-3.5 text-[#0B5394]" />
                       ) : (
-                        <Sun className="h-3.5 w-3.5 text-amber-500" />
+                        <Sun className="h-3.5 w-3.5 text-[#F78309]" />
                       )}
                     </span>
                   </button>

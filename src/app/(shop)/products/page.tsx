@@ -1,4 +1,5 @@
 // src/app/(shop)/products/page.tsx
+import Link from 'next/link'
 import { searchProducts, getProductCategories, ProductSortOption } from '@/lib/supabase/queries'
 import { ProductCard } from '@/components/products/ProductCard'
 import { ProductSearch } from '@/components/products/ProductSearch'
@@ -55,6 +56,12 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
             <p className="text-xl text-blue-100">
               {activeCategory?.description || 'Premium motorcycle loading ramps and accessories for trucks, vans, and trailers.'}
             </p>
+            <Link
+              href="/compare"
+              className="inline-flex items-center gap-2 mt-4 text-sm bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition-colors"
+            >
+              Compare Ramps
+            </Link>
           </div>
         </div>
       </section>
@@ -109,8 +116,8 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         <ChatCTA
           variant="card"
           title="Need Help Choosing?"
-          description="Not sure which ramp is right for your setup? Chat with our AI assistant for personalized recommendations."
-          buttonText="Get Recommendations"
+          description="Not sure which ramp is right for your setup? Ask Charli for personalized recommendations based on your truck and bike."
+          buttonText="Ask Charli"
         />
       </div>
     </div>

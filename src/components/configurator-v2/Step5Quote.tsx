@@ -7,7 +7,8 @@ import { useToast } from '@/components/ui/toast'
 import { Button } from '@/components/ui/button'
 import { AnimatedCTAActionButton } from '@/components/ui/animated-cta-button'
 import { FEES, CONTACT } from '@/types/configurator-v2'
-import { Phone, Mail, Printer, Share2, Check, Copy } from 'lucide-react'
+import { Phone, Mail, Printer, Share2, Check, Copy, Calendar } from 'lucide-react'
+import { CallScheduler } from '@/components/contact/CallScheduler'
 
 // Format currency with thousand separators
 const formatCurrency = (amount: number): string => {
@@ -24,6 +25,7 @@ export function Step5Quote() {
   const [showShareDialog, setShowShareDialog] = useState(false)
   const [shareLink, setShareLink] = useState('')
   const [copied, setCopied] = useState(false)
+  const [showScheduleModal, setShowScheduleModal] = useState(false)
 
   const weightUnit = units === 'imperial' ? 'lbs' : 'kg'
   const lengthUnit = units === 'imperial' ? 'inches' : 'cm'
@@ -372,15 +374,26 @@ export function Step5Quote() {
                   Add to Cart
                 </AnimatedCTAActionButton>
 
-                <Button
-                  onClick={() => window.location.href = `tel:${CONTACT.phone}`}
-                  variant="outline"
-                  className="w-full border-secondary text-secondary hover:bg-secondary/10 gap-2"
-                  size="lg"
-                >
-                  <Phone className="w-5 h-5" />
-                  Call {CONTACT.phone}
-                </Button>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    onClick={() => window.location.href = `tel:${CONTACT.phone}`}
+                    variant="outline"
+                    className="border-secondary text-secondary hover:bg-secondary/10 gap-2"
+                    size="lg"
+                  >
+                    <Phone className="w-5 h-5" />
+                    Call Now
+                  </Button>
+                  <Button
+                    onClick={() => setShowScheduleModal(true)}
+                    variant="outline"
+                    className="border-[#0B5394] text-[#0B5394] hover:bg-[#0B5394]/10 gap-2"
+                    size="lg"
+                  >
+                    <Calendar className="w-5 h-5" />
+                    Schedule
+                  </Button>
+                </div>
 
                 <div className="grid grid-cols-3 gap-2">
                   <Button
@@ -459,6 +472,30 @@ export function Step5Quote() {
                   Close
                 </Button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Schedule Call Modal */}
+        {showScheduleModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-background rounded-xl shadow-2xl max-w-md w-full p-6 relative">
+              <button
+                onClick={() => setShowScheduleModal(false)}
+                className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              <CallScheduler
+                onScheduled={() => {
+                  showToast('We will call you at your scheduled time', 'success', 'Call Scheduled!')
+                }}
+                onCallbackRequested={() => {
+                  showToast('We will call you back during your preferred time', 'success', 'Callback Requested!')
+                }}
+              />
             </div>
           </div>
         )}

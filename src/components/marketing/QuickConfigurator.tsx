@@ -760,6 +760,9 @@ export function QuickConfigurator() {
                             <AnimatedPrice value={result.price} show={showResult} />
                           </span>
                           <span className="text-zinc-500 dark:text-zinc-500 ml-2 text-sm">base price</span>
+                          <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-2 italic">
+                            * Price does not include possible required accessories
+                          </p>
                         </div>
                       )}
 

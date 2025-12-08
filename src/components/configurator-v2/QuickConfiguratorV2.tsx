@@ -7,7 +7,8 @@ import React, { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { ConfiguratorHeader } from './ConfiguratorHeader'
 import { ConfiguratorProvider } from './ConfiguratorProvider'
-import { ArrowRight, CheckCircle, Info, Ruler, FileText, Clock } from 'lucide-react'
+import { ArrowRight, CheckCircle, Info, Ruler, FileText, Clock, Phone, Calendar, X } from 'lucide-react'
+import { CallScheduler } from '@/components/contact/CallScheduler'
 
 interface Option {
   value: string
@@ -207,6 +208,7 @@ function QuickConfiguratorContent() {
   const [result, setResult] = useState<Result | null>(null)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
+  const [showScheduleModal, setShowScheduleModal] = useState(false)
 
   const questions = buildQuestionFlow(answers)
   const currentQuestion = questions[step]
@@ -432,6 +434,27 @@ function QuickConfiguratorContent() {
                         <ArrowRight className="ml-2 w-5 h-5" />
                       </Link>
 
+                      {/* Help Options */}
+                      <div className="mt-8 pt-6 border-t border-border">
+                        <p className="text-sm text-muted-foreground mb-3">Need help deciding?</p>
+                        <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                          <button
+                            onClick={() => setShowScheduleModal(true)}
+                            className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-[#0B5394] text-[#0B5394] hover:bg-[#0B5394]/10 rounded-lg transition-colors text-sm"
+                          >
+                            <Calendar className="w-4 h-4" />
+                            Schedule a Call
+                          </button>
+                          <a
+                            href="tel:800-687-4410"
+                            className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-[#F78309] text-[#F78309] hover:bg-[#F78309]/10 rounded-lg transition-colors text-sm"
+                          >
+                            <Phone className="w-4 h-4" />
+                            Call Now
+                          </a>
+                        </div>
+                      </div>
+
                       {/* Reset */}
                       <button
                         onClick={handleReset}
@@ -532,6 +555,24 @@ function QuickConfiguratorContent() {
             </div>
           </div>
         </div>
+
+        {/* Schedule Call Modal */}
+        {showScheduleModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-background rounded-xl shadow-2xl max-w-md w-full p-6 relative">
+              <button
+                onClick={() => setShowScheduleModal(false)}
+                className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <CallScheduler
+                onScheduled={() => setShowScheduleModal(false)}
+                onCallbackRequested={() => setShowScheduleModal(false)}
+              />
+            </div>
+          </div>
+        )}
       </main>
     </div>
   )

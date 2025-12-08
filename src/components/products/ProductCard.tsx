@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ShoppingCart } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'
+import { WishlistButton } from '@/components/wishlist/WishlistButton'
 import { formatPrice } from '@/lib/utils/format'
 import type { Product } from '@/lib/supabase/queries'
 
@@ -60,14 +61,24 @@ export function ProductCard({ product }: ProductCardProps) {
             )}
           </div>
 
-          {/* Discount Badge - Top Right */}
-          {hasDiscount && (
-            <div className="absolute top-2 right-2 z-10">
+          {/* Wishlist Button & Discount Badge - Top Right */}
+          <div className="absolute top-2 right-2 z-10 flex flex-col gap-2 items-end">
+            <WishlistButton
+              product={{
+                id: product.id,
+                name: product.name,
+                slug: product.slug,
+                price: product.base_price,
+                image: primaryImage?.url,
+              }}
+              size="sm"
+            />
+            {hasDiscount && (
               <Badge className="bg-[#F78309] text-white shadow-md hover:bg-[#F78309]/90">
                 Save {Math.round(((product.compare_at_price! - product.base_price) / product.compare_at_price!) * 100)}%
               </Badge>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </Link>
 

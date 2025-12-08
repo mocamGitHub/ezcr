@@ -1,6 +1,7 @@
 // src/app/(marketing)/blog/page.tsx
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { ChatCTA } from '@/components/chat/ChatCTA'
 import { getBlogPosts } from '@/lib/supabase/queries'
 
 // Base URL for images from live site (fallback)
@@ -151,6 +152,18 @@ export default async function BlogPage() {
               ))}
             </div>
           )}
+        </div>
+      </section>
+
+      {/* Chat CTA */}
+      <section className="py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <ChatCTA
+            variant="card"
+            title="Have Questions About Ramps?"
+            description="Ask Charli for personalized recommendations based on your truck and motorcycle."
+            buttonText="Ask Charli"
+          />
         </div>
       </section>
 

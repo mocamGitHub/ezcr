@@ -1,8 +1,9 @@
 'use client'
 
 import React, { useState, useRef, useEffect, useCallback } from 'react'
-import { MessageCircle, X, Send, Loader2, Sparkles, ExternalLink, Download, Printer, Mic, MicOff, Volume2 } from 'lucide-react'
+import { MessageCircle, X, Send, Loader2, Sparkles, ExternalLink, Download, Printer, Mic, MicOff, Volume2, Calendar, Phone } from 'lucide-react'
 import { v4 as uuidv4 } from 'uuid'
+import { CallScheduler } from '@/components/contact/CallScheduler'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -41,7 +42,7 @@ export function UniversalChatWidget({ pageContext = { page: 'unknown' }, embedde
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: "Hi! I'm here to help you find the perfect motorcycle ramp. I can answer questions about our products, shipping, warranty, and more. What can I help you with today?",
+      content: "Hi! I'm Charli, your EZ Cycle Ramp assistant. I'm here to help you find the perfect motorcycle ramp. I can answer questions about our products, shipping, warranty, and more. You can type or use voice to chat with me! What can I help you with today?",
       timestamp: new Date(),
       suggestedQuestions: INITIAL_PROMPTS,
     },
@@ -50,6 +51,7 @@ export function UniversalChatWidget({ pageContext = { page: 'unknown' }, embedde
   const [isLoading, setIsLoading] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const [speechSupported, setSpeechSupported] = useState(false)
+  const [showScheduleModal, setShowScheduleModal] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -306,7 +308,7 @@ export function UniversalChatWidget({ pageContext = { page: 'unknown' }, embedde
         <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full animate-pulse border-2 border-white"></span>
         <div className="absolute bottom-full right-0 mb-3 px-4 py-2 bg-[#0B5394] text-white text-sm rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
           <Sparkles className="w-4 h-4 inline mr-2" />
-          Need help? Chat with us!
+          Need help? Chat with Charli!
           <div className="absolute bottom-0 right-6 transform translate-y-1/2 rotate-45 w-3 h-3 bg-[#0B5394]"></div>
         </div>
       </button>
@@ -322,8 +324,8 @@ export function UniversalChatWidget({ pageContext = { page: 'unknown' }, embedde
             <Sparkles className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="font-semibold text-lg">EZ Cycle Ramp Assistant</h3>
-            <p className="text-xs text-blue-100">Online - Ask me anything!</p>
+            <h3 className="font-semibold text-lg">Charli</h3>
+            <p className="text-xs text-white/80">Online - Type or speak to chat!</p>
           </div>
         </div>
         <div className="flex items-center gap-1">
@@ -481,13 +483,57 @@ export function UniversalChatWidget({ pageContext = { page: 'unknown' }, embedde
           >
             Clear chat
           </button>
-          <a
-            href="tel:800-687-4410"
-            className="hover:text-[#F78309] transition-colors flex items-center gap-1"
-          >
-            Need help? Call 800-687-4410
-          </a>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowScheduleModal(true)}
+              className="hover:text-[#0B5394] transition-colors flex items-center gap-1"
+            >
+              <Calendar className="w-3 h-3" />
+              Schedule Call
+            </button>
+            <a
+              href="tel:800-687-4410"
+              className="hover:text-[#F78309] transition-colors flex items-center gap-1"
+            >
+              <Phone className="w-3 h-3" />
+              800-687-4410
+            </a>
+          </div>
         </div>
+
+        {/* Schedule Call Modal */}
+        {showScheduleModal && (
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10 rounded-xl">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-sm w-[95%] p-4 relative max-h-[90%] overflow-y-auto">
+              <button
+                onClick={() => setShowScheduleModal(false)}
+                className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <CallScheduler
+                onScheduled={() => {
+                  setShowScheduleModal(false)
+                  setMessages(prev => [...prev, {
+                    role: 'assistant',
+                    content: "Great! Your call has been scheduled. We'll call you at your selected time. Is there anything else I can help you with?",
+                    timestamp: new Date(),
+                    suggestedQuestions: ['Tell me about your ramps', 'What shipping options do you offer?'],
+                  }])
+                }}
+                onCallbackRequested={() => {
+                  setShowScheduleModal(false)
+                  setMessages(prev => [...prev, {
+                    role: 'assistant',
+                    content: "Perfect! We've received your callback request. We'll call you back during your preferred time window. Is there anything else I can help you with in the meantime?",
+                    timestamp: new Date(),
+                    suggestedQuestions: ['Tell me about your ramps', 'What shipping options do you offer?'],
+                  }])
+                }}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </>
   )

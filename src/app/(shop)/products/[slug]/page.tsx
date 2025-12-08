@@ -7,8 +7,9 @@ import { AddToCartButton } from '@/components/cart/AddToCartButton'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { formatPrice } from '@/lib/utils/format'
-import { ArrowLeft, Check, X } from 'lucide-react'
+import { ArrowLeft, Check, X, Play } from 'lucide-react'
 import { ChatCTA } from '@/components/chat/ChatCTA'
+import { VideoEmbed } from '@/components/video/VideoEmbed'
 
 interface ProductPageProps {
   params: Promise<{
@@ -132,8 +133,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
           <h1 className="text-4xl font-bold mb-4">{product.name}</h1>
 
           {/* Price */}
-          <div className="flex items-baseline space-x-3 mb-6">
-            <span className="text-4xl font-bold text-[#0B5394]">
+          <div className="flex items-baseline justify-center space-x-3 mb-6">
+            <span className="text-4xl font-bold text-[#F78309]">
               {formatPrice(product.base_price)}
             </span>
             {hasDiscount && (
@@ -214,13 +215,34 @@ export default async function ProductPage({ params }: ProductPageProps) {
         </div>
       )}
 
+      {/* Installation Video Section */}
+      <div className="mt-12 border-t pt-8">
+        <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+          <Play className="w-6 h-6 text-[#F78309]" />
+          Installation & Setup Video
+        </h2>
+        <p className="text-muted-foreground mb-6">
+          Watch how to set up and use your ramp safely.
+        </p>
+        <div className="max-w-2xl">
+          <VideoEmbed
+            videoId="dQw4w9WgXcQ"
+            title={`How to Set Up Your ${product.name}`}
+          />
+        </div>
+        <p className="text-sm text-muted-foreground mt-4">
+          Have questions? <Link href="/contact" className="text-[#0B5394] hover:underline">Contact us</Link> or chat with Charli below.
+        </p>
+      </div>
+
       {/* Chat CTA */}
       <div className="mt-12">
         <ChatCTA
           variant="banner"
           title={`Questions about the ${product.name}?`}
-          description="Get instant answers about compatibility, specifications, and more."
-          buttonText="Chat Now"
+          description="Ask Charli about compatibility with your truck, specs, or anything else."
+          buttonText="Ask Charli"
+          showIcon={true}
         />
       </div>
     </div>

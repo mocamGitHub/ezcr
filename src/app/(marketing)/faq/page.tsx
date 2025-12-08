@@ -192,8 +192,9 @@ export default function FAQPage() {
           <ChatCTA
             variant="banner"
             title="Can't find your answer?"
-            description="Our AI assistant can help you find what you're looking for instantly."
-            buttonText="Ask a Question"
+            description="Ask Charli, our AI assistant, for instant help with any questions about ramps, shipping, or compatibility."
+            buttonText="Ask Charli"
+            showIcon={true}
           />
         </div>
       </section>

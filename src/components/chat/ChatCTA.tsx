@@ -9,6 +9,7 @@ interface ChatCTAProps {
   description?: string
   buttonText?: string
   className?: string
+  showIcon?: boolean
 }
 
 /**
@@ -22,9 +23,10 @@ interface ChatCTAProps {
 export function ChatCTA({
   variant = 'card',
   title = 'Have Questions?',
-  description = 'Chat with our AI assistant for instant answers about ramps, shipping, and more.',
+  description = 'Chat with our assistant, Charli, for instant answers about ramps, shipping, and more.',
   buttonText = 'Start Chat',
   className = '',
+  showIcon = false,
 }: ChatCTAProps) {
   const openChat = () => {
     // Find and click the chat widget button
@@ -69,6 +71,7 @@ export function ChatCTA({
             onClick={openChat}
             className="bg-[#F78309] hover:bg-[#F78309]/90 text-white whitespace-nowrap"
           >
+            {showIcon && <MessageCircle className="w-4 h-4 mr-2" />}
             {buttonText}
           </Button>
         </div>

@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Phone, Mail, MapPin, Clock } from 'lucide-react'
 import { ChatCTA } from '@/components/chat/ChatCTA'
+import { CallScheduler } from '@/components/contact/CallScheduler'
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -132,110 +133,118 @@ export default function ContactPage() {
                 <ChatCTA
                   variant="card"
                   title="Need Instant Help?"
-                  description="Chat with our AI assistant 24/7 for quick answers about products, shipping, and more."
-                  buttonText="Start Chat"
+                  description="Charli is available 24/7 to answer questions about products, shipping, compatibility, and more."
+                  buttonText="Chat with Charli"
                 />
               </div>
             </div>
 
-            {/* Contact Form */}
-            <div className="bg-muted/50 p-8 rounded-lg border">
-              <h2 className="text-2xl font-bold mb-6">Send a Message</h2>
+            {/* Right Column - Form + Call Scheduler */}
+            <div className="space-y-6">
+              {/* Contact Form */}
+              <div className="bg-muted/50 p-8 rounded-lg border">
+                <h2 className="text-2xl font-bold mb-6">Send a Message</h2>
 
-              {submitted ? (
-                <div className="text-center py-12">
-                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
+                {submitted ? (
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <h3 className="text-xl font-semibold mb-2">Message Sent!</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Thank you for reaching out. We will get back to you within 24 hours.
+                    </p>
+                    <Button onClick={() => {
+                      setSubmitted(false)
+                      setFormData({ name: '', email: '', phone: '', subject: '', message: '' })
+                    }}>
+                      Send Another Message
+                    </Button>
                   </div>
-                  <h3 className="text-xl font-semibold mb-2">Message Sent!</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Thank you for reaching out. We will get back to you within 24 hours.
-                  </p>
-                  <Button onClick={() => {
-                    setSubmitted(false)
-                    setFormData({ name: '', email: '', phone: '', subject: '', message: '' })
-                  }}>
-                    Send Another Message
-                  </Button>
-                </div>
-              ) : (
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid sm:grid-cols-2 gap-4">
+                ) : (
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="name">Name *</Label>
+                        <Input
+                          id="name"
+                          name="name"
+                          value={formData.name}
+                          onChange={handleChange}
+                          required
+                          placeholder="Your name"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email *</Label>
+                        <Input
+                          id="email"
+                          name="email"
+                          type="email"
+                          value={formData.email}
+                          onChange={handleChange}
+                          required
+                          placeholder="your@email.com"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="phone">Phone</Label>
+                        <Input
+                          id="phone"
+                          name="phone"
+                          type="tel"
+                          value={formData.phone}
+                          onChange={handleChange}
+                          placeholder="(555) 123-4567"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="subject">Subject *</Label>
+                        <Input
+                          id="subject"
+                          name="subject"
+                          value={formData.subject}
+                          onChange={handleChange}
+                          required
+                          placeholder="How can we help?"
+                        />
+                      </div>
+                    </div>
+
                     <div className="space-y-2">
-                      <Label htmlFor="name">Name *</Label>
-                      <Input
-                        id="name"
-                        name="name"
-                        value={formData.name}
+                      <Label htmlFor="message">Message *</Label>
+                      <Textarea
+                        id="message"
+                        name="message"
+                        value={formData.message}
                         onChange={handleChange}
                         required
-                        placeholder="Your name"
+                        placeholder="Tell us more about your inquiry..."
+                        rows={4}
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email *</Label>
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        required
-                        placeholder="your@email.com"
-                      />
-                    </div>
-                  </div>
 
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Phone</Label>
-                      <Input
-                        id="phone"
-                        name="phone"
-                        type="tel"
-                        value={formData.phone}
-                        onChange={handleChange}
-                        placeholder="(555) 123-4567"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="subject">Subject *</Label>
-                      <Input
-                        id="subject"
-                        name="subject"
-                        value={formData.subject}
-                        onChange={handleChange}
-                        required
-                        placeholder="How can we help?"
-                      />
-                    </div>
-                  </div>
+                    <Button
+                      type="submit"
+                      size="lg"
+                      className="w-full bg-[#F78309] hover:bg-[#F78309]/90"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? 'Sending...' : 'Send Message'}
+                    </Button>
+                  </form>
+                )}
+              </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="message">Message *</Label>
-                    <Textarea
-                      id="message"
-                      name="message"
-                      value={formData.message}
-                      onChange={handleChange}
-                      required
-                      placeholder="Tell us more about your inquiry..."
-                      rows={5}
-                    />
-                  </div>
-
-                  <Button
-                    type="submit"
-                    size="lg"
-                    className="w-full bg-[#F78309] hover:bg-[#F78309]/90"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? 'Sending...' : 'Send Message'}
-                  </Button>
-                </form>
-              )}
+              {/* Schedule a Call - Below the form */}
+              <div className="bg-muted/50 p-6 rounded-lg border">
+                <CallScheduler />
+              </div>
             </div>
           </div>
         </div>
