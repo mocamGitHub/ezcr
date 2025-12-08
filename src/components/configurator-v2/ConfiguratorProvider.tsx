@@ -493,33 +493,55 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
       const processingFee = subtotal * 0.03
       const total = subtotal + salesTax + processingFee
 
-      const response = await fetch('/api/configurator/save', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          configuration: {
-            ...configData,
-            currentStep,
-            completedSteps,
-            isComplete,
-          },
-          total,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to save configuration')
+      const configToSave = {
+        ...configData,
+        currentStep,
+        completedSteps,
+        isComplete,
       }
 
-      const data = await response.json()
-      setSavedConfigId(data.configuration.id)
+      // Try API save first
+      try {
+        const response = await fetch('/api/configurator/save', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            configuration: configToSave,
+            total,
+          }),
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setSavedConfigId(data.configuration.id)
+
+          return {
+            success: true,
+            id: data.configuration.id,
+            message: isComplete ? 'Configuration saved successfully!' : 'Progress saved! You can resume later.',
+          }
+        }
+      } catch (apiError) {
+        console.warn('API save failed, falling back to localStorage:', apiError)
+      }
+
+      // Fallback: Save to localStorage
+      const localId = `local-config-${Date.now()}`
+      const localConfig = {
+        id: localId,
+        configuration: configToSave,
+        total,
+        savedAt: new Date().toISOString(),
+      }
+      localStorage.setItem('ezcr-saved-config', JSON.stringify(localConfig))
+      setSavedConfigId(localId)
 
       return {
         success: true,
-        id: data.configuration.id,
-        message: isComplete ? 'Configuration saved successfully!' : 'Progress saved! You can resume later.',
+        id: localId,
+        message: isComplete ? 'Configuration saved locally!' : 'Progress saved locally! You can resume later.',
       }
     } catch (error) {
       console.error('Error saving configuration:', error)
@@ -532,6 +554,23 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
 
   const loadConfiguration = async (id: string): Promise<boolean> => {
     try {
+      // Check if this is a local configuration
+      if (id.startsWith('local-config-')) {
+        const localData = localStorage.getItem('ezcr-saved-config')
+        if (localData) {
+          const parsed = JSON.parse(localData)
+          if (parsed.id === id) {
+            setConfigData(parsed.configuration)
+            setCurrentStep(parsed.configuration.currentStep || 1)
+            setCompletedSteps(parsed.configuration.completedSteps || [])
+            setSavedConfigId(id)
+            return true
+          }
+        }
+        return false
+      }
+
+      // Try API load
       const response = await fetch(`/api/configurator/load/${id}`)
 
       if (!response.ok) {

@@ -108,7 +108,7 @@ export default function ContactPage() {
                   <div>
                     <h3 className="font-semibold mb-1">Location</h3>
                     <p className="text-muted-foreground">
-                      NEO-DYNE, USA<br />
+                      Woodstock, GA<br />
                       United States
                     </p>
                   </div>

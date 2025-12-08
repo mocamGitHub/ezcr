@@ -74,8 +74,8 @@ export function Footer() {
                 </svg>
               </div>
               <div className="text-left">
-                <p className="font-semibold text-xs md:text-sm">Veteran Owned</p>
-                <p className="text-xs text-muted-foreground hidden md:block">Since 1999</p>
+                <p className="font-semibold text-xs md:text-sm text-foreground">Veteran Owned</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 hidden md:block">Since 1999</p>
               </div>
             </div>
             {/* BBB A+ - Verified Shield */}
@@ -100,8 +100,8 @@ export function Footer() {
                 </svg>
               </div>
               <div className="text-left">
-                <p className="font-semibold text-xs md:text-sm">BBB A+ Rated</p>
-                <p className="text-xs text-muted-foreground hidden md:block">Accredited</p>
+                <p className="font-semibold text-xs md:text-sm text-foreground">BBB A+ Rated</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 hidden md:block">Accredited</p>
               </div>
             </div>
           </div>

@@ -3,10 +3,13 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { InventoryTable } from '@/components/admin/InventoryTable'
+import { InventoryAlerts } from '@/components/admin/InventoryAlerts'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { RefreshCw, Search, AlertTriangle } from 'lucide-react'
+import { RefreshCw, Search, AlertTriangle, Download } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { toast } from 'sonner'
+import { exportToCSV, inventoryColumns, getExportFilename } from '@/lib/utils/export'
 
 interface Product {
   id: string
@@ -92,11 +95,11 @@ export default function InventoryDashboardPage() {
     setFilteredProducts(filtered)
   }, [searchQuery, showLowStockOnly, products])
 
-  const lowStockCount = products.filter(
-    (p) => p.inventory_count <= p.low_stock_threshold
-  ).length
-
   const outOfStockCount = products.filter((p) => p.inventory_count === 0).length
+
+  const lowStockCount = products.filter(
+    (p) => p.inventory_count > 0 && p.inventory_count <= p.low_stock_threshold
+  ).length
 
   const totalValue = products.reduce(
     (sum, p) => sum + p.base_price * p.inventory_count,
@@ -112,10 +115,22 @@ export default function InventoryDashboardPage() {
             Manage product stock levels and view inventory history
           </p>
         </div>
-        <Button onClick={fetchProducts} disabled={loading}>
-          <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              exportToCSV(filteredProducts, inventoryColumns, getExportFilename('inventory'))
+              toast.success(`Exported ${filteredProducts.length} products to CSV`)
+            }}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
+          <Button onClick={fetchProducts} disabled={loading}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Statistics Cards */}
@@ -144,25 +159,12 @@ export default function InventoryDashboardPage() {
         </div>
       </div>
 
-      {/* Low Stock Alert */}
-      {lowStockCount > 0 && !showLowStockOnly && (
-        <Alert className="mb-6 border-yellow-600 bg-yellow-50 dark:bg-yellow-950/20">
-          <AlertTriangle className="h-4 w-4 text-yellow-600" />
-          <AlertTitle className="text-yellow-800 dark:text-yellow-400">
-            Low Stock Alert
-          </AlertTitle>
-          <AlertDescription className="text-yellow-700 dark:text-yellow-500">
-            {lowStockCount} product{lowStockCount !== 1 ? 's are' : ' is'} running low on
-            stock.{' '}
-            <button
-              onClick={() => setShowLowStockOnly(true)}
-              className="underline font-medium"
-            >
-              View low stock items
-            </button>
-          </AlertDescription>
-        </Alert>
-      )}
+      {/* Inventory Alerts Panel */}
+      <InventoryAlerts
+        products={products}
+        onFilterLowStock={() => setShowLowStockOnly(!showLowStockOnly)}
+        showingLowStock={showLowStockOnly}
+      />
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4 mb-6">

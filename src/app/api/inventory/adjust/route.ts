@@ -90,43 +90,82 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Use the database function to adjust inventory atomically
-    // User ID is tracked for audit trail
-    const { data: transactionId, error: adjustError } = await supabaseAdmin.rpc(
-      'log_inventory_transaction',
-      {
-        p_tenant_id: TENANT_ID,
-        p_product_id: productId,
-        p_variant_id: variantId || null,
-        p_order_id: null,
-        p_transaction_type: transactionType,
-        p_quantity_change: quantityChange,
-        p_reason: reason,
-        p_reference_id: referenceId || null,
-        p_created_by: user.id, // Track who made the adjustment
-      }
-    )
-
-    if (adjustError) {
-      console.error('Inventory adjustment error:', adjustError)
-      return NextResponse.json(
-        { error: adjustError.message || 'Failed to adjust inventory' },
-        { status: 500 }
-      )
-    }
-
-    // Get updated product inventory
-    const { data: product, error: productError } = await supabaseAdmin
+    // Get current product inventory
+    const { data: currentProduct, error: fetchError } = await supabaseAdmin
       .from('products')
       .select('id, name, sku, inventory_count')
       .eq('id', productId)
       .single()
 
-    if (productError) {
+    if (fetchError || !currentProduct) {
+      console.error('Failed to fetch product:', fetchError)
       return NextResponse.json(
-        { error: 'Failed to fetch updated product' },
+        { error: 'Product not found' },
+        { status: 404 }
+      )
+    }
+
+    const currentQuantity = currentProduct.inventory_count || 0
+    const newQuantity = currentQuantity + quantityChange
+
+    // Prevent negative inventory
+    if (newQuantity < 0) {
+      return NextResponse.json(
+        { error: `Insufficient inventory. Current: ${currentQuantity}, Requested change: ${quantityChange}` },
+        { status: 400 }
+      )
+    }
+
+    // Update product inventory count
+    const { error: updateError } = await supabaseAdmin
+      .from('products')
+      .update({
+        inventory_count: newQuantity,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', productId)
+
+    if (updateError) {
+      console.error('Failed to update inventory:', updateError)
+      return NextResponse.json(
+        { error: 'Failed to update inventory' },
         { status: 500 }
       )
+    }
+
+    // Try to log transaction (table may not exist yet, so don't fail if it doesn't)
+    let transactionId = null
+    try {
+      const { data: transaction, error: transactionError } = await supabaseAdmin
+        .from('inventory_transactions')
+        .insert({
+          tenant_id: TENANT_ID,
+          product_id: productId,
+          variant_id: variantId || null,
+          order_id: null,
+          transaction_type: transactionType,
+          quantity_change: quantityChange,
+          previous_quantity: currentQuantity,
+          new_quantity: newQuantity,
+          reason: reason,
+          reference_id: referenceId || null,
+          created_by: user.id,
+        })
+        .select('id')
+        .single()
+
+      if (!transactionError && transaction) {
+        transactionId = transaction.id
+      }
+    } catch {
+      // Transaction logging is optional - continue without it
+      console.log('Note: inventory_transactions table may not exist yet')
+    }
+
+    // Get updated product
+    const product = {
+      ...currentProduct,
+      inventory_count: newQuantity
     }
 
     return NextResponse.json({

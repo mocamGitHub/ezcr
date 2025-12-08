@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
 /**
@@ -40,21 +40,28 @@ export async function authenticateRequest(
       }
     }
 
-    // Create Supabase client with cookies
-    const cookieStore = cookies()
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: false,
+    // Create Supabase client with cookies (SSR-compatible)
+    const cookieStore = await cookies()
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options)
+          })
+        },
       },
     })
 
-    // Get session from cookies
+    // Get authenticated user (more secure than getSession)
     const {
-      data: { session },
-      error: sessionError,
-    } = await supabase.auth.getSession()
+      data: { user: authUser },
+      error: userError,
+    } = await supabase.auth.getUser()
 
-    if (sessionError || !session) {
+    if (userError || !authUser) {
       return {
         authenticated: false,
         user: null,
@@ -66,7 +73,7 @@ export async function authenticateRequest(
     const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
       .select('id, email, role, tenant_id')
-      .eq('id', session.user.id)
+      .eq('id', authUser.id)
       .single()
 
     if (profileError || !profile) {
@@ -155,9 +162,11 @@ export async function requireRole(
  * Role definitions
  */
 export const ROLES = {
+  OWNER: 'owner',
   ADMIN: 'admin',
   INVENTORY_MANAGER: 'inventory_manager',
   CUSTOMER_SERVICE: 'customer_service',
+  VIEWER: 'viewer',
   CUSTOMER: 'customer',
 } as const
 
@@ -165,10 +174,10 @@ export const ROLES = {
  * Common role groups
  */
 export const ROLE_GROUPS = {
-  ADMIN_ROLES: ['admin'] as string[],
-  INVENTORY_ROLES: ['admin', 'inventory_manager'] as string[],
-  STAFF_ROLES: ['admin', 'inventory_manager', 'customer_service'] as string[],
-  ALL_ROLES: ['admin', 'inventory_manager', 'customer_service', 'customer'] as string[],
+  ADMIN_ROLES: ['owner', 'admin'] as string[],
+  INVENTORY_ROLES: ['owner', 'admin', 'inventory_manager'] as string[],
+  STAFF_ROLES: ['owner', 'admin', 'inventory_manager', 'customer_service'] as string[],
+  ALL_ROLES: ['owner', 'admin', 'inventory_manager', 'customer_service', 'viewer', 'customer'] as string[],
 }
 
 /**
@@ -186,6 +195,9 @@ export async function authenticateAdmin(request: NextRequest) {
       error: { message: 'Server configuration error', status: 500 },
     }
   }
+
+  // Import the regular client for admin operations (service key)
+  const { createClient } = await import('@supabase/supabase-js')
 
   // Create admin Supabase client
   const supabase = createClient(supabaseUrl, supabaseServiceKey, {

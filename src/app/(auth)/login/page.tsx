@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -8,17 +8,36 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
+const REMEMBER_EMAIL_KEY = 'ezcr_remember_email'
+
 export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [rememberMe, setRememberMe] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Load remembered email on mount
+  useEffect(() => {
+    const savedEmail = localStorage.getItem(REMEMBER_EMAIL_KEY)
+    if (savedEmail) {
+      setEmail(savedEmail)
+      setRememberMe(true)
+    }
+  }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError(null)
+
+    // Handle remember me
+    if (rememberMe) {
+      localStorage.setItem(REMEMBER_EMAIL_KEY, email)
+    } else {
+      localStorage.removeItem(REMEMBER_EMAIL_KEY)
+    }
 
     try {
       const supabase = createClient()
@@ -59,7 +78,7 @@ export default function LoginPage() {
         <div className="text-center">
           <h1 className="text-3xl font-bold">Sign In</h1>
           <p className="text-muted-foreground mt-2">
-            Access the EZ Cycle Ramp admin panel
+            Welcome back to EZ Cycle Ramp
           </p>
         </div>
 
@@ -95,6 +114,19 @@ export default function LoginPage() {
                 required
                 disabled={loading}
               />
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="rememberMe"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <Label htmlFor="rememberMe" className="text-sm font-normal cursor-pointer">
+                Remember my email
+              </Label>
             </div>
 
             <Button

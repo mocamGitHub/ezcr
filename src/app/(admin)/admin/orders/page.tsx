@@ -26,8 +26,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { RefreshCw, Search, Eye, Package, DollarSign, Clock } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
+import { RefreshCw, Search, Eye, Package, DollarSign, Clock, CheckSquare, Truck, XCircle, Download } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
+import { toast } from 'sonner'
+import { exportToCSV, orderColumns, getExportFilename } from '@/lib/utils/export'
 
 interface Order {
   id: string
@@ -96,6 +99,8 @@ export default function AdminOrdersPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
+  const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set())
+  const [bulkUpdating, setBulkUpdating] = useState(false)
 
   const fetchOrders = async () => {
     setLoading(true)
@@ -173,6 +178,59 @@ export default function AdminOrdersPage() {
     setDetailsOpen(true)
   }
 
+  const toggleOrderSelection = (orderId: string) => {
+    const newSelection = new Set(selectedOrders)
+    if (newSelection.has(orderId)) {
+      newSelection.delete(orderId)
+    } else {
+      newSelection.add(orderId)
+    }
+    setSelectedOrders(newSelection)
+  }
+
+  const toggleAllOrders = () => {
+    if (selectedOrders.size === filteredOrders.length) {
+      setSelectedOrders(new Set())
+    } else {
+      setSelectedOrders(new Set(filteredOrders.map(o => o.id)))
+    }
+  }
+
+  const bulkUpdateStatus = async (newStatus: string) => {
+    if (selectedOrders.size === 0) return
+
+    setBulkUpdating(true)
+    try {
+      const supabase = createClient()
+      const orderIds = Array.from(selectedOrders)
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from('orders')
+        .update({ status: newStatus })
+        .in('id', orderIds)
+
+      if (error) throw error
+
+      toast.success(`Updated ${orderIds.length} orders to ${newStatus}`)
+      setSelectedOrders(new Set())
+      fetchOrders()
+    } catch (err) {
+      console.error('Error bulk updating orders:', err)
+      toast.error('Failed to update orders')
+    } finally {
+      setBulkUpdating(false)
+    }
+  }
+
+  const handleExportOrders = () => {
+    const dataToExport = selectedOrders.size > 0
+      ? filteredOrders.filter(o => selectedOrders.has(o.id))
+      : filteredOrders
+    exportToCSV(dataToExport, orderColumns, getExportFilename('orders'))
+    toast.success(`Exported ${dataToExport.length} orders to CSV`)
+  }
+
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="flex items-center justify-between mb-6">
@@ -182,10 +240,16 @@ export default function AdminOrdersPage() {
             View and manage customer orders
           </p>
         </div>
-        <Button onClick={fetchOrders} disabled={loading}>
-          <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handleExportOrders}>
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
+          <Button onClick={fetchOrders} disabled={loading}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Statistics Cards */}
@@ -254,11 +318,76 @@ export default function AdminOrdersPage() {
         </Select>
       </div>
 
+      {/* Bulk Actions Bar */}
+      {selectedOrders.size > 0 && (
+        <div className="flex items-center justify-between bg-primary/10 border border-primary/20 rounded-lg p-4 mb-6">
+          <div className="flex items-center gap-2">
+            <CheckSquare className="h-5 w-5 text-primary" />
+            <span className="font-medium">
+              {selectedOrders.size} order{selectedOrders.size !== 1 ? 's' : ''} selected
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => bulkUpdateStatus('processing')}
+              disabled={bulkUpdating}
+            >
+              <Package className="h-4 w-4 mr-1" />
+              Mark Processing
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => bulkUpdateStatus('shipped')}
+              disabled={bulkUpdating}
+            >
+              <Truck className="h-4 w-4 mr-1" />
+              Mark Shipped
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => bulkUpdateStatus('delivered')}
+              disabled={bulkUpdating}
+            >
+              <CheckSquare className="h-4 w-4 mr-1" />
+              Mark Delivered
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => bulkUpdateStatus('canceled')}
+              disabled={bulkUpdating}
+              className="text-destructive hover:text-destructive"
+            >
+              <XCircle className="h-4 w-4 mr-1" />
+              Cancel
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedOrders(new Set())}
+            >
+              Clear Selection
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Orders Table */}
       <div className="border rounded-lg">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-[40px]">
+                <Checkbox
+                  checked={selectedOrders.size === filteredOrders.length && filteredOrders.length > 0}
+                  onCheckedChange={toggleAllOrders}
+                  aria-label="Select all"
+                />
+              </TableHead>
               <TableHead>Order #</TableHead>
               <TableHead>Customer</TableHead>
               <TableHead>Status</TableHead>
@@ -271,19 +400,29 @@ export default function AdminOrdersPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8">
+                <TableCell colSpan={8} className="text-center py-8">
                   Loading orders...
                 </TableCell>
               </TableRow>
             ) : filteredOrders.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                   No orders found
                 </TableCell>
               </TableRow>
             ) : (
               filteredOrders.map((order) => (
-                <TableRow key={order.id}>
+                <TableRow
+                  key={order.id}
+                  className={selectedOrders.has(order.id) ? 'bg-primary/5' : ''}
+                >
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedOrders.has(order.id)}
+                      onCheckedChange={() => toggleOrderSelection(order.id)}
+                      aria-label={`Select order ${order.order_number}`}
+                    />
+                  </TableCell>
                   <TableCell className="font-mono font-medium">
                     {order.order_number}
                   </TableCell>

@@ -5,7 +5,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -124,9 +123,9 @@ export function InventoryAdjustmentDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] p-0 gap-0 bg-background border-2 shadow-2xl">
         <form onSubmit={handleSubmit}>
-          <DialogHeader>
+          <DialogHeader className="p-6 pb-4">
             <DialogTitle>Adjust Inventory</DialogTitle>
             <DialogDescription>
               Make changes to inventory levels for <strong>{product.name}</strong> (SKU:{' '}
@@ -134,7 +133,7 @@ export function InventoryAdjustmentDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-4 px-6 pb-4 max-h-[50vh] overflow-y-auto">
             {/* Current Stock Display */}
             <div className="bg-muted p-3 rounded-md">
               <div className="flex justify-between items-center">
@@ -221,7 +220,7 @@ export function InventoryAdjustmentDialog({
                 placeholder="Explain why this adjustment is being made..."
                 required
                 disabled={loading || success}
-                rows={3}
+                rows={2}
               />
             </div>
 
@@ -236,9 +235,6 @@ export function InventoryAdjustmentDialog({
                 placeholder="PO number, ticket #, etc."
                 disabled={loading || success}
               />
-              <p className="text-xs text-muted-foreground">
-                Purchase order number, work order, or other reference
-              </p>
             </div>
 
             {/* Warning for negative stock */}
@@ -271,7 +267,7 @@ export function InventoryAdjustmentDialog({
             )}
           </div>
 
-          <DialogFooter>
+          <div className="p-6 pt-4 border-t bg-muted/50 flex justify-end gap-2">
             <Button
               type="button"
               variant="outline"
@@ -280,7 +276,11 @@ export function InventoryAdjustmentDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading || success || newInventoryCount < 0}>
+            <Button
+              type="submit"
+              disabled={loading || success || newInventoryCount < 0}
+              className="bg-amber-500 hover:bg-amber-600 text-black font-semibold"
+            >
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -295,7 +295,7 @@ export function InventoryAdjustmentDialog({
                 'Adjust Inventory'
               )}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

@@ -18,7 +18,7 @@ export default function AboutPage() {
               About EZ Cycle Ramp
             </h1>
             <p className="text-xl text-blue-100">
-              Veteran-owned motorcycle loading solutions trusted by riders since 1999.
+              Veteran-owned motorcycle loading solutions trusted by riders for years.
             </p>
           </div>
         </div>
@@ -111,8 +111,26 @@ export default function AboutPage() {
       {/* Veteran Owned Section */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-block bg-[#0B5394] text-white px-6 py-3 rounded-full text-lg font-semibold mb-6">
-            Proudly Veteran Owned
+          {/* Veteran Badge with Icon - styled as badge, not button */}
+          <div className="inline-flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 flex-shrink-0">
+              <svg viewBox="0 0 56 56" className="w-full h-full">
+                {/* Shield background */}
+                <path
+                  d="M28 4 L50 12 L50 28 C50 42 28 52 28 52 C28 52 6 42 6 28 L6 12 Z"
+                  fill="#0B5394"
+                />
+                {/* Red stripes */}
+                <path d="M12 20 L44 20 L44 24 L12 24 Z" fill="#B91C1C" />
+                <path d="M12 32 L44 32 L44 36 L12 36 Z" fill="#B91C1C" />
+                {/* Star */}
+                <path
+                  d="M28 10 L30 16 L36 16 L31 20 L33 26 L28 22 L23 26 L25 20 L20 16 L26 16 Z"
+                  fill="white"
+                />
+              </svg>
+            </div>
+            <span className="text-2xl font-bold text-[#0B5394]">Proudly Veteran Owned</span>
           </div>
           <h2 className="text-3xl font-bold mb-4">
             Serving Those Who Served

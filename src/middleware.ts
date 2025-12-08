@@ -103,9 +103,9 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Auth routes - redirect to admin if already logged in
+  // Auth routes - redirect to admin dashboard if already logged in
   if ((pathname === '/login' || pathname === '/signup') && session) {
-    return NextResponse.redirect(new URL('/admin/team', request.url))
+    return NextResponse.redirect(new URL('/admin/dashboard', request.url))
   }
 
   return response

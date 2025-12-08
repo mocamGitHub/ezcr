@@ -168,14 +168,16 @@ function ConfiguratorContent() {
   const [prevStep, setPrevStep] = useState(currentStep)
   const [direction, setDirection] = useState<'forward' | 'backward'>('forward')
 
-  // Track step direction and scroll to top on Step 5
+  // Track step direction and scroll to top on step change (especially for mobile)
   useEffect(() => {
     if (currentStep !== prevStep) {
       setDirection(currentStep > prevStep ? 'forward' : 'backward')
       setPrevStep(currentStep)
 
-      // Auto-scroll to top when entering Step 5 (Quote)
-      if (currentStep === 5) {
+      // Auto-scroll to top on all step changes for mobile, and always on Step 5
+      // Check if on mobile (screen width < 768px) or if entering Step 5
+      const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
+      if (isMobile || currentStep === 5) {
         window.scrollTo({ top: 0, behavior: 'smooth' })
       }
     }

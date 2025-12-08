@@ -14,7 +14,7 @@ import { useState, useCallback, useEffect } from 'react'
 
 export function Header() {
   const { theme, toggleTheme } = useTheme()
-  const { user, profile, signOut } = useAuth()
+  const { user, profile, signOut, loading: authLoading } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
   const [showUserMenu, setShowUserMenu] = useState(false)
@@ -27,6 +27,17 @@ export function Header() {
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Get user initials for avatar
+  const getUserInitials = () => {
+    if (profile?.first_name && profile?.last_name) {
+      return `${profile.first_name[0]}${profile.last_name[0]}`.toUpperCase()
+    }
+    if (user?.email) {
+      return user.email[0].toUpperCase()
+    }
+    return 'U'
+  }
 
   const handleSignOut = async () => {
     await signOut()
@@ -115,16 +126,20 @@ export function Header() {
           )}
 
           {/* User Account */}
-          {user && profile ? (
+          {authLoading ? (
+            // Show loading placeholder while auth initializes
+            <Button variant="ghost" size="icon" aria-label="Loading" disabled>
+              <User className="h-5 w-5 opacity-50" />
+            </Button>
+          ) : user ? (
             <div className="relative">
-              <Button
-                variant="ghost"
-                size="icon"
+              <button
                 aria-label="Account"
                 onClick={() => setShowUserMenu(!showUserMenu)}
+                className="flex items-center justify-center w-9 h-9 rounded-full bg-[#0B5394] text-white font-semibold text-sm hover:bg-[#0B5394]/90 transition-colors focus:outline-none focus:ring-2 focus:ring-[#0B5394] focus:ring-offset-2"
               >
-                <User className="h-5 w-5" />
-              </Button>
+                {getUserInitials()}
+              </button>
 
               {showUserMenu && (
                 <>
@@ -137,19 +152,28 @@ export function Header() {
                   {/* Dropdown Menu */}
                   <div className="absolute right-0 mt-2 w-56 bg-card border rounded-lg shadow-lg z-50">
                     <div className="px-4 py-3 border-b">
-                      <p className="text-sm font-medium">
-                        {profile.first_name} {profile.last_name}
-                      </p>
-                      <p className="text-xs text-muted-foreground">{profile.email}</p>
-                      <p className="text-xs text-muted-foreground capitalize mt-1">
-                        Role: {profile.role.replace('_', ' ')}
-                      </p>
+                      {profile ? (
+                        <>
+                          <p className="text-sm font-medium">
+                            {profile.first_name} {profile.last_name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">{profile.email}</p>
+                          <p className="text-xs text-muted-foreground capitalize mt-1">
+                            Role: {profile.role.replace('_', ' ')}
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-sm font-medium">Signed In</p>
+                          <p className="text-xs text-muted-foreground">{user.email}</p>
+                        </>
+                      )}
                     </div>
 
                     <div className="py-2">
-                      {['owner', 'admin', 'customer_service', 'viewer'].includes(profile.role) && (
+                      {(!profile || ['owner', 'admin', 'customer_service', 'viewer'].includes(profile.role)) && (
                         <Link
-                          href="/admin/team"
+                          href="/admin/dashboard"
                           className="flex items-center px-4 py-2 text-sm hover:bg-muted transition-colors"
                           onClick={() => setShowUserMenu(false)}
                         >
@@ -171,7 +195,7 @@ export function Header() {
               )}
             </div>
           ) : (
-            <Link href="/login" className="hidden sm:block">
+            <Link href="/login">
               <Button variant="ghost" size="icon" aria-label="Sign In">
                 <User className="h-5 w-5" />
               </Button>

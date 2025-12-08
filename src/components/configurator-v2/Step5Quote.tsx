@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useConfigurator } from './ConfiguratorProvider'
 import { useCart } from '@/contexts/CartContext'
 import { useToast } from '@/components/ui/toast'
@@ -9,6 +9,7 @@ import { AnimatedCTAActionButton } from '@/components/ui/animated-cta-button'
 import { FEES, CONTACT } from '@/types/configurator-v2'
 import { Phone, Mail, Printer, Share2, Check, Copy, Calendar } from 'lucide-react'
 import { CallScheduler } from '@/components/contact/CallScheduler'
+import { clearSharedConfiguratorData } from '@/lib/configurator-shared-data'
 
 // Format currency with thousand separators
 const formatCurrency = (amount: number): string => {
@@ -168,6 +169,10 @@ export function Step5Quote() {
       'success',
       'Items Added to Cart!'
     )
+
+    // Clear both configurator data stores after adding to cart
+    clearSharedConfiguratorData() // Clear Quick Configurator shared data
+    localStorage.removeItem('ezcr-configurator') // Clear legacy configurator context
 
     // Open the cart drawer after a brief delay
     setTimeout(() => openCart(), 300)
@@ -363,8 +368,8 @@ export function Step5Quote() {
                 </div>
               </div>
 
-              {/* Actions */}
-              <div className="space-y-3">
+              {/* Actions - improved spacing */}
+              <div className="space-y-4">
                 <AnimatedCTAActionButton
                   onClick={handleAddToCart}
                   icon="cart"
@@ -374,11 +379,11 @@ export function Step5Quote() {
                   Add to Cart
                 </AnimatedCTAActionButton>
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-3">
                   <Button
                     onClick={() => window.location.href = `tel:${CONTACT.phone}`}
                     variant="outline"
-                    className="border-secondary text-secondary hover:bg-secondary/10 gap-2"
+                    className="border-[#F78309] text-[#F78309] hover:bg-[#F78309]/10 gap-2"
                     size="lg"
                   >
                     <Phone className="w-5 h-5" />
@@ -395,29 +400,32 @@ export function Step5Quote() {
                   </Button>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-3 pt-2">
                   <Button
                     onClick={handleEmailQuote}
-                    variant="secondary"
-                    className="gap-1 text-xs"
+                    variant="outline"
+                    className="gap-1.5 text-xs border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    size="sm"
                   >
-                    <Mail className="w-3 h-3" />
+                    <Mail className="w-3.5 h-3.5" />
                     Email
                   </Button>
                   <Button
                     onClick={handlePrintQuote}
-                    variant="secondary"
-                    className="gap-1 text-xs"
+                    variant="outline"
+                    className="gap-1.5 text-xs border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    size="sm"
                   >
-                    <Printer className="w-3 h-3" />
+                    <Printer className="w-3.5 h-3.5" />
                     Print
                   </Button>
                   <Button
                     onClick={handleShare}
-                    variant="secondary"
-                    className="gap-1 text-xs"
+                    variant="outline"
+                    className="gap-1.5 text-xs border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    size="sm"
                   >
-                    <Share2 className="w-3 h-3" />
+                    <Share2 className="w-3.5 h-3.5" />
                     Share
                   </Button>
                 </div>
@@ -476,10 +484,10 @@ export function Step5Quote() {
           </div>
         )}
 
-        {/* Schedule Call Modal */}
+        {/* Schedule Call Modal - positioned at top on mobile for visibility */}
         {showScheduleModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-background rounded-xl shadow-2xl max-w-md w-full p-6 relative">
+          <div className="fixed inset-0 bg-black/50 flex items-start sm:items-center justify-center z-50 p-4 pt-16 sm:pt-4 overflow-y-auto">
+            <div className="bg-background rounded-xl shadow-2xl max-w-md w-full p-6 relative my-auto">
               <button
                 onClick={() => setShowScheduleModal(false)}
                 className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
@@ -490,9 +498,11 @@ export function Step5Quote() {
               </button>
               <CallScheduler
                 onScheduled={() => {
+                  setShowScheduleModal(false)
                   showToast('We will call you at your scheduled time', 'success', 'Call Scheduled!')
                 }}
                 onCallbackRequested={() => {
+                  setShowScheduleModal(false)
                   showToast('We will call you back during your preferred time', 'success', 'Callback Requested!')
                 }}
               />

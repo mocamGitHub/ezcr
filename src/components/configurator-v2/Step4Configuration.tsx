@@ -88,8 +88,8 @@ export function Step4Configuration() {
         </div>
 
         {/* Ramp Model Selection */}
-        <div>
-          <h3 className="text-xl font-semibold mb-4">Select <span className="text-[#F78309]">Ramp Model</span></h3>
+        <div className="pt-4">
+          <h3 className="text-xl font-bold mb-2 pb-2 border-b border-[#F78309]/30">Select <span className="text-[#F78309]">Ramp Model</span></h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* AUN250 */}
             <button
@@ -163,8 +163,8 @@ export function Step4Configuration() {
         </div>
 
         {/* Ramp Extensions */}
-        <div>
-          <h3 className="text-xl font-semibold mb-4">Ramp <span className="text-[#F78309]">Extensions</span></h3>
+        <div className="pt-6">
+          <h3 className="text-xl font-bold mb-2 pb-2 border-b border-[#F78309]/30">Ramp <span className="text-[#F78309]">Extensions</span></h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               { id: 'no-ext', name: PRODUCT_NAMES.extensions['no-ext'], price: PRICING.extensions['no-ext'], recommended: false },
@@ -201,10 +201,10 @@ export function Step4Configuration() {
         </div>
 
         {/* Delivery & Services */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="pt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Delivery Options */}
           <div>
-            <h3 className="text-xl font-semibold mb-4"><span className="text-[#0B5394]">Delivery</span> Options</h3>
+            <h3 className="text-xl font-bold mb-2 pb-2 border-b border-[#0B5394]/30"><span className="text-[#0B5394]">Delivery</span> Options</h3>
             <div className="space-y-3">
               {[
                 { id: 'pickup', name: PRODUCT_NAMES.delivery.pickup, price: PRICING.delivery.pickup },
@@ -246,7 +246,7 @@ export function Step4Configuration() {
 
           {/* Services */}
           <div>
-            <h3 className="text-xl font-semibold mb-4"><span className="text-[#0B5394]">Services</span></h3>
+            <h3 className="text-xl font-bold mb-2 pb-2 border-b border-[#0B5394]/30"><span className="text-[#0B5394]">Services</span></h3>
             <div className="space-y-3">
               {[
                 { id: 'not-assembled', name: PRODUCT_NAMES.services['not-assembled'], price: PRICING.services['not-assembled'] },
@@ -278,10 +278,10 @@ export function Step4Configuration() {
         </div>
 
         {/* Accessories */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="pt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Boltless Tiedown Kit */}
           <div>
-            <h3 className="text-xl font-semibold mb-4"><span className="text-[#F78309]">Boltless</span> Tiedown Kit</h3>
+            <h3 className="text-xl font-bold mb-2 pb-2 border-b border-[#F78309]/30"><span className="text-[#F78309]">Boltless</span> Tiedown Kit</h3>
             <div className="space-y-3">
               {[
                 { id: 'no-kit', name: PRODUCT_NAMES.boltlessKit['no-kit'], price: PRICING.boltlessKit['no-kit'] },
@@ -312,7 +312,7 @@ export function Step4Configuration() {
 
           {/* Tie-Down Accessories */}
           <div>
-            <h3 className="text-xl font-semibold mb-4"><span className="text-[#F78309]">Tie-Down</span> Accessories</h3>
+            <h3 className="text-xl font-bold mb-2 pb-2 border-b border-[#F78309]/30"><span className="text-[#F78309]">Tie-Down</span> Accessories</h3>
             <div className="space-y-3">
               {[
                 { id: 'no-tiedown', name: PRODUCT_NAMES.tiedown['no-tiedown'], price: PRICING.tiedown['no-tiedown'], recommended: false },

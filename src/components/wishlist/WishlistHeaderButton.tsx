@@ -9,7 +9,7 @@ export function WishlistHeaderButton() {
   const { itemCount } = useWishlist()
 
   return (
-    <Link href="/wishlist" className="hidden sm:block">
+    <Link href="/wishlist">
       <Button variant="ghost" size="icon" aria-label="Wishlist" className="relative">
         <Heart className="h-5 w-5" />
         {itemCount > 0 && (
