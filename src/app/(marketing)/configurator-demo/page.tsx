@@ -114,7 +114,7 @@ function Option1APolishedAnimations() {
             <h3 className="text-lg text-white font-medium mb-2">{currentQuestion?.question}</h3>
             {currentQuestion?.helpText && <p className="text-zinc-500 text-sm mb-4">{currentQuestion.helpText}</p>}
             <div className="space-y-2">
-              {currentQuestion?.options.map((option, index) => {
+              {currentQuestion?.options.map((option: { value: string; label: string; sublabel?: string }, index) => {
                 const isSelected = selectedOption === option.value
                 return (
                   <button
@@ -297,7 +297,7 @@ function Option1CCardStack() {
                   <h3 className="text-lg font-bold text-white">{question.question}</h3>
                 </div>
                 <div className="space-y-2">
-                  {question.options.map(option => (
+                  {question.options.map((option: { value: string; label: string; sublabel?: string }) => (
                     <button
                       key={option.value}
                       onClick={() => idx === 0 && handleAnswer(option.value)}
