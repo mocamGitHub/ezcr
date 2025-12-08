@@ -121,7 +121,7 @@ function HeroOptionB() {
         </div>
 
         <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">
-          The Last Ramp You'll
+          The Last Ramp You&apos;ll
           <br />
           <span className="text-[#F78309]">Ever Need</span>
         </h1>

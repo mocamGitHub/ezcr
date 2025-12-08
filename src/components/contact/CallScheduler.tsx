@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Calendar, Phone, Clock, ArrowLeft, Check, PhoneCall } from 'lucide-react'
+import { Calendar, Phone, ArrowLeft, Check, PhoneCall } from 'lucide-react'
 
 interface CallSchedulerProps {
   variant?: 'full' | 'compact'
@@ -32,7 +32,7 @@ function getAvailableDates() {
   const dates = []
   const today = new Date()
   let daysAdded = 0
-  let currentDate = new Date(today)
+  const currentDate = new Date(today)
 
   while (daysAdded < 4) {
     currentDate.setDate(currentDate.getDate() + 1)
@@ -106,12 +106,12 @@ export function CallScheduler({ variant = 'full', onScheduled, onCallbackRequest
           <Check className="w-8 h-8 text-green-600 dark:text-green-400" />
         </div>
         <h3 className="text-xl font-bold mb-2">
-          {successType === 'schedule' ? "You're Booked!" : 'Callback Requested!'}
+          {successType === 'schedule' ? "You&apos;re Booked!" : 'Callback Requested!'}
         </h3>
         <p className="text-muted-foreground mb-4">
           {successType === 'schedule'
             ? `We'll call you on ${selectedDate?.date} at ${selectedTime}.`
-            : "We'll call you back during your preferred time window."}
+            : "We&apos;ll call you back during your preferred time window."}
         </p>
 
         {successType === 'schedule' && (
@@ -124,7 +124,7 @@ export function CallScheduler({ variant = 'full', onScheduled, onCallbackRequest
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-muted-foreground">•</span>
-                <span>Know your motorcycle's weight</span>
+                <span>Know your motorcycle&apos;s weight</span>
               </li>
             </ul>
           </div>

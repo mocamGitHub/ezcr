@@ -582,7 +582,7 @@ function Step5Current() {
             <h3 className="font-semibold mb-2">Selected Configuration</h3>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between"><span>AUN250 Folding Ramp</span><span>$1,299</span></div>
-              <div className="flex justify-between"><span>Extension 1 (12")</span><span>$149</span></div>
+              <div className="flex justify-between"><span>Extension 1 (12&quot;)</span><span>$149</span></div>
               <div className="flex justify-between"><span>Local Pickup</span><span>$0</span></div>
             </div>
           </div>
@@ -623,7 +623,7 @@ function Step5OptionA() {
           <h3 className="font-semibold mb-2">Your Configuration</h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between py-1 border-b border-border/50"><span>AUN250 Folding Ramp</span><span className="font-medium">$1,299</span></div>
-            <div className="flex justify-between py-1 border-b border-border/50"><span>Extension 1 (12")</span><span className="font-medium">$149</span></div>
+            <div className="flex justify-between py-1 border-b border-border/50"><span>Extension 1 (12&quot;)</span><span className="font-medium">$149</span></div>
             <div className="flex justify-between py-1"><span>Local Pickup</span><span className="font-medium">$0</span></div>
           </div>
         </div>

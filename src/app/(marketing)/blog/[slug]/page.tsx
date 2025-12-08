@@ -453,7 +453,7 @@ function renderContent(content: string) {
     if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('* ')) {
       inList = true
       // Handle **bold** in list items
-      let itemText = trimmedLine.slice(2)
+      const itemText = trimmedLine.slice(2)
       listItems.push(itemText.replace(/\*\*(.*?)\*\*/g, '$1'))
       return
     }
