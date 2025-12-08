@@ -173,7 +173,7 @@ export function CallScheduler({ variant = 'full', onScheduled, onCallbackRequest
             </div>
             <div className="text-left">
               <span className="font-semibold block text-gray-900 dark:text-white">Request a Callback</span>
-              <span className="text-sm text-muted-foreground">We'll call you back today</span>
+              <span className="text-sm text-muted-foreground">We&apos;ll call you back today</span>
             </div>
           </div>
         </button>
@@ -309,7 +309,7 @@ export function CallScheduler({ variant = 'full', onScheduled, onCallbackRequest
 
         <h3 className="text-lg font-semibold">Request a Callback</h3>
         <p className="text-sm text-muted-foreground">
-          Leave your details and we'll call you back today.
+          Leave your details and we&apos;ll call you back today.
         </p>
 
         <form onSubmit={handleCallbackSubmit} className="space-y-3">
