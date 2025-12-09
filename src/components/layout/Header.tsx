@@ -182,6 +182,15 @@ export function Header() {
                         </Link>
                       )}
 
+                      <Link
+                        href="/admin/profile"
+                        className="flex items-center px-4 py-2 text-sm hover:bg-muted transition-colors"
+                        onClick={() => setShowUserMenu(false)}
+                      >
+                        <User className="h-4 w-4 mr-2" />
+                        My Profile
+                      </Link>
+
                       <button
                         onClick={handleSignOut}
                         className="flex items-center w-full px-4 py-2 text-sm hover:bg-muted transition-colors text-left"

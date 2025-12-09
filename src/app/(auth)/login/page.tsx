@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -11,7 +10,6 @@ import { Label } from '@/components/ui/label'
 const REMEMBER_EMAIL_KEY = 'ezcr_remember_email'
 
 export default function LoginPage() {
-  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
@@ -60,9 +58,8 @@ export default function LoginPage() {
           .update({ last_login: new Date().toISOString() })
           .eq('id', data.user.id)
 
-        // Redirect to admin dashboard
-        router.push('/admin/team')
-        router.refresh()
+        // Use window.location for full page reload to ensure cookies are sent to middleware
+        window.location.href = '/admin/dashboard'
       }
     } catch (err) {
       setError('An unexpected error occurred')
