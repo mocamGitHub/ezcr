@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { RefreshCw, DollarSign, ShoppingCart, Users, TrendingUp, Package, UserCircle, MessageSquare, LogOut } from 'lucide-react'
+import { RefreshCw, DollarSign, ShoppingCart, Users, TrendingUp, Package, UserCircle, MessageSquare, LogOut, Truck } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -101,6 +101,7 @@ export default function AdminDashboardPage() {
   const quickLinks = [
     { href: '/admin/orders', label: 'Orders', icon: ShoppingCart },
     { href: '/admin/inventory', label: 'Inventory', icon: Package },
+    { href: '/admin/shipping', label: 'Shipping', icon: Truck },
     { href: '/admin/crm', label: 'Customers', icon: UserCircle },
     { href: '/admin/testimonials', label: 'Testimonials', icon: MessageSquare },
     { href: '/admin/team', label: 'Team', icon: Users },

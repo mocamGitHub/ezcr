@@ -2,9 +2,15 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { AlertTriangle, PackageX, Bell, BellOff, ChevronDown, ChevronUp } from 'lucide-react'
+import { AlertTriangle, PackageX, BellOff, ChevronDown, ChevronUp, VolumeX, Volume2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 interface Product {
@@ -13,31 +19,86 @@ interface Product {
   sku: string
   inventory_count: number
   low_stock_threshold: number
+  suppress_low_stock_alert?: boolean
+  suppress_out_of_stock_alert?: boolean
 }
 
 interface InventoryAlertsProps {
   products: Product[]
   onFilterLowStock: () => void
   showingLowStock: boolean
+  onToggleAlertSuppression?: (productId: string, alertType: 'low_stock' | 'out_of_stock', suppress: boolean) => Promise<void>
+  showSuppressed?: boolean
 }
 
-export function InventoryAlerts({ products, onFilterLowStock, showingLowStock }: InventoryAlertsProps) {
+export function InventoryAlerts({
+  products,
+  onFilterLowStock,
+  showingLowStock,
+  onToggleAlertSuppression,
+  showSuppressed = false,
+}: InventoryAlertsProps) {
   const [expanded, setExpanded] = useState(true)
   const [dismissed, setDismissed] = useState(false)
+  const [suppressingId, setSuppressingId] = useState<string | null>(null)
 
-  const outOfStock = products.filter(p => p.inventory_count <= 0)
+  // Filter out suppressed alerts unless showSuppressed is true
+  const outOfStock = products.filter(p =>
+    p.inventory_count <= 0 &&
+    (showSuppressed || !p.suppress_out_of_stock_alert)
+  )
   const critical = products.filter(p =>
     p.inventory_count > 0 &&
-    p.inventory_count <= Math.floor(p.low_stock_threshold * 0.5)
+    p.inventory_count <= Math.floor(p.low_stock_threshold * 0.5) &&
+    (showSuppressed || !p.suppress_low_stock_alert)
   )
   const lowStock = products.filter(p =>
     p.inventory_count > Math.floor(p.low_stock_threshold * 0.5) &&
-    p.inventory_count <= p.low_stock_threshold
+    p.inventory_count <= p.low_stock_threshold &&
+    (showSuppressed || !p.suppress_low_stock_alert)
   )
 
-  const totalAlerts = outOfStock.length + critical.length + lowStock.length
+  // Count suppressed alerts
+  const suppressedOutOfStock = products.filter(p =>
+    p.inventory_count <= 0 && p.suppress_out_of_stock_alert
+  ).length
+  const suppressedLowStock = products.filter(p =>
+    p.inventory_count > 0 &&
+    p.inventory_count <= p.low_stock_threshold &&
+    p.suppress_low_stock_alert
+  ).length
 
-  if (totalAlerts === 0 || dismissed) {
+  const totalAlerts = outOfStock.length + critical.length + lowStock.length
+  const totalSuppressed = suppressedOutOfStock + suppressedLowStock
+
+  if (totalAlerts === 0 && totalSuppressed === 0) {
+    return null
+  }
+
+  if (totalAlerts === 0 && !showSuppressed) {
+    // Only suppressed alerts exist, show minimal indicator
+    return (
+      <div className="border rounded-lg mb-6 p-4 bg-muted/30">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <VolumeX className="h-4 w-4" />
+            <span className="text-sm">
+              {totalSuppressed} suppressed alert{totalSuppressed !== 1 ? 's' : ''}
+            </span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onFilterLowStock}
+          >
+            View Details
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (dismissed) {
     return null
   }
 
@@ -48,6 +109,91 @@ export function InventoryAlerts({ products, onFilterLowStock, showingLowStock }:
   }
 
   const severity = getAlertSeverity()
+
+  const handleToggleSuppression = async (
+    e: React.MouseEvent,
+    productId: string,
+    alertType: 'low_stock' | 'out_of_stock',
+    currentlySuppressed: boolean
+  ) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    if (!onToggleAlertSuppression) return
+
+    setSuppressingId(productId)
+    try {
+      await onToggleAlertSuppression(productId, alertType, !currentlySuppressed)
+    } finally {
+      setSuppressingId(null)
+    }
+  }
+
+  const renderProductItem = (
+    product: Product,
+    alertType: 'low_stock' | 'out_of_stock',
+    badgeVariant: 'destructive' | 'warning' | 'outline',
+    badgeClassName?: string
+  ) => {
+    const isSuppressed = alertType === 'out_of_stock'
+      ? product.suppress_out_of_stock_alert
+      : product.suppress_low_stock_alert
+    const isProcessing = suppressingId === product.id
+
+    return (
+      <div
+        key={product.id}
+        className={cn(
+          "flex items-center justify-between p-2 bg-white dark:bg-gray-900 rounded border text-sm transition-colors",
+          isSuppressed && "opacity-60 border-dashed",
+          !isSuppressed && "hover:bg-gray-50 dark:hover:bg-gray-800"
+        )}
+      >
+        <Link
+          href={`/admin/inventory/${product.id}`}
+          className="truncate font-medium flex-1 hover:underline"
+        >
+          {product.name}
+        </Link>
+        <div className="flex items-center gap-1 ml-2">
+          {alertType === 'out_of_stock' ? (
+            <Badge variant="destructive" className="text-xs">0</Badge>
+          ) : (
+            <Badge
+              variant={badgeVariant === 'warning' ? 'default' : 'outline'}
+              className={cn("text-xs", badgeClassName)}
+            >
+              {product.inventory_count}
+            </Badge>
+          )}
+          {onToggleAlertSuppression && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    disabled={isProcessing}
+                    onClick={(e) => handleToggleSuppression(e, product.id, alertType, !!isSuppressed)}
+                  >
+                    {isSuppressed ? (
+                      <Volume2 className="h-3 w-3 text-muted-foreground" />
+                    ) : (
+                      <VolumeX className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {isSuppressed ? 'Enable alert' : 'Suppress alert'}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className={cn(
@@ -81,6 +227,9 @@ export function InventoryAlerts({ products, onFilterLowStock, showingLowStock }:
             </h3>
             <p className="text-sm text-muted-foreground">
               {totalAlerts} item{totalAlerts !== 1 ? 's' : ''} need attention
+              {totalSuppressed > 0 && !showSuppressed && (
+                <span className="ml-1 text-xs">({totalSuppressed} suppressed)</span>
+              )}
             </p>
           </div>
         </div>
@@ -92,6 +241,7 @@ export function InventoryAlerts({ products, onFilterLowStock, showingLowStock }:
               e.stopPropagation()
               setDismissed(true)
             }}
+            title="Dismiss temporarily"
           >
             <BellOff className="h-4 w-4" />
           </Button>
@@ -116,16 +266,9 @@ export function InventoryAlerts({ products, onFilterLowStock, showingLowStock }:
                 <span className="text-sm font-medium">{outOfStock.length} products</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                {outOfStock.slice(0, 6).map(product => (
-                  <Link
-                    key={product.id}
-                    href={`/admin/inventory/${product.id}`}
-                    className="flex items-center justify-between p-2 bg-white dark:bg-gray-900 rounded border text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                  >
-                    <span className="truncate font-medium">{product.name}</span>
-                    <Badge variant="destructive" className="ml-2 text-xs">0</Badge>
-                  </Link>
-                ))}
+                {outOfStock.slice(0, 6).map(product =>
+                  renderProductItem(product, 'out_of_stock', 'destructive')
+                )}
               </div>
               {outOfStock.length > 6 && (
                 <p className="text-xs text-muted-foreground">
@@ -143,18 +286,9 @@ export function InventoryAlerts({ products, onFilterLowStock, showingLowStock }:
                 <span className="text-sm font-medium">{critical.length} products</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                {critical.slice(0, 6).map(product => (
-                  <Link
-                    key={product.id}
-                    href={`/admin/inventory/${product.id}`}
-                    className="flex items-center justify-between p-2 bg-white dark:bg-gray-900 rounded border text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                  >
-                    <span className="truncate font-medium">{product.name}</span>
-                    <Badge className="ml-2 bg-orange-500 text-white text-xs">
-                      {product.inventory_count}
-                    </Badge>
-                  </Link>
-                ))}
+                {critical.slice(0, 6).map(product =>
+                  renderProductItem(product, 'low_stock', 'warning', 'bg-orange-500 text-white')
+                )}
               </div>
               {critical.length > 6 && (
                 <p className="text-xs text-muted-foreground">
@@ -174,18 +308,9 @@ export function InventoryAlerts({ products, onFilterLowStock, showingLowStock }:
                 <span className="text-sm font-medium">{lowStock.length} products</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                {lowStock.slice(0, 6).map(product => (
-                  <Link
-                    key={product.id}
-                    href={`/admin/inventory/${product.id}`}
-                    className="flex items-center justify-between p-2 bg-white dark:bg-gray-900 rounded border text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                  >
-                    <span className="truncate font-medium">{product.name}</span>
-                    <Badge variant="outline" className="ml-2 border-yellow-500 text-yellow-700 text-xs">
-                      {product.inventory_count}
-                    </Badge>
-                  </Link>
-                ))}
+                {lowStock.slice(0, 6).map(product =>
+                  renderProductItem(product, 'low_stock', 'outline', 'border-yellow-500 text-yellow-700')
+                )}
               </div>
               {lowStock.length > 6 && (
                 <p className="text-xs text-muted-foreground">
@@ -196,7 +321,7 @@ export function InventoryAlerts({ products, onFilterLowStock, showingLowStock }:
           )}
 
           {/* Action Button */}
-          <div className="pt-2 border-t">
+          <div className="pt-2 border-t flex items-center justify-between">
             <Button
               variant={showingLowStock ? 'secondary' : 'default'}
               size="sm"
@@ -204,6 +329,12 @@ export function InventoryAlerts({ products, onFilterLowStock, showingLowStock }:
             >
               {showingLowStock ? 'Show All Products' : 'View All Low Stock Items'}
             </Button>
+            {totalSuppressed > 0 && (
+              <span className="text-xs text-muted-foreground">
+                <VolumeX className="h-3 w-3 inline mr-1" />
+                {totalSuppressed} alert{totalSuppressed !== 1 ? 's' : ''} suppressed
+              </span>
+            )}
           </div>
         </div>
       )}

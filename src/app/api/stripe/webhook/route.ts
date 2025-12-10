@@ -4,6 +4,75 @@ import { supabaseAdmin } from '@/lib/supabase/admin'
 import { sendOrderConfirmationEmail } from '@/lib/email/order-confirmation'
 import Stripe from 'stripe'
 
+// ============================================
+// SHIPPING INTEGRATION HELPERS
+// ============================================
+
+async function triggerN8NWorkflow(order: any, orderNumber: string) {
+  const webhookUrl = process.env.N8N_ORDER_WEBHOOK_URL
+  if (!webhookUrl) return { skipped: true }
+
+  try {
+    await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event: 'order_created',
+        timestamp: new Date().toISOString(),
+        order: {
+          id: order.id,
+          orderNumber: orderNumber,
+          customerEmail: order.customer_email,
+          customerName: order.customer_name,
+          productSku: order.product_sku,
+          productName: order.product_name,
+          deliveryMethod: order.delivery_method,
+          shippingAddress: order.shipping_address,
+          grandTotal: order.total_amount || order.grand_total,
+        },
+      }),
+    })
+    console.log('✅ N8N workflow triggered')
+  } catch (error) {
+    console.error('❌ N8N trigger failed:', error)
+  }
+}
+
+async function sendSlackNotification(order: any, orderNumber: string) {
+  const webhookUrl = process.env.SLACK_WEBHOOK_URL
+  if (!webhookUrl) return { skipped: true }
+
+  try {
+    await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: `🎉 New Order: ${orderNumber}`,
+        blocks: [
+          {
+            type: 'header',
+            text: {
+              type: 'plain_text',
+              text: `🎉 New Order: ${orderNumber}`,
+            },
+          },
+          {
+            type: 'section',
+            fields: [
+              { type: 'mrkdwn', text: `*Customer:*\n${order.customer_email}` },
+              { type: 'mrkdwn', text: `*Total:*\n$${(order.total_amount || order.grand_total || 0).toFixed(2)}` },
+              { type: 'mrkdwn', text: `*Delivery:*\n${order.delivery_method === 'pickup' ? 'Pickup' : 'Shipping'}` },
+            ],
+          },
+        ],
+      }),
+    })
+    console.log('✅ Slack notification sent')
+  } catch (error) {
+    console.error('❌ Slack notification failed:', error)
+  }
+}
+
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!
 
 export async function POST(request: NextRequest) {
@@ -99,16 +168,16 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Send order confirmation email
-        try {
-          // Get order details for email
-          const { data: order } = await supabaseAdmin
-            .from('orders')
-            .select('*')
-            .eq('id', orderId)
-            .single()
+        // Get order details for email and fulfillment
+        const { data: order } = await supabaseAdmin
+          .from('orders')
+          .select('*')
+          .eq('id', orderId)
+          .single()
 
-          if (order && orderItems) {
+        // Send order confirmation email
+        if (order && orderItems) {
+          try {
             await sendOrderConfirmationEmail({
               orderNumber: orderNumber || order.order_number,
               customerName: order.customer_name,
@@ -125,13 +194,22 @@ export async function POST(request: NextRequest) {
               total: order.total_amount,
               shippingAddress: order.shipping_address,
             })
+          } catch (emailError) {
+            console.error('Failed to send order confirmation email:', emailError)
+            // Don't fail webhook for email errors
           }
-        } catch (emailError) {
-          console.error('Failed to send order confirmation email:', emailError)
-          // Don't fail webhook for email errors
-        }
 
-        // TODO: Trigger fulfillment workflow via N8N
+          // Trigger fulfillment workflow via N8N and Slack notification
+          try {
+            await Promise.allSettled([
+              triggerN8NWorkflow(order, orderNumber || order.order_number),
+              sendSlackNotification(order, orderNumber || order.order_number),
+            ])
+          } catch (fulfillmentError) {
+            console.error('Fulfillment triggers failed:', fulfillmentError)
+            // Don't fail webhook for fulfillment errors
+          }
+        }
 
         break
       }

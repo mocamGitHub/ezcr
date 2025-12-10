@@ -20,6 +20,8 @@ interface Product {
   category_id: string | null
   base_price: number
   is_active: boolean
+  suppress_low_stock_alert?: boolean
+  suppress_out_of_stock_alert?: boolean
   product_categories?: {
     name: string
   } | null
@@ -51,6 +53,8 @@ export default function InventoryDashboardPage() {
           category_id,
           base_price,
           is_active,
+          suppress_low_stock_alert,
+          suppress_out_of_stock_alert,
           product_categories (
             name
           )
@@ -95,6 +99,46 @@ export default function InventoryDashboardPage() {
     setFilteredProducts(filtered)
   }, [searchQuery, showLowStockOnly, products])
 
+  const handleToggleAlertSuppression = async (
+    productId: string,
+    alertType: 'low_stock' | 'out_of_stock',
+    suppress: boolean
+  ) => {
+    try {
+      const response = await fetch('/api/inventory/suppress-alert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId, alertType, suppress }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update alert settings')
+      }
+
+      // Update local state
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.id === productId
+            ? {
+                ...p,
+                suppress_low_stock_alert:
+                  alertType === 'low_stock' ? suppress : p.suppress_low_stock_alert,
+                suppress_out_of_stock_alert:
+                  alertType === 'out_of_stock' ? suppress : p.suppress_out_of_stock_alert,
+              }
+            : p
+        )
+      )
+
+      toast.success(data.message)
+    } catch (err) {
+      console.error('Error toggling alert suppression:', err)
+      toast.error(err instanceof Error ? err.message : 'Failed to update alert settings')
+    }
+  }
+
   const outOfStockCount = products.filter((p) => p.inventory_count === 0).length
 
   const lowStockCount = products.filter(
@@ -105,6 +149,15 @@ export default function InventoryDashboardPage() {
     (sum, p) => sum + p.base_price * p.inventory_count,
     0
   )
+
+  // Count suppressed alerts
+  const suppressedCount = products.filter(
+    (p) =>
+      (p.inventory_count <= 0 && p.suppress_out_of_stock_alert) ||
+      (p.inventory_count > 0 &&
+        p.inventory_count <= p.low_stock_threshold &&
+        p.suppress_low_stock_alert)
+  ).length
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -164,6 +217,8 @@ export default function InventoryDashboardPage() {
         products={products}
         onFilterLowStock={() => setShowLowStockOnly(!showLowStockOnly)}
         showingLowStock={showLowStockOnly}
+        onToggleAlertSuppression={handleToggleAlertSuppression}
+        showSuppressed={showLowStockOnly}
       />
 
       {/* Filters */}
@@ -183,6 +238,9 @@ export default function InventoryDashboardPage() {
           onClick={() => setShowLowStockOnly(!showLowStockOnly)}
         >
           {showLowStockOnly ? 'Show All' : 'Show Low Stock Only'}
+          {suppressedCount > 0 && !showLowStockOnly && (
+            <span className="ml-2 text-xs opacity-70">({suppressedCount} suppressed)</span>
+          )}
         </Button>
       </div>
 
