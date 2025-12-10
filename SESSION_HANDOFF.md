@@ -1,85 +1,137 @@
-# Session Handoff - Login Fix & User Profile Page
+# Session Handoff - Shipping Analytics, Resend Email, Inventory Alerts
 
 **Date**: December 9, 2025
-**Time**: Morning Session
-**Previous Commit**: `3f88535` - feat: UI/UX improvements and admin dashboard analytics
-**Current Commit**: `9c9d43e` - feat: Add user profile page and fix login redirect
-**Current Status**: Login working, profile page added, deployed to staging
+**Time**: Evening Session
+**Previous Commit**: `c4fd864` - docs: Update session handoff for login fix and profile page
+**Current Commits**:
+- `948261d` - feat: Add shipping analytics, Resend email, inventory alert suppression
+- `568da05` - fix: Add missing tooltip component for build
+**Current Status**: All features complete, deployed to staging (waiting for Coolify rebuild)
 **Branch**: main
-**Dev Server**: Running at http://localhost:3000
-**Staging**: https://staging.ezcycleramp.com (deployed and working)
+**Dev Server**: Not running (was running earlier)
+**Staging**: https://staging.ezcycleramp.com (deployment in progress after build fix)
 
 ---
 
 ## What Was Accomplished This Session
 
-### 1. Login Redirect Fix
-- **Problem**: After successful login, page would blink and stay on login page
-- **Root Cause**: `router.push()` doesn't trigger full page reload, so auth cookies weren't sent to middleware
-- **Solution**: Changed to `window.location.href` for proper cookie handling
-- **File**: `src/app/(auth)/login/page.tsx`
+### 1. Shipping Analytics Dashboard
+- Created `ShippingAnalyticsDashboard.tsx` component with full analytics display
+- Created `shipping-analytics.ts` server actions for querying database views
+- Added `/admin/shipping` page to access the dashboard
+- Dashboard shows: orders overview, shipping performance, action items, quote analytics
 
-### 2. User Profile Page (New Feature)
-- Created `/admin/profile` page with:
-  - Account information display (email, role, status, created date)
-  - Update profile form (first name, last name)
-  - Change password functionality (simplified - no current password required since user is authenticated)
-- Added "My Profile" link to user dropdown menu in header
-- **Files**:
-  - `src/app/(admin)/admin/profile/page.tsx` (new)
-  - `src/components/layout/Header.tsx` (modified)
+### 2. Email System Migration (SendGrid → Resend)
+- Installed `resend` npm package
+- Created comprehensive `resend-service.ts` with email templates for:
+  - Order confirmation
+  - Shipping notification
+  - Delivery confirmation
+  - Pickup ready
+  - Review request
+  - Installation tips
+- Updated `order-confirmation.ts` to use Resend with HTML templates
+- Created `post-purchase-emails` API route for scheduled email automation
 
-### 3. Staging Deployment Fix
-- **Problem**: Staging server missing `SUPABASE_SERVICE_KEY` in `.env.production`
-- **Solution**: Added the key to `/opt/ezcr-staging/.env.production` on server
-- Recreated Docker container to pick up env changes
+### 3. Inventory Alert Suppression Feature
+- **Database**: Created migration `00024_inventory_alert_suppression.sql` (already applied)
+- **API**: Created `/api/inventory/suppress-alert` endpoint with admin/inventory_manager role check
+- **UI**: Updated `InventoryAlerts.tsx` with:
+  - VolumeX/Volume2 icons for suppress/enable toggle
+  - Shows suppressed count when hidden
+  - Per-product independent control for low stock vs out of stock alerts
+- **Integration**: Updated `inventory/page.tsx` to fetch and manage suppression state
 
-### 4. Security Note
-- Observed attack attempts in staging logs (busybox, wget, pkill commands)
-- Attacks are failing (permission denied) but consider adding rate limiting/WAF
+### 4. Shipping API Routes
+- Created `/api/shipping-quote` - T-Force Freight LTL quote API
+- Created `/api/shipping-webhook` - Webhook handler for shipping status updates
+
+### 5. Credentials Added to .env.local
+- T-Force Freight: `TFORCE_CLIENT_ID`, `TFORCE_CLIENT_SECRET`, `TFORCE_ACCOUNT_NUMBER`
+- Twilio SMS: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`
+
+### 6. n8n Workflow
+- User imported `n8n/process-scheduled-emails-workflow.json` manually
+
+### 7. Build Fix
+- Added missing `@radix-ui/react-tooltip` dependency
+- Created `src/components/ui/tooltip.tsx` component
+- Fixed ESLint `let` vs `const` error in shipping-quote route
 
 ---
 
-## Files Modified This Session
+## Files Created/Modified This Session
 
-1. `src/app/(auth)/login/page.tsx` - Fixed redirect using window.location.href
-2. `src/app/(admin)/admin/profile/page.tsx` - New profile management page
-3. `src/components/layout/Header.tsx` - Added "My Profile" link to dropdown
+### New Files
+- `src/components/admin/analytics/ShippingAnalyticsDashboard.tsx`
+- `src/actions/shipping-analytics.ts`
+- `src/app/(admin)/admin/shipping/page.tsx`
+- `src/app/api/inventory/suppress-alert/route.ts`
+- `src/app/api/post-purchase-emails/route.ts`
+- `src/app/api/shipping-quote/route.ts`
+- `src/app/api/shipping-webhook/route.ts`
+- `src/lib/email/resend-service.ts`
+- `src/components/ui/tooltip.tsx`
+- `supabase/migrations/00024_inventory_alert_suppression.sql`
+- `n8n/process-scheduled-emails-workflow.json`
+
+### Modified Files
+- `src/app/(admin)/admin/dashboard/page.tsx` - Added shipping link
+- `src/app/(admin)/admin/inventory/page.tsx` - Added alert suppression handling
+- `src/app/api/stripe/webhook/route.ts` - Fixed scope issue with order variable
+- `src/components/admin/InventoryAlerts.tsx` - Added suppression UI
+- `src/components/admin/analytics/index.ts` - Export ShippingAnalyticsDashboard
+- `src/lib/email/order-confirmation.ts` - Switched to Resend
+- `package.json` / `package-lock.json` - Added resend, @radix-ui/react-tooltip
+- `.env.local` - Added T-Force and Twilio credentials
 
 ---
 
 ## Current State
 
 ### What's Working
-- Login properly redirects to `/admin/dashboard`
-- User can view account info at `/admin/profile`
-- User can update name and change password
-- Staging deployed and functional at https://staging.ezcycleramp.com
-- Dev server running at http://localhost:3000
+- Build compiles successfully (verified locally)
+- All new features implemented and pushed to GitHub
+- Migration 00024 applied to database
+- n8n workflow imported
 
 ### What's Pending
-- None for this session's scope
+1. **Staging Deployment** - Coolify should auto-rebuild after push; if still timing out, check Coolify dashboard
+2. **Stripe Webhook Configuration** - Must be done manually in Stripe Dashboard:
+   - URL: `https://staging.ezcycleramp.com/api/stripe/webhook`
+   - Events: `checkout.session.completed`, `payment_intent.succeeded`, `payment_intent.payment_failed`
+   - Copy signing secret to `STRIPE_WEBHOOK_SECRET` env var
+
+### Environment Variables for Staging
+Ensure these are set in Coolify for staging.ezcycleramp.com:
+- `RESEND_API_KEY`
+- `TFORCE_CLIENT_ID`, `TFORCE_CLIENT_SECRET`, `TFORCE_ACCOUNT_NUMBER`
+- `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`
+- `STRIPE_WEBHOOK_SECRET` (after creating webhook)
 
 ---
 
 ## Deployment Status
 
 ### Staging (staging.ezcycleramp.com)
-- **Status**: Deployed and working
-- **Container**: ezcr-nextjs
-- **Last Deploy**: December 9, 2025
-- **Commit**: `9c9d43e`
+- **Status**: Build fix pushed, waiting for Coolify auto-deploy
+- **Commits**: `948261d` + `568da05`
+- **Issue**: Was timing out due to build failure (missing tooltip component) - now fixed
 
 ### Production
-- Not yet deployed (awaiting user decision)
+- Not yet deployed
 
 ---
 
 ## Next Recommended Actions
 
-1. **Test on Production** - When ready, deploy to production
-2. **Security Hardening** - Consider adding rate limiting or WAF for staging
-3. **Password Reset via Email** - Test the forgot-password flow works with SMTP
+1. **Check Coolify Dashboard** - Verify staging deployment completed successfully
+2. **Test Staging Site** - Once deployed, test:
+   - `/admin/shipping` - Shipping analytics dashboard
+   - `/admin/inventory` - Alert suppression toggle (VolumeX icon on alerts)
+3. **Configure Stripe Webhook** - Manual task in Stripe Dashboard
+4. **Verify Resend Domain** - Ensure ezcycleramp.com is verified in Resend dashboard
+5. **Test Email Flows** - Place test order to verify Resend emails work
 
 ---
 
@@ -96,26 +148,33 @@ git status
 git log -3 --oneline
 ```
 
-### 3. Start dev server (if not running)
+### 3. Check staging site
 ```bash
-pnpm dev
+curl -I https://staging.ezcycleramp.com
 ```
 
-### 4. Key files to review
-- Login page: `src/app/(auth)/login/page.tsx`
-- Profile page: `src/app/(admin)/admin/profile/page.tsx`
-- Header (user menu): `src/components/layout/Header.tsx`
+### 4. Start dev server (if needed)
+```bash
+npm run dev
+```
 
-### 5. Test locally
-- Go to http://localhost:3000/login
-- Log in with credentials
-- Check profile at http://localhost:3000/admin/profile
+### 5. Key files to review
+- Shipping dashboard: `src/components/admin/analytics/ShippingAnalyticsDashboard.tsx`
+- Inventory alerts: `src/components/admin/InventoryAlerts.tsx`
+- Alert suppression API: `src/app/api/inventory/suppress-alert/route.ts`
+- Email service: `src/lib/email/resend-service.ts`
+
+### 6. If staging still down
+- Check Coolify dashboard for build logs
+- Verify `.env` variables are set correctly
+- May need to manually trigger rebuild
 
 ---
 
 ## Environment Notes
 
-- **Supabase**: https://supabase.nexcyte.com (shared between dev/staging/prod)
-- **Test User**: morris@mocampbell.com (password was changed this session)
-- **Staging Server**: root@5.161.187.109
-- **Staging Path**: /opt/ezcr-staging
+- **Supabase**: https://supabase.nexcyte.com
+- **Staging Server**: Managed by Coolify
+- **T-Force API**: Credentials in .env.local (test mode)
+- **Resend**: API key in .env.local, domain needs verification
+- **Twilio**: Credentials added for SMS pickup notifications
