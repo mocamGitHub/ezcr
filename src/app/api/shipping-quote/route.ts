@@ -734,7 +734,7 @@ export async function POST(req: NextRequest) {
     console.error('Shipping quote error:', error);
 
     let errorType = 'API_ERROR';
-    let errorMessage = error.message || 'Unknown error';
+    const errorMessage = error.message || 'Unknown error';
     let userMessage = 'We couldn\'t calculate shipping at this time. Please contact us at (937) 725-6790 for a quote.';
     let statusCode = 500;
 
