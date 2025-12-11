@@ -14,7 +14,7 @@
 //   SUPPORT_EMAIL=support@ezcycleramp.com
 //   SENDGRID_API_KEY=your_sendgrid_key
 //   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-//   SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+//   SUPABASE_SERVICE_KEY=your_service_role_key
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
@@ -211,7 +211,7 @@ function validateZipCode(zip: string): boolean {
 
 function getSupabaseClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
     throw new Error('Supabase credentials not configured');
