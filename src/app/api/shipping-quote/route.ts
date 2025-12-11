@@ -759,7 +759,7 @@ export async function POST(req: NextRequest) {
     const request: ShippingQuoteRequest = {
       destinationZip: 'unknown',
       productSku: 'AUN200',
-      source: 'unknown' as const,
+      source: 'checkout',
     };
 
     // Log error to database

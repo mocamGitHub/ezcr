@@ -69,6 +69,11 @@ export interface ConfigData {
   tiedown: ProductSelection
   service: ProductSelection
   delivery: ProductSelection
+  // Tonneau cover options (for pickup trucks)
+  hasTonneauCover?: boolean
+  tonneauType?: string
+  tonneauRollDirection?: string
+  rollupPosition?: string
 }
 
 // Measurement Ranges (all in inches)

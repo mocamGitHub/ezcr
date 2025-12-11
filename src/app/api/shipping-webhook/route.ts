@@ -81,7 +81,7 @@ function getStripeClient() {
     throw new Error('Stripe secret key not configured');
   }
   return new Stripe(secretKey, {
-    apiVersion: '2023-10-16',
+    apiVersion: '2025-10-29.clover',
   });
 }
 
@@ -147,6 +147,10 @@ async function handleCheckoutSessionCompleted(
   }
 
   // Build order data
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sessionAny = session as any;
+  const shippingDetails = sessionAny.shipping_details || sessionAny.shipping;
+
   const orderData: OrderData = {
     orderNumber: generateOrderNumber(),
     customerEmail: session.customer_details?.email || session.customer_email || '',
@@ -160,13 +164,13 @@ async function handleCheckoutSessionCompleted(
     deliveryMethod: metadata.delivery_method as 'shipping' | 'pickup' || 'shipping',
     shippingQuoteId: metadata.shipping_quote_id,
     shippingCost: parseFloat(metadata.shipping_cost) || shippingQuote?.total_rate || 0,
-    shippingAddress: session.shipping_details?.address ? {
-      streetAddress: session.shipping_details.address.line1 || '',
-      apartment: session.shipping_details.address.line2 || undefined,
-      city: session.shipping_details.address.city || '',
-      state: session.shipping_details.address.state || '',
-      zipCode: session.shipping_details.address.postal_code || '',
-      country: session.shipping_details.address.country || 'US',
+    shippingAddress: shippingDetails?.address ? {
+      streetAddress: shippingDetails.address.line1 || '',
+      apartment: shippingDetails.address.line2 || undefined,
+      city: shippingDetails.address.city || '',
+      state: shippingDetails.address.state || '',
+      zipCode: shippingDetails.address.postal_code || '',
+      country: shippingDetails.address.country || 'US',
       isResidential: metadata.is_residential === 'true',
     } : undefined,
     destinationTerminal: shippingQuote?.destination_terminal_code ? {

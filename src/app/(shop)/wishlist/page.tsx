@@ -15,22 +15,24 @@ export default function WishlistPage() {
 
   const handleAddToCart = (item: typeof items[0]) => {
     addItem({
-      id: item.id,
-      name: item.name,
+      productId: item.id,
+      productName: item.name,
+      productSlug: item.slug,
+      productImage: item.image || null,
       price: item.price,
-      quantity: 1,
-      image: item.image,
+      sku: null,
     })
   }
 
   const handleAddAllToCart = () => {
     items.forEach(item => {
       addItem({
-        id: item.id,
-        name: item.name,
+        productId: item.id,
+        productName: item.name,
+        productSlug: item.slug,
+        productImage: item.image || null,
         price: item.price,
-        quantity: 1,
-        image: item.image,
+        sku: null,
       })
     })
   }

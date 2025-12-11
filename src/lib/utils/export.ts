@@ -2,7 +2,8 @@
  * Export utilities for generating CSV and Excel downloads
  */
 
-type ExportDataRow = Record<string, string | number | boolean | null | undefined>
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ExportDataRow = Record<string, any>
 
 interface ExportColumn {
   key: string
@@ -13,7 +14,7 @@ interface ExportColumn {
 /**
  * Convert array of objects to CSV string
  */
-export function convertToCSV(data: ExportDataRow[], columns: ExportColumn[]): string {
+export function convertToCSV<T extends ExportDataRow>(data: T[], columns: ExportColumn[]): string {
   if (data.length === 0) return ''
 
   // Generate header row
@@ -39,27 +40,21 @@ export function convertToCSV(data: ExportDataRow[], columns: ExportColumn[]): st
 export function downloadCSV(csv: string, filename: string): void {
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
   const link = document.createElement('a')
-
-  if (navigator.msSaveBlob) {
-    // IE 10+
-    navigator.msSaveBlob(blob, filename)
-  } else {
-    const url = URL.createObjectURL(blob)
-    link.href = url
-    link.download = filename
-    link.style.display = 'none'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
-  }
+  const url = URL.createObjectURL(blob)
+  link.href = url
+  link.download = filename
+  link.style.display = 'none'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
 }
 
 /**
  * Export data to CSV file
  */
-export function exportToCSV(
-  data: ExportDataRow[],
+export function exportToCSV<T extends ExportDataRow>(
+  data: T[],
   columns: ExportColumn[],
   filename: string
 ): void {

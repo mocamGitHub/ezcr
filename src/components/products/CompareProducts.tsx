@@ -83,11 +83,12 @@ export function CompareProducts({ products }: CompareProductsProps) {
 
   const handleAddToCart = (product: Product) => {
     addItem({
-      id: product.id,
-      name: product.name,
+      productId: product.id,
+      productName: product.name,
+      productSlug: product.slug,
+      productImage: product.images?.[0]?.url || null,
       price: product.base_price,
-      quantity: 1,
-      image: product.images?.[0]?.url,
+      sku: null,
     })
   }
 

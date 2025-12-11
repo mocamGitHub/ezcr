@@ -34,7 +34,7 @@ export function TestimonialSubmitForm({
   onSuccess,
   className,
 }: TestimonialSubmitFormProps) {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [formData, setFormData] = useState<FormData>({
     rating: 5,
     review_text: '',
