@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 import { X, Clock, Package, Users, Zap } from 'lucide-react'
 
 // Types for FOMO banner configuration
@@ -106,11 +107,17 @@ function formatMessage(message: string, config: FOMOBannerConfig): string {
 }
 
 export function FOMOBanner() {
+  const pathname = usePathname()
   const [config, setConfig] = useState<FOMOBannerConfig | null>(null)
   const [isDismissed, setIsDismissed] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
+  // Don't show FOMO banners on admin pages
+  const isAdminPage = pathname?.startsWith('/admin')
+
   useEffect(() => {
+    // Skip fetching if on admin page
+    if (isAdminPage) return
     // Check if user has dismissed this banner before
     const dismissedBanners = localStorage.getItem('dismissedFOMOBanners')
     if (dismissedBanners) {
@@ -151,7 +158,7 @@ export function FOMOBanner() {
     }
 
     fetchConfig()
-  }, [])
+  }, [isAdminPage])
 
   // Check if this specific banner was dismissed
   useEffect(() => {
@@ -175,7 +182,8 @@ export function FOMOBanner() {
     setIsDismissed(true)
   }
 
-  if (isLoading || !config || isDismissed || !config.enabled) {
+  // Don't render on admin pages, or if loading/dismissed/disabled
+  if (isAdminPage || isLoading || !config || isDismissed || !config.enabled) {
     return null
   }
 

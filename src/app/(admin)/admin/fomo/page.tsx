@@ -130,7 +130,7 @@ export default function FOMOManagementPage() {
     if (!confirm('Are you sure you want to delete this banner?')) return
 
     try {
-      const response = await fetch(`/api/admin/fomo-banners/${bannerId}`, {
+      const response = await fetch(`/api/admin/fomo-banners?id=${bannerId}`, {
         method: 'DELETE',
       })
       if (response.ok) {
@@ -145,8 +145,8 @@ export default function FOMOManagementPage() {
   const handleToggleEnabled = async (banner: FOMOBannerConfig) => {
     const updated = { ...banner, enabled: !banner.enabled }
     try {
-      const response = await fetch('/api/fomo-banner', {
-        method: 'POST',
+      const response = await fetch('/api/admin/fomo-banners', {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updated),
       })
@@ -165,19 +165,18 @@ export default function FOMOManagementPage() {
     setError(null)
 
     try {
-      const response = await fetch('/api/fomo-banner', {
-        method: 'POST',
+      const existing = banners.find((b) => b.id === editingBanner.id)
+      const method = existing ? 'PUT' : 'POST'
+
+      const response = await fetch('/api/admin/fomo-banners', {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editingBanner),
       })
 
       if (response.ok) {
-        const existing = banners.find((b) => b.id === editingBanner.id)
-        if (existing) {
-          setBanners(banners.map((b) => (b.id === editingBanner.id ? editingBanner : b)))
-        } else {
-          setBanners([...banners, editingBanner])
-        }
+        // Reload banners to get server-generated IDs for new banners
+        await loadBanners()
         setShowDialog(false)
         setEditingBanner(null)
       } else {
