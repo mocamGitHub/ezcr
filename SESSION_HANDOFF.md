@@ -1,6 +1,6 @@
 # Session Handoff Document
 
-**Last Updated**: December 13, 2024 (Evening Session)
+**Last Updated**: December 13, 2024 (Afternoon Session)
 **Commit Hash**: (see Git Commit Hashes below)
 **Dev Server**: Running on http://localhost:3000
 **Branch**: main
@@ -9,100 +9,82 @@
 
 ## Session Summary
 
-This session focused on admin dashboard improvements, shipping UI enhancements, and UX improvements to the configurator selection indicators.
+This session focused on initializing the Beads issue tracker for the project.
 
 ### Completed Tasks
 
-1. **FOMO Banner Management Page** (`/admin/fomo`)
-   - Created full CRUD interface for FOMO urgency banners
-   - Supports countdown, stock, visitors, recent purchase, custom types
-   - Color customization, scheduling, preview functionality
-   - Added to admin navigation
+1. **Beads Issue Tracker Initialization**
+   - Installed bd v0.29.0 binary to `C:\nvm4w\nodejs\bd.exe` (in PATH)
+   - Ran `bd init --quiet` to create `.beads/` directory and database
+   - Verified with `bd doctor` - all core checks passing
 
-2. **Admin Dashboard Improvements**
-   - Removed quick links from dashboard (using sidebar navigation instead)
-   - Added date range picker with custom range support
-   - Added "Last 12 months" and "Custom Range" period options
+2. **Project Documentation Created**
+   - Created `AGENTS.md` with full bd workflow instructions for AI agents
+   - Created `CLAUDE.md` with project guide and Beads integration note
+   - Created `.github/copilot-instructions.md` for GitHub Copilot integration
 
-3. **Admin Breadcrumbs Enhancement**
-   - Added back button for sub-pages navigation
+3. **Claude Desktop MCP Configuration**
+   - Created `%APPDATA%\Claude\claude_desktop_config.json`
+   - Configured `beads-mcp` server for MCP integration
+   - Note: Claude Desktop restart required for MCP changes
 
-4. **Centralized Contact Configuration**
-   - Created `src/config/contact.ts` with company contact info
-   - Added T-Force Freight contact information
+4. **VS Code Extension Installed**
+   - Installed `planet57.vscode-beads` v0.9.0
+   - Extension activated and detected the project
+   - Daemon running (PID 39432)
 
-5. **Shipping UI Improvements** (Step 4 Configuration)
-   - Made shipping form collapsible - only shows when Freight Shipping is selected
-   - Added T-Force Freight terminal display with:
-     - Nearest terminal name and code
-     - Terminal support phone number (800) 333-7400
-   - Added fallback phone number on shipping errors
+5. **Test Issue Created**
+   - Created test issue: `ezcr-7ao [P4] [chore] open - Beads setup complete`
+   - Verified with `bd list`
 
-6. **Quote Page Improvements** (Step 5 Quote)
-   - Added T-Force terminal display when shipping is selected
-   - Shows "Nearest T-Force Freight Terminal" with terminal info
-   - Green color scheme matching Step 4
-
-7. **Selection Indicator Checkmarks** (Both Configurators)
-   - Added orange checkmark circles to all selected items
-   - Added ring glow effect on selected items
-   - Applied to: Ramp Models, Extensions, Delivery, Services, Boltless Kit, Tiedowns
-   - Updated both `/configure-smooth` (v2) and `/configure` (legacy)
-
-### Files Modified/Created
+### Files Created
 
 **New Files:**
-- `src/app/(admin)/admin/fomo/page.tsx` - FOMO management page
-- `src/config/contact.ts` - Centralized contact info
-- `src/components/ui/popover.tsx` - shadcn popover component
-- `src/components/ui/switch.tsx` - shadcn switch component
-
-**Modified Files:**
-- `src/config/admin-nav.ts` - Added FOMO nav item
-- `src/app/(admin)/admin/dashboard/page.tsx` - Date range picker, removed quick links
-- `src/components/admin/AdminBreadcrumbs.tsx` - Added back button
-- `src/components/configurator-v2/Step4Configuration.tsx` - Shipping UI, checkmarks
-- `src/components/configurator-v2/Step5Quote.tsx` - Terminal display
-- `src/components/configurator-legacy/Step4Configuration.tsx` - Checkmarks
+- `.beads/` directory with database and config
+- `AGENTS.md` - AI agent workflow documentation
+- `CLAUDE.md` - Claude Code project guide
+- `.github/copilot-instructions.md` - GitHub Copilot instructions
+- `.gitattributes` - Git merge driver for Beads
 
 ---
 
 ## Current Status
 
 ### Working Features
-- All 186 UFE tests passing
-- Dev server running successfully
-- Both configurators functional with new selection indicators
-- Admin dashboard with date range picker
-- FOMO management page ready
+- Beads issue tracker fully initialized
+- `bd` command available in PATH
+- VS Code extension active
+- Daemon running
+- All core `bd doctor` checks passing
 
-### Staging Deployment
-- Last deployed: Previous session
-- T-Force credentials not configured on staging (expected)
-- Graceful fallback message displays when shipping quote fails
-
-### Known Issues
-- Pre-existing Clover API version mismatch in `src/app/api/shipping-webhook/route.ts` (unrelated to this session)
+### Beads Doctor Warnings (Non-Critical)
+- Missing pre-push git hook (optional)
+- Claude integration hooks not configured (optional)
+- sync-branch not configured (only needed for multi-clone setups)
 
 ---
 
 ## Next Recommended Actions
 
-1. **Test in Browser**
-   - Visit http://localhost:3000/configure-smooth
-   - Test the selection checkmarks on all options
-   - Test shipping form expand/collapse behavior
-   - Verify terminal info displays after getting shipping quote
+1. **Close the Test Issue**
+   ```bash
+   bd close ezcr-7ao --reason "Setup verified"
+   ```
 
-2. **Test Admin Features**
-   - Visit http://localhost:3000/admin/dashboard
-   - Test date range picker (custom range)
-   - Visit http://localhost:3000/admin/fomo
-   - Test FOMO banner CRUD operations
+2. **Install Git Hooks** (Optional)
+   ```bash
+   bd hooks install
+   ```
 
-3. **Deploy to Staging**
-   - Commit and push changes
-   - Coolify auto-deploys on push to main
+3. **Set Up Claude Integration** (Optional)
+   ```bash
+   bd setup claude
+   ```
+
+4. **Start Using Beads for Task Tracking**
+   - Use `bd create "Task title" -t task -p 2` instead of markdown TODOs
+   - Use `bd ready` to see unblocked work
+   - Use `bd list` to see all issues
 
 ---
 
@@ -114,41 +96,47 @@ After running `/clear`, use these commands to resume:
 # 1. Read this handoff document
 cat SESSION_HANDOFF.md
 
-# 2. Check dev server status (should still be running)
+# 2. Check Beads status
+bd doctor
+
+# 3. Check dev server status (should still be running)
 curl -s -o /dev/null -w "%{http_code}" http://localhost:3000
 
-# 3. If dev server not running, start it
+# 4. If dev server not running, start it
 pnpm dev
 
-# 4. Check git status
+# 5. Check git status
 git status
 
-# 5. Run tests to verify everything works
-pnpm test
+# 6. Check for ready work
+bd ready
 ```
 
 ### Key Files to Review
-- `src/components/configurator-v2/Step4Configuration.tsx` - Main shipping/selection UI
-- `src/components/configurator-v2/Step5Quote.tsx` - Quote page with terminal display
-- `src/config/contact.ts` - Contact and T-Force info
+- `AGENTS.md` - Beads workflow documentation
+- `CLAUDE.md` - Project guide
+- `.beads/config.yaml` - Beads configuration
 
 ---
 
 ## Technical Context
 
-### T-Force Freight Terminal Display
-The shipping quote API returns `destinationTerminal` with `name` and `code` fields. This is displayed in both Step 4 (when quote received) and Step 5 (on the quote summary).
+### Beads Commands Quick Reference
+```bash
+bd ready              # Show unblocked issues
+bd list               # List all issues
+bd create "Title" -t bug|feature|task -p 0-4
+bd update <id> --status in_progress
+bd close <id> --reason "Done"
+bd show <id>          # Show issue details
+bd doctor             # Health check
+```
 
-### Selection Checkmarks
-All selectable buttons now include:
-- `ring-2 ring-[#F78309]/20` - Orange glow when selected
-- Orange circle with white Check icon in top-left
-- `pl-6` padding on text to accommodate checkmark
-
-### Collapsible Shipping Form
-- Default: Pickup selected, shipping form hidden
-- Click "Freight Shipping" to expand and show ZIP input
-- Form collapses when "Pickup in Woodstock, GA" is selected
+### Beads File Locations
+- Database: `.beads/beads.db` (not committed)
+- Issues JSONL: `.beads/issues.jsonl` (committed to git)
+- Config: `.beads/config.yaml`
+- Binary: `C:\nvm4w\nodejs\bd.exe`
 
 ---
 
@@ -158,6 +146,7 @@ All selectable buttons now include:
 - **Staging**: Hetzner with Coolify (auto-deploys on push)
 - **Env Var**: Use `SUPABASE_SERVICE_KEY` (not `SUPABASE_SERVICE_ROLE_KEY`)
 - **T-Force API**: Credentials in .env.local
+- **Beads**: v0.29.0, daemon running
 
 ---
 
@@ -165,8 +154,9 @@ All selectable buttons now include:
 
 | Commit | Description |
 |--------|-------------|
-| (pending) | feat: Add selection checkmarks, T-Force terminal display, FOMO admin |
-| `b0d7f5c` | Previous session |
+| `dbb75d5` | chore: Initialize Beads issue tracker |
+| `044d266` | fix: FOMO admin API and hide banners on admin pages |
+| `65109d5` | feat: Add selection checkmarks, T-Force terminal display, FOMO admin |
+| `b0d7f5c` | feat: Add UFE (Universal Fitment Engine) and configurator improvements |
 | `ec1a6f9` | docs: Update session handoff for TypeScript fixes |
 | `b5d67e9` | fix: Use consistent SUPABASE_SERVICE_KEY env var |
-| `561fbb3` | fix: Resolve TypeScript build errors |
