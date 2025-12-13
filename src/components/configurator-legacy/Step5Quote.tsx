@@ -7,7 +7,7 @@ import { useToast } from '@/components/ui/toast'
 import { Button } from '@/components/ui/button'
 import { AnimatedCTAActionButton } from '@/components/ui/animated-cta-button'
 import { FEES, CONTACT } from '@/types/configurator-v2'
-import { Phone, Mail, Printer, Share2, Check, Copy, Calendar, Info, AlertTriangle } from 'lucide-react'
+import { Phone, Mail, Printer, Share2, Check, Copy, Calendar } from 'lucide-react'
 import { CallScheduler } from '@/components/contact/CallScheduler'
 import { clearSharedConfiguratorData } from '@/lib/configurator-shared-data'
 
@@ -20,7 +20,7 @@ const formatCurrency = (amount: number): string => {
 }
 
 export function Step5Quote() {
-  const { configData, units, previousStep, setShowContactModal, setPendingAction, saveConfiguration, savedConfigId, executeEmailQuote, executePrintQuote, ufeResult } = useConfigurator()
+  const { configData, units, previousStep, setShowContactModal, setPendingAction, saveConfiguration, savedConfigId, executeEmailQuote, executePrintQuote } = useConfigurator()
   const { addItem, openCart } = useCart()
   const { showToast } = useToast()
   const [showShareDialog, setShowShareDialog] = useState(false)
@@ -340,30 +340,6 @@ export function Step5Quote() {
                 )}
               </div>
             </div>
-
-            {/* UFE Fitment Notes */}
-            {ufeResult?.success && ((ufeResult.tonneauNotes && ufeResult.tonneauNotes.length > 0) || ufeResult.angleWarning) && (
-              <div className="bg-card rounded-xl p-6 border border-amber-200 dark:border-amber-800">
-                <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5 text-amber-600" />
-                  <span>Fitment <span className="text-amber-600">Notes</span></span>
-                </h3>
-                <div className="space-y-3">
-                  {ufeResult.angleWarning && (
-                    <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3 flex gap-2">
-                      <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                      <p className="text-sm text-amber-800 dark:text-amber-200">{ufeResult.angleWarning}</p>
-                    </div>
-                  )}
-                  {ufeResult.tonneauNotes?.map((note, index) => (
-                    <div key={index} className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 flex gap-2">
-                      <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-                      <p className="text-sm text-blue-800 dark:text-blue-200">{note}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Right Column: Quote Summary */}

@@ -1,0 +1,39 @@
+{
+  "version": "1.0.0",
+  "angleCalculation": {
+    "enabled": true,
+    "warningThresholdDegrees": 25,
+    "maxSafeDegrees": 30
+  },
+  "tonneauPenaltyInches": 10,
+  "beamExtensionThresholdInches": 101,
+  "tailgateCloseBufferInches": 3,
+  "bedLengthCategories": {
+    "short": { "max": 71.99 },
+    "standard": { "min": 72, "max": 95.99 },
+    "long": { "min": 96 }
+  },
+  "measurementRanges": {
+    "bedLengthClosed": { "min": 53.15, "max": 98.43 },
+    "bedLengthWithTailgate": { "min": 68, "max": 130 },
+    "tailgateHeight": { "min": 0, "max": 60 },
+    "motorcycleWeight": { "min": 100, "max": 1200 },
+    "motorcycleWheelbase": { "min": 40, "max": 80 },
+    "motorcycleLength": { "min": 60, "max": 120 }
+  },
+  "unitDefaults": {
+    "length": "inches",
+    "weight": "lbs"
+  },
+  "pricing": {
+    "taxRate": 0.089,
+    "processingFeeRate": 0.03,
+    "freeShippingThreshold": 500,
+    "shippingCost": 185
+  },
+  "bulkDiscounts": [
+    { "minQuantity": 3, "discountPercent": 5 },
+    { "minQuantity": 5, "discountPercent": 10 },
+    { "minQuantity": 10, "discountPercent": 15 }
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "models": {
+    "AUN210": {
+      "id": "AUN210",
+      "name": "AUN210 Standard Ramp",
+      "sku": "AUN210",
+      "price": 999.00,
+      "folds": false,
+      "foldsWhenLoaded": false,
+      "tailgateCloseLoaded": true,
+      "tailgateCloseUnloaded": true,
+      "tailgateCloseLoadedCondition": "motorcycle_length + buffer <= usable_bed_length",
+      "compatibleAccessories": ["AC004", "AC001-1", "AC001-2", "AC001-3"],
+      "incompatibleAccessories": ["4-BEAM"],
+      "recommendForBedCategories": ["standard", "long"],
+      "primaryRecommendationFor": ["long"],
+      "description": "The AUN210 does not fold. Tailgate can close with motorcycle loaded if motorcycle fits within usable bed length with 3\" buffer. Requires AC004 for loading/unloading in tailgate-close scenarios.",
+      "features": [
+        "Non-folding design for maximum stability",
+        "Supports tailgate closure with motorcycle loaded",
+        "Compatible with AC004 tailgate extension",
+        "Ideal for long bed trucks"
+      ],
+      "active": true
+    },
+    "AUN250": {
+      "id": "AUN250",
+      "name": "AUN250 Folding Ramp (Premium)",
+      "sku": "AUN250",
+      "price": 1299.00,
+      "folds": true,
+      "foldsWhenLoaded": false,
+      "tailgateCloseLoaded": false,
+      "tailgateCloseUnloaded": true,
+      "tailgateCloseUnloadedCondition": "ramp_folded",
+      "compatibleAccessories": ["4-BEAM", "AC001-1", "AC001-2", "AC001-3"],
+      "incompatibleAccessories": ["AC004"],
+      "recommendForBedCategories": ["short", "standard"],
+      "primaryRecommendationFor": ["short"],
+      "requires4BeamWhen": "bed_category == 'long' || (bed_length + tailgate_length) > threshold",
+      "description": "The AUN250 folds only when motorcycle is NOT loaded. Tailgate cannot close while motorcycle is loaded. Tailgate can close when motorcycle is removed and ramp is folded.",
+      "features": [
+        "Folds for compact storage (when unloaded)",
+        "Premium build quality",
+        "Compatible with 4-Beam extension for long beds",
+        "Ideal for short and standard bed trucks"
+      ],
+      "active": true
+    }
+  },
+  "futureModels": {
+    "_comment": "Placeholder for upcoming ramp models - add new models here following the same structure"
+  },
+  "decisionRules": {
+    "tailgateMustCloseUnloaded": {
+      "result": "AUN250",
+      "reason": "AUN250 allows tailgate closure when folded (motorcycle not loaded)"
+    },
+    "tailgateMustCloseLoaded": {
+      "result": "AUN210",
+      "condition": "motorcycle_length + buffer <= usable_bed_length",
+      "requiredAccessory": "AC004",
+      "failureOnConditionNotMet": true,
+      "reason": "AUN210 allows tailgate closure with motorcycle loaded if it fits"
+    },
+    "longBed": {
+      "primary": "AUN210",
+      "alternative": "AUN250",
+      "alternativeRequires": "4-BEAM",
+      "reason": "AUN210 recommended for long beds; AUN250 requires 4-Beam extension"
+    }
+  }
+}

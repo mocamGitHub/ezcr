@@ -1,0 +1,105 @@
+{
+  "categories": {
+    "short": {
+      "id": "short",
+      "name": "Short Bed",
+      "displayRange": "5' - 5.8'",
+      "rangeInches": {
+        "min": 0,
+        "max": 71.99
+      },
+      "approximateFeet": {
+        "min": 5,
+        "max": 5.8
+      },
+      "primaryRamp": "AUN250",
+      "alternativeRamp": "AUN210",
+      "notes": [
+        "Most common on compact and mid-size trucks",
+        "AUN250 recommended for folding capability"
+      ]
+    },
+    "standard": {
+      "id": "standard",
+      "name": "Standard Bed",
+      "displayRange": "6' - 6.5'",
+      "rangeInches": {
+        "min": 72,
+        "max": 95.99
+      },
+      "approximateFeet": {
+        "min": 6,
+        "max": 6.5
+      },
+      "primaryRamp": null,
+      "alternativeRamp": null,
+      "evaluateBoth": true,
+      "notes": [
+        "Most versatile bed size",
+        "Both AUN210 and AUN250 may work depending on requirements"
+      ]
+    },
+    "long": {
+      "id": "long",
+      "name": "Long Bed",
+      "displayRange": "8'+",
+      "rangeInches": {
+        "min": 96,
+        "max": 999
+      },
+      "approximateFeet": {
+        "min": 8,
+        "max": 99
+      },
+      "primaryRamp": "AUN210",
+      "alternativeRamp": "AUN250",
+      "alternativeRequires": "4-BEAM",
+      "notes": [
+        "AUN210 strongly recommended",
+        "AUN250 possible but requires 4-Beam Extension",
+        "Best chance for tailgate closure with motorcycle loaded"
+      ]
+    }
+  },
+  "quickWizardOptions": [
+    {
+      "value": "short",
+      "label": "Short bed",
+      "sublabel": "5' - 5.8'"
+    },
+    {
+      "value": "standard",
+      "label": "Standard bed",
+      "sublabel": "6' - 6.5'"
+    },
+    {
+      "value": "long",
+      "label": "Long bed",
+      "sublabel": "8'+"
+    },
+    {
+      "value": "unsure",
+      "label": "I'm not sure",
+      "sublabel": null
+    }
+  ],
+  "measurementHints": {
+    "short": {
+      "estimatedBedLength": { "min": 60, "max": 70 },
+      "estimatedTotalLength": { "min": 78, "max": 90 }
+    },
+    "standard": {
+      "estimatedBedLength": { "min": 72, "max": 78 },
+      "estimatedTotalLength": { "min": 92, "max": 100 }
+    },
+    "long": {
+      "estimatedBedLength": { "min": 96, "max": 108 },
+      "estimatedTotalLength": { "min": 116, "max": 130 }
+    },
+    "unsure": {
+      "estimatedBedLength": null,
+      "estimatedTotalLength": null,
+      "fallbackRecommendation": "AUN250"
+    }
+  }
+}

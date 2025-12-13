@@ -1,0 +1,123 @@
+{
+  "accessories": {
+    "AC004": {
+      "id": "AC004",
+      "name": "AC004 Tailgate Extension",
+      "sku": "AC004",
+      "price": 199.00,
+      "type": "tailgate-extension",
+      "category": "required-conditional",
+      "compatibleRamps": ["AUN210"],
+      "incompatibleRamps": ["AUN250"],
+      "requiredWhen": {
+        "ramp": "AUN210",
+        "condition": "tailgateMustClose && motorcycleLoaded",
+        "description": "Required when using AUN210 with tailgate close and motorcycle loaded"
+      },
+      "removable": true,
+      "removableNote": "Can be removed and stored after loading/unloading",
+      "description": "Tailgate extension for AUN210. Required for loading/unloading when tailgate must close with motorcycle loaded. Removable after loading."
+    },
+    "4-BEAM": {
+      "id": "4-BEAM",
+      "name": "4-Beam Extension",
+      "sku": "4-BEAM",
+      "price": 249.00,
+      "type": "bed-extension",
+      "category": "required-conditional",
+      "compatibleRamps": ["AUN250"],
+      "incompatibleRamps": ["AUN210"],
+      "requiredWhen": {
+        "ramp": "AUN250",
+        "conditions": [
+          {
+            "type": "bedCategory",
+            "value": "long",
+            "description": "Required when bed category is 'long'"
+          },
+          {
+            "type": "threshold",
+            "check": "bedLengthWithTailgate > beamExtensionThresholdInches",
+            "description": "Required when total length exceeds threshold"
+          }
+        ]
+      },
+      "description": "Bed extension for AUN250. Required for long beds or when bed length plus tailgate exceeds 101 inches (configurable)."
+    },
+    "AC001-1": {
+      "id": "AC001-1",
+      "name": "AC001-1 Tailgate Height Extension",
+      "sku": "AC001-1",
+      "price": 149.00,
+      "type": "height-extension",
+      "category": "required-conditional",
+      "compatibleRamps": ["AUN210", "AUN250"],
+      "requiredWhen": {
+        "condition": "heightBased",
+        "heightRange": { "min": 35, "max": 42 },
+        "description": "Required when tailgate height is 35-42 inches"
+      },
+      "description": "Height extension for tailgates 35-42 inches from ground."
+    },
+    "AC001-2": {
+      "id": "AC001-2",
+      "name": "AC001-2 Tailgate Height Extension",
+      "sku": "AC001-2",
+      "price": 179.00,
+      "type": "height-extension",
+      "category": "required-conditional",
+      "compatibleRamps": ["AUN210", "AUN250"],
+      "requiredWhen": {
+        "condition": "heightBased",
+        "heightRange": { "min": 43, "max": 51 },
+        "description": "Required when tailgate height is 43-51 inches"
+      },
+      "description": "Height extension for tailgates 43-51 inches from ground."
+    },
+    "AC001-3": {
+      "id": "AC001-3",
+      "name": "AC001-3 Tailgate Height Extension",
+      "sku": "AC001-3",
+      "price": 209.00,
+      "type": "height-extension",
+      "category": "required-conditional",
+      "compatibleRamps": ["AUN210", "AUN250"],
+      "requiredWhen": {
+        "condition": "heightBased",
+        "heightRange": { "min": 52, "max": 60 },
+        "description": "Required when tailgate height is 52-60 inches"
+      },
+      "description": "Height extension for tailgates 52-60 inches from ground."
+    },
+    "AC012": {
+      "id": "AC012",
+      "name": "AC012 Boltless Tie Down Kit",
+      "sku": "AC012",
+      "price": 89.00,
+      "type": "accessory",
+      "category": "optional",
+      "compatibleRamps": ["AUN210", "AUN250"],
+      "description": "Optional boltless tie down kit for securing the ramp without drilling."
+    }
+  },
+  "accessoryCategories": {
+    "required-conditional": {
+      "name": "Required (Conditional)",
+      "description": "Required based on specific conditions (bed size, height, ramp model)"
+    },
+    "optional": {
+      "name": "Optional",
+      "description": "Optional accessories that enhance the ramp experience"
+    }
+  },
+  "compatibilityMatrix": {
+    "AUN210": {
+      "compatible": ["AC004", "AC001-1", "AC001-2", "AC001-3", "AC012"],
+      "incompatible": ["4-BEAM"]
+    },
+    "AUN250": {
+      "compatible": ["4-BEAM", "AC001-1", "AC001-2", "AC001-3", "AC012"],
+      "incompatible": ["AC004"]
+    }
+  }
+}

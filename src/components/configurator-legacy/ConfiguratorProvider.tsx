@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useMemo } from 'react'
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import {
   ConfigData,
   VehicleType,
@@ -19,9 +19,6 @@ import {
   mapBikeWeightToLbs,
   mapBikeWeightToType,
 } from '@/lib/configurator-shared-data'
-import { useShippingQuote, ShippingQuoteResponse } from '@/hooks/useShippingQuote'
-import type { UFEResult, TonneauType, RollDirection, RampModelId } from '@/lib/ufe'
-import { evaluateAdvanced, getRampModel } from '@/lib/ufe'
 
 interface ConfiguratorContextType {
   // State
@@ -32,17 +29,6 @@ interface ConfiguratorContextType {
   pendingAction: 'cart' | 'email' | 'print' | null
   showContactModal: boolean
   savedConfigId: string | null
-
-  // UFE State
-  ufeResult: UFEResult | null
-  ufeRecommendedModel: RampModelId | null
-
-  // Shipping state
-  shippingZip: string
-  isResidential: boolean
-  shippingQuote: ShippingQuoteResponse | null
-  isLoadingShipping: boolean
-  shippingError: string | null
 
   // Navigation
   goToStep: (step: number) => void
@@ -80,12 +66,6 @@ interface ConfiguratorContextType {
   selectBoltlessKit: (id: string, name: string, price: number) => void
   selectTiedown: (id: string, name: string, price: number) => void
 
-  // Shipping
-  setShippingZip: (zip: string) => void
-  setIsResidential: (isResidential: boolean) => void
-  fetchShippingQuote: () => Promise<void>
-  clearShippingQuote: () => void
-
   // Validation
   canProceedFromStep: (step: number) => boolean
 
@@ -96,9 +76,6 @@ interface ConfiguratorContextType {
   // Quote actions
   executeEmailQuote: () => Promise<{ success: boolean; message: string }>
   executePrintQuote: () => { success: boolean; message: string }
-
-  // UFE
-  runUFEEvaluation: () => void
 
   // Conversion helpers
   convertToInches: (value: number) => number
@@ -128,14 +105,6 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
   const [showContactModal, setShowContactModal] = useState(false)
   const [pendingAction, setPendingAction] = useState<'cart' | 'email' | 'print' | null>(null)
   const [savedConfigId, setSavedConfigId] = useState<string | null>(null)
-
-  // UFE State
-  const [ufeResult, setUfeResult] = useState<UFEResult | null>(null)
-
-  // Shipping state
-  const [shippingZip, setShippingZip] = useState('')
-  const [isResidential, setIsResidential] = useState(true)
-  const { quote: shippingQuote, isLoading: isLoadingShipping, error: shippingError, fetchQuote, clearQuote } = useShippingQuote()
 
 
   const [configData, setConfigData] = useState<ConfigData>({
@@ -191,14 +160,6 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
     },
   })
 
-  // Computed UFE recommended model
-  const ufeRecommendedModel = useMemo<RampModelId | null>(() => {
-    if (ufeResult?.success && ufeResult.primaryRecommendation) {
-      return ufeResult.primaryRecommendation.rampId
-    }
-    return null
-  }, [ufeResult])
-
   // Load shared data from Quick Configurator on mount
   useEffect(() => {
     const sharedData = getSharedConfiguratorData()
@@ -253,105 +214,6 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
       }
     }
   }, [])
-
-  // Run UFE Evaluation based on current config data
-  const runUFEEvaluation = useCallback(() => {
-    // Only run if we have a pickup truck with measurements
-    if (configData.vehicle !== 'pickup') {
-      setUfeResult(null)
-      return
-    }
-
-    // Ensure we have required measurements
-    const bedLengthClosed = configData.measurements.bedLengthClosed
-    const bedLengthOpen = configData.measurements.bedLengthOpen
-    const loadHeight = configData.measurements.loadHeight
-    const motorcycleWeight = configData.motorcycle.weight
-    const motorcycleWheelbase = configData.motorcycle.wheelbase
-    const motorcycleLength = configData.motorcycle.length
-
-    if (!bedLengthClosed || !bedLengthOpen || !loadHeight ||
-        !motorcycleWeight || !motorcycleWheelbase || !motorcycleLength) {
-      setUfeResult(null)
-      return
-    }
-
-    // Convert measurements to imperial if needed
-    const toInches = (value: number) => units === 'metric' ? value / CONVERSION_FACTORS.inchesToCm : value
-    const toLbs = (value: number) => units === 'metric' ? value / CONVERSION_FACTORS.lbsToKg : value
-
-    // Map tonneau type to UFE format
-    const mapTonneauType = (type: string | undefined): TonneauType => {
-      if (!type) return 'none'
-      const mapping: Record<string, TonneauType> = {
-        'roll-up-soft': 'roll-up-soft',
-        'roll-up-hard': 'roll-up-hard',
-        'tri-fold-soft': 'tri-fold-soft',
-        'tri-fold-hard': 'tri-fold-hard',
-        'bi-fold': 'bi-fold',
-        'hinged': 'hinged',
-        'retractable': 'retractable',
-        'other': 'other',
-      }
-      return mapping[type] || 'none'
-    }
-
-    // Map roll direction to UFE format
-    const mapRollDirection = (dir: string | undefined): RollDirection | undefined => {
-      if (!dir) return undefined
-      if (dir === 'on-top' || dir === 'into-bed') return dir
-      return undefined
-    }
-
-    try {
-      const result = evaluateAdvanced({
-        truck: {
-          bedLengthClosed: toInches(bedLengthClosed),
-          bedLengthWithTailgate: toInches(bedLengthOpen),
-          tailgateHeight: toInches(loadHeight),
-          hasTonneau: configData.hasTonneauCover || false,
-          tonneauType: mapTonneauType(configData.tonneauType),
-          rollDirection: mapRollDirection(configData.tonneauRollDirection),
-        },
-        motorcycle: {
-          weight: toLbs(motorcycleWeight),
-          wheelbase: toInches(motorcycleWheelbase),
-          totalLength: toInches(motorcycleLength),
-        },
-        tailgateMustClose: false,
-        motorcycleLoadedWhenClosed: false,
-        unitSystem: 'imperial',
-      })
-
-      setUfeResult(result)
-
-      // Auto-select the recommended model if UFE succeeds
-      if (result.success && result.primaryRecommendation) {
-        const rampId = result.primaryRecommendation.rampId
-        const rampModel = getRampModel(rampId)
-        if (rampModel) {
-          setConfigData((prev) => ({
-            ...prev,
-            selectedModel: {
-              id: rampId,
-              name: PRODUCT_NAMES.models[rampId as keyof typeof PRODUCT_NAMES.models] || rampModel.name,
-              price: PRICING.models[rampId as keyof typeof PRICING.models] || rampModel.price,
-            },
-          }))
-        }
-      }
-    } catch (error) {
-      console.error('UFE evaluation error:', error)
-      setUfeResult(null)
-    }
-  }, [configData, units])
-
-  // Auto-run UFE when entering step 4
-  useEffect(() => {
-    if (currentStep === 4 && configData.vehicle === 'pickup') {
-      runUFEEvaluation()
-    }
-  }, [currentStep, runUFEEvaluation, configData.vehicle])
 
 
   // Conversion helpers
@@ -475,8 +337,6 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
         requiresCargoExtension: false,
       },
     }))
-    // Clear UFE result when vehicle changes
-    setUfeResult(null)
   }
 
   // Generic config data update (for tonneau cover info, etc.)
@@ -586,51 +446,6 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
       tiedown: { id, name, price },
     }))
   }
-
-  // Shipping quote fetch function
-  const fetchShippingQuote = useCallback(async () => {
-    if (!shippingZip || shippingZip.length < 5) {
-      return
-    }
-
-    // Map model ID to SKU format expected by API
-    // AUN250 -> AUN250, AUN210 -> AUN200 (API only supports AUN200/AUN250)
-    const productSku = configData.selectedModel.id === 'AUN210' ? 'AUN200' : 'AUN250'
-
-    const result = await fetchQuote({
-      destinationZip: shippingZip,
-      productSku: productSku as 'AUN200' | 'AUN250',
-      isResidential,
-      source: 'configurator',
-    })
-
-    // If successful, update the delivery price with the actual shipping rate + handling fee
-    // Handling fee is configurable in PRICING.shippingHandlingFee
-    if (result?.success && result.totalRate) {
-      const totalShippingCost = result.totalRate + PRICING.shippingHandlingFee
-      setConfigData((prev) => ({
-        ...prev,
-        delivery: {
-          id: 'ship',
-          name: `Freight Shipping to ${shippingZip}`,
-          price: totalShippingCost,
-        },
-      }))
-    }
-  }, [shippingZip, isResidential, configData.selectedModel.id, fetchQuote])
-
-  // Clear shipping quote and reset to pickup
-  const clearShippingQuote = useCallback(() => {
-    clearQuote()
-    setConfigData((prev) => ({
-      ...prev,
-      delivery: {
-        id: 'pickup',
-        name: PRODUCT_NAMES.delivery.pickup,
-        price: PRICING.delivery.pickup,
-      },
-    }))
-  }, [clearQuote])
 
   // Validation
   const canProceedFromStep = (step: number): boolean => {
@@ -899,15 +714,6 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
     pendingAction,
     showContactModal,
     savedConfigId,
-    // UFE state
-    ufeResult,
-    ufeRecommendedModel,
-    // Shipping state
-    shippingZip,
-    isResidential,
-    shippingQuote,
-    isLoadingShipping,
-    shippingError,
     goToStep,
     nextStep,
     previousStep,
@@ -928,18 +734,11 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
     selectService,
     selectBoltlessKit,
     selectTiedown,
-    // Shipping methods
-    setShippingZip,
-    setIsResidential,
-    fetchShippingQuote,
-    clearShippingQuote,
     canProceedFromStep,
     saveConfiguration,
     loadConfiguration,
     executeEmailQuote,
     executePrintQuote,
-    // UFE
-    runUFEEvaluation,
     convertToInches,
     convertToCm,
     convertToLbs,

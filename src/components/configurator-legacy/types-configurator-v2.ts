@@ -141,9 +141,6 @@ export const PRICING = {
     'turnbuckle-2': 159.0,
     straps: 29.0,
   },
-  // Local shipping preparation fee (palletizing, handling, pickup from warehouse)
-  // This is added on top of the TForce freight quote
-  shippingHandlingFee: 62,
 } as const
 
 // Product Names

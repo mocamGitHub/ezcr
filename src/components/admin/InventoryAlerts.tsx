@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { AlertTriangle, PackageX, BellOff, ChevronDown, ChevronUp, VolumeX, Volume2 } from 'lucide-react'
+import { AlertTriangle, PackageX, BellOff, Bell, ChevronDown, ChevronUp, VolumeX, Volume2, EyeOff, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -31,6 +31,8 @@ interface InventoryAlertsProps {
   showSuppressed?: boolean
 }
 
+type AlertSection = 'outOfStock' | 'critical' | 'lowStock'
+
 export function InventoryAlerts({
   products,
   onFilterLowStock,
@@ -39,7 +41,8 @@ export function InventoryAlerts({
   showSuppressed = false,
 }: InventoryAlertsProps) {
   const [expanded, setExpanded] = useState(true)
-  const [dismissed, setDismissed] = useState(false)
+  const [dismissedAll, setDismissedAll] = useState(false)
+  const [dismissedSections, setDismissedSections] = useState<Set<AlertSection>>(new Set())
   const [suppressingId, setSuppressingId] = useState<string | null>(null)
 
   // Filter out suppressed alerts unless showSuppressed is true
@@ -71,6 +74,37 @@ export function InventoryAlerts({
   const totalAlerts = outOfStock.length + critical.length + lowStock.length
   const totalSuppressed = suppressedOutOfStock + suppressedLowStock
 
+  // Count visible sections (not dismissed)
+  const visibleSections = {
+    outOfStock: outOfStock.length > 0 && !dismissedSections.has('outOfStock'),
+    critical: critical.length > 0 && !dismissedSections.has('critical'),
+    lowStock: lowStock.length > 0 && !dismissedSections.has('lowStock'),
+  }
+  const visibleSectionCount = Object.values(visibleSections).filter(Boolean).length
+
+  // Count dismissed sections that have alerts
+  const dismissedSectionCount =
+    (outOfStock.length > 0 && dismissedSections.has('outOfStock') ? 1 : 0) +
+    (critical.length > 0 && dismissedSections.has('critical') ? 1 : 0) +
+    (lowStock.length > 0 && dismissedSections.has('lowStock') ? 1 : 0)
+
+  const toggleSectionDismiss = (section: AlertSection) => {
+    setDismissedSections(prev => {
+      const next = new Set(prev)
+      if (next.has(section)) {
+        next.delete(section)
+      } else {
+        next.add(section)
+      }
+      return next
+    })
+  }
+
+  const restoreAllSections = () => {
+    setDismissedSections(new Set())
+    setDismissedAll(false)
+  }
+
   if (totalAlerts === 0 && totalSuppressed === 0) {
     return null
   }
@@ -98,13 +132,34 @@ export function InventoryAlerts({
     )
   }
 
-  if (dismissed) {
-    return null
+  // Show restore button when all alerts are dismissed
+  if (dismissedAll || (visibleSectionCount === 0 && dismissedSectionCount > 0)) {
+    return (
+      <div className="border rounded-lg mb-6 p-4 bg-muted/30">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <BellOff className="h-4 w-4" />
+            <span className="text-sm">
+              Inventory alerts hidden ({totalAlerts} alert{totalAlerts !== 1 ? 's' : ''})
+            </span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={restoreAllSections}
+            className="gap-1"
+          >
+            <Bell className="h-4 w-4" />
+            Show Alerts
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   const getAlertSeverity = () => {
-    if (outOfStock.length > 0) return 'destructive'
-    if (critical.length > 0) return 'warning'
+    if (visibleSections.outOfStock) return 'destructive'
+    if (visibleSections.critical) return 'warning'
     return 'default'
   }
 
@@ -195,6 +250,37 @@ export function InventoryAlerts({
     )
   }
 
+  const renderSectionHeader = (
+    section: AlertSection,
+    badge: React.ReactNode,
+    count: number
+  ) => (
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        {badge}
+        <span className="text-sm font-medium">{count} products</span>
+      </div>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              onClick={(e) => {
+                e.stopPropagation()
+                toggleSectionDismiss(section)
+              }}
+            >
+              <EyeOff className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Hide this section</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    </div>
+  )
+
   return (
     <div className={cn(
       'border rounded-lg mb-6 overflow-hidden',
@@ -208,7 +294,7 @@ export function InventoryAlerts({
         onClick={() => setExpanded(!expanded)}
       >
         <div className="flex items-center gap-3">
-          {outOfStock.length > 0 ? (
+          {visibleSections.outOfStock ? (
             <PackageX className="h-5 w-5 text-red-600" />
           ) : (
             <AlertTriangle className={cn(
@@ -226,25 +312,41 @@ export function InventoryAlerts({
               Inventory Alerts
             </h3>
             <p className="text-sm text-muted-foreground">
-              {totalAlerts} item{totalAlerts !== 1 ? 's' : ''} need attention
-              {totalSuppressed > 0 && !showSuppressed && (
-                <span className="ml-1 text-xs">({totalSuppressed} suppressed)</span>
+              {visibleSectionCount > 0 ? (
+                <>
+                  {totalAlerts} item{totalAlerts !== 1 ? 's' : ''} need attention
+                  {(totalSuppressed > 0 || dismissedSectionCount > 0) && !showSuppressed && (
+                    <span className="ml-1 text-xs">
+                      ({dismissedSectionCount > 0 && `${dismissedSectionCount} hidden`}
+                      {dismissedSectionCount > 0 && totalSuppressed > 0 && ', '}
+                      {totalSuppressed > 0 && `${totalSuppressed} suppressed`})
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span>All sections hidden</span>
               )}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation()
-              setDismissed(true)
-            }}
-            title="Dismiss temporarily"
-          >
-            <BellOff className="h-4 w-4" />
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setDismissedAll(true)
+                  }}
+                >
+                  <BellOff className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Hide all alerts</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           {expanded ? (
             <ChevronUp className="h-5 w-5 text-muted-foreground" />
           ) : (
@@ -256,15 +358,35 @@ export function InventoryAlerts({
       {/* Content */}
       {expanded && (
         <div className="px-4 pb-4 space-y-3">
-          {/* Out of Stock Section */}
-          {outOfStock.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Badge variant="destructive" className="text-xs">
-                  OUT OF STOCK
-                </Badge>
-                <span className="text-sm font-medium">{outOfStock.length} products</span>
+          {/* Dismissed sections indicator */}
+          {dismissedSectionCount > 0 && (
+            <div className="flex items-center justify-between p-2 bg-muted/50 rounded text-sm">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <EyeOff className="h-4 w-4" />
+                <span>
+                  {dismissedSectionCount} section{dismissedSectionCount !== 1 ? 's' : ''} hidden
+                </span>
               </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setDismissedSections(new Set())}
+                className="h-7 text-xs gap-1"
+              >
+                <Eye className="h-3 w-3" />
+                Show All
+              </Button>
+            </div>
+          )}
+
+          {/* Out of Stock Section */}
+          {outOfStock.length > 0 && !dismissedSections.has('outOfStock') && (
+            <div className="space-y-2">
+              {renderSectionHeader(
+                'outOfStock',
+                <Badge variant="destructive" className="text-xs">OUT OF STOCK</Badge>,
+                outOfStock.length
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 {outOfStock.slice(0, 6).map(product =>
                   renderProductItem(product, 'out_of_stock', 'destructive')
@@ -279,12 +401,13 @@ export function InventoryAlerts({
           )}
 
           {/* Critical Stock Section */}
-          {critical.length > 0 && (
+          {critical.length > 0 && !dismissedSections.has('critical') && (
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Badge className="bg-orange-500 text-white text-xs">CRITICAL</Badge>
-                <span className="text-sm font-medium">{critical.length} products</span>
-              </div>
+              {renderSectionHeader(
+                'critical',
+                <Badge className="bg-orange-500 text-white text-xs">CRITICAL</Badge>,
+                critical.length
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 {critical.slice(0, 6).map(product =>
                   renderProductItem(product, 'low_stock', 'warning', 'bg-orange-500 text-white')
@@ -299,14 +422,15 @@ export function InventoryAlerts({
           )}
 
           {/* Low Stock Section */}
-          {lowStock.length > 0 && (
+          {lowStock.length > 0 && !dismissedSections.has('lowStock') && (
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
+              {renderSectionHeader(
+                'lowStock',
                 <Badge variant="outline" className="border-yellow-500 text-yellow-700 dark:text-yellow-400 text-xs">
                   LOW STOCK
-                </Badge>
-                <span className="text-sm font-medium">{lowStock.length} products</span>
-              </div>
+                </Badge>,
+                lowStock.length
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 {lowStock.slice(0, 6).map(product =>
                   renderProductItem(product, 'low_stock', 'outline', 'border-yellow-500 text-yellow-700')

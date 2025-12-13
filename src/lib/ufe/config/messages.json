@@ -1,0 +1,86 @@
+{
+  "recommendations": {
+    "AUN210": {
+      "primary": "Based on your requirements, we recommend the AUN210 Standard Ramp.",
+      "tailgateClose": "The AUN210 allows your tailgate to close with your motorcycle loaded.",
+      "withAC004": "The AC004 Tailgate Extension is required for loading/unloading and can be removed after.",
+      "longBed": "The AUN210 is ideal for your long bed truck configuration.",
+      "alternative": "The AUN210 is an alternative option for your setup."
+    },
+    "AUN250": {
+      "primary": "Based on your requirements, we recommend the AUN250 Folding Ramp.",
+      "tailgateClose": "The AUN250 allows your tailgate to close when the ramp is folded (motorcycle unloaded).",
+      "with4Beam": "The 4-Beam Extension is required for your bed configuration.",
+      "shortBed": "The AUN250 is perfect for your short bed truck.",
+      "standardBed": "The AUN250 provides flexibility with its folding design.",
+      "alternative": "The AUN250 is an alternative option, though it will require the 4-Beam Extension."
+    }
+  },
+  "warnings": {
+    "angleHigh": "Loading angle of {angle}° is higher than recommended ({threshold}°). Use caution when loading.",
+    "angleCritical": "Loading angle of {angle}° exceeds the maximum safe angle of {max}°. Consider adjustments to reduce the angle.",
+    "tonneau": {
+      "rollsIntoBed": "Your roll-up cover reduces usable bed length by approximately {penalty} inches when rolled.",
+      "triFold": "Fold your cover toward the cab before loading.",
+      "biFold": "Fold your cover toward the cab before loading.",
+      "hinged": "Open your cover fully before loading.",
+      "retractable": "Ensure canister is at least 10 inches from cab.",
+      "other": "Ensure your tonneau cover is positioned to allow maximum bed access."
+    },
+    "measurementClose": "Your measurements are close to the limits for this configuration. We recommend verifying measurements before purchase.",
+    "motorcycleLengthTight": "Your motorcycle length ({length}\") is close to the usable bed length ({usable}\"). Consider allowing extra margin."
+  },
+  "errors": {
+    "hardFailure": {
+      "title": "Configuration Not Possible",
+      "message": "Unfortunately, we cannot recommend a configuration that allows your tailgate to close with your motorcycle loaded given the measurements provided.",
+      "details": "Your motorcycle length ({motorcycleLength}\") plus the required {buffer}\" buffer ({total}\") exceeds your usable bed length ({usableBedLength}\").",
+      "suggestion": "Consider: (1) A truck with a longer bed, (2) Not requiring tailgate closure while loaded, or (3) Contact us to discuss alternatives."
+    },
+    "measurementOutOfRange": {
+      "title": "Measurement Out of Range",
+      "message": "The {field} measurement of {value}\" is outside the supported range ({min}\" - {max}\").",
+      "suggestion": "Please verify your measurement and try again."
+    },
+    "incompatibleAccessory": {
+      "title": "Incompatible Accessory",
+      "message": "The {accessory} is not compatible with the {ramp}.",
+      "suggestion": "This accessory has been removed from your configuration."
+    },
+    "weightExceeded": {
+      "title": "Weight Capacity Exceeded",
+      "message": "Your motorcycle weight ({weight} lbs) exceeds our maximum capacity of {max} lbs.",
+      "suggestion": "Contact us for custom solutions for heavier motorcycles."
+    }
+  },
+  "info": {
+    "quickWizardComplete": "Based on your answers, we've identified the best ramp for your needs.",
+    "advancedWizardComplete": "Your complete configuration is ready with all required accessories.",
+    "accessoriesExplained": {
+      "AC004": "The AC004 is placed on the tailgate during loading/unloading and removed for storage.",
+      "4-BEAM": "The 4-Beam Extension provides additional support for longer bed configurations.",
+      "AC001": "Height extensions ensure proper ramp angle based on your tailgate height."
+    },
+    "wizardSyncAvailable": "We've pre-filled some information from your previous wizard session.",
+    "exactMeasurementsRequired": "Exact measurements will be required before finalizing your order."
+  },
+  "cta": {
+    "viewProduct": "View Product",
+    "getFullQuote": "Get Full Quote",
+    "contactUs": "Contact Us",
+    "scheduleCall": "Schedule a Call",
+    "callNow": "Call Now",
+    "startOver": "Start Over",
+    "goToAdvancedWizard": "Use Full Configurator",
+    "goToQuickWizard": "Use Quick Finder"
+  },
+  "labels": {
+    "primaryRecommendation": "Recommended",
+    "alternativeOption": "Alternative Option",
+    "requiredAccessory": "Required",
+    "optionalAccessory": "Optional",
+    "included": "Included",
+    "freeShipping": "Free Shipping",
+    "estimatedTotal": "Estimated Total"
+  }
+}

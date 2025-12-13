@@ -3,10 +3,13 @@
 // T-Force Freight LTL Rating Integration
 // ============================================
 //
-// Required Environment Variables:
+// Required Environment Variables (from T-Force Developer Portal https://developer.tforcefreight.com/profile):
 //   TFORCE_CLIENT_ID=your_client_id
 //   TFORCE_CLIENT_SECRET=your_client_secret
 //   TFORCE_ACCOUNT_NUMBER=your_account_number
+// Optional (defaults to T-Force production values):
+//   TFORCE_TOKEN_ENDPOINT=https://login.microsoftonline.com/{tenant-id}/oauth2/v2.0/token
+//   TFORCE_SCOPE=https://tffproduction.onmicrosoft.com/{app-id}/.default
 //   TWILIO_ACCOUNT_SID=your_twilio_sid
 //   TWILIO_AUTH_TOKEN=your_twilio_token
 //   TWILIO_FROM_NUMBER=+1234567890
@@ -24,8 +27,10 @@ import { createClient } from '@supabase/supabase-js';
 // ============================================
 
 const TFORCE_CONFIG = {
-  // API Endpoints
-  tokenUrl: 'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+  // API Endpoints - T-Force specific tenant ID required
+  // Token endpoint and scope can be overridden via env vars from T-Force developer portal
+  tokenUrl: process.env.TFORCE_TOKEN_ENDPOINT || 'https://login.microsoftonline.com/ca4f5969-c10f-40d4-8127-e74b691f95de/oauth2/v2.0/token',
+  tokenScope: process.env.TFORCE_SCOPE || 'https://tffproduction.onmicrosoft.com/f06cb173-a8e6-44ad-89a1-06c1070a1f62/.default',
   ratingUrl: 'https://api.tforcefreight.com/rating/getRate',
   apiVersion: 'v1',
 
@@ -241,7 +246,7 @@ async function getAccessToken(): Promise<string> {
       grant_type: 'client_credentials',
       client_id: clientId,
       client_secret: clientSecret,
-      scope: 'https://api.tforcefreight.com/.default',
+      scope: TFORCE_CONFIG.tokenScope,
     }),
   });
 

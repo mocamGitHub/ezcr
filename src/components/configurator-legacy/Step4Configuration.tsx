@@ -1,11 +1,11 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import { useConfigurator } from './ConfiguratorProvider'
 import { Button } from '@/components/ui/button'
 import { PRICING, PRODUCT_NAMES } from '@/types/configurator-v2'
 import { Badge } from '@/components/ui/badge'
-import { Info, Loader2, Truck, MapPin, Home, Building2, Check } from 'lucide-react'
+import { Info } from 'lucide-react'
 
 export function Step4Configuration() {
   const {
@@ -19,28 +19,7 @@ export function Step4Configuration() {
     selectTiedown,
     nextStep,
     previousStep,
-    // Shipping
-    shippingZip,
-    setShippingZip,
-    isResidential,
-    setIsResidential,
-    shippingQuote,
-    isLoadingShipping,
-    shippingError,
-    fetchShippingQuote,
-    clearShippingQuote,
-    // UFE
-    ufeResult,
-    ufeRecommendedModel,
   } = useConfigurator()
-
-  // Local state for ZIP input
-  const [zipInput, setZipInput] = useState(shippingZip)
-
-  // Sync local state with context
-  useEffect(() => {
-    setZipInput(shippingZip)
-  }, [shippingZip])
 
   const weightUnit = units === 'imperial' ? 'lbs' : 'kg'
   const lengthUnit = units === 'imperial' ? 'inches' : 'cm'
@@ -50,26 +29,6 @@ export function Step4Configuration() {
 
   // Boltless kit selected - Turnbuckles (2 pairs) should be recommended
   const boltlessKitSelected = configData.boltlessKit.id === 'kit'
-
-  // Handle ZIP code submission
-  const handleGetShippingQuote = async () => {
-    if (zipInput.length >= 5) {
-      setShippingZip(zipInput)
-      // Small delay to ensure state is updated
-      setTimeout(() => {
-        fetchShippingQuote()
-      }, 100)
-    }
-  }
-
-  // Handle picking up (clear shipping quote)
-  const handleSelectPickup = () => {
-    clearShippingQuote()
-    selectDelivery('pickup', PRODUCT_NAMES.delivery.pickup, PRICING.delivery.pickup)
-  }
-
-  // Check if shipping is selected (has a valid quote)
-  const isShippingSelected = configData.delivery.id === 'ship' && shippingQuote?.success
 
   return (
     <div className="animate-in fade-in duration-300">
@@ -146,11 +105,7 @@ export function Step4Configuration() {
                 }
               `}
             >
-              {(ufeRecommendedModel === 'AUN250' || (!ufeRecommendedModel && configData.vehicle === 'pickup')) && (
-                <Badge className="absolute top-3 right-3 bg-success text-white">
-                  {ufeRecommendedModel === 'AUN250' ? 'UFE RECOMMENDED' : 'RECOMMENDED'}
-                </Badge>
-              )}
+              <Badge className="absolute top-3 right-3 bg-success text-white">RECOMMENDED</Badge>
               <div className="flex justify-between items-start mb-3">
                 <h4 className="text-xl font-bold">AUN250</h4>
                 <p className="text-2xl font-bold">${PRICING.models.AUN250.toFixed(0)}</p>
@@ -185,9 +140,6 @@ export function Step4Configuration() {
                 }
               `}
             >
-              {ufeRecommendedModel === 'AUN210' && (
-                <Badge className="absolute top-3 right-3 bg-success text-white">UFE RECOMMENDED</Badge>
-              )}
               <div className="flex justify-between items-start mb-3">
                 <h4 className="text-xl font-bold">AUN210</h4>
                 <p className="text-2xl font-bold">${PRICING.models.AUN210.toFixed(0)}</p>
@@ -208,24 +160,6 @@ export function Step4Configuration() {
               </ul>
             </button>
           </div>
-
-          {/* UFE Notes and Warnings */}
-          {ufeResult?.success && ((ufeResult.tonneauNotes && ufeResult.tonneauNotes.length > 0) || ufeResult.angleWarning) && (
-            <div className="mt-4 space-y-2">
-              {ufeResult.angleWarning && (
-                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 flex gap-2">
-                  <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                  <p className="text-sm text-amber-800 dark:text-amber-200">{ufeResult.angleWarning}</p>
-                </div>
-              )}
-              {ufeResult.tonneauNotes?.map((note, index) => (
-                <div key={index} className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 flex gap-2">
-                  <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-                  <p className="text-sm text-blue-800 dark:text-blue-200">{note}</p>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* Ramp Extensions */}
@@ -272,144 +206,39 @@ export function Step4Configuration() {
           <div>
             <h3 className="text-xl font-bold mb-2 pb-2 border-b border-[#0B5394]/30"><span className="text-[#0B5394]">Delivery</span> Options</h3>
             <div className="space-y-3">
-              {/* Pickup Option */}
-              <button
-                type="button"
-                onClick={handleSelectPickup}
-                className={`
-                  w-full p-4 rounded-xl border-2 transition-all duration-300 text-left
-                  hover:shadow-md
-                  ${
-                    configData.delivery.id === 'pickup'
-                      ? 'border-[#F78309] bg-[#F78309]/5'
-                      : 'border-border bg-card hover:border-[#F78309]/50'
-                  }
-                `}
-              >
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-5 h-5 text-[#0B5394]" />
-                    <h4 className="font-semibold">Pickup in Woodstock, GA</h4>
+              {[
+                { id: 'pickup', name: PRODUCT_NAMES.delivery.pickup, price: PRICING.delivery.pickup },
+                { id: 'ship', name: PRODUCT_NAMES.delivery.ship, price: PRICING.delivery.ship },
+              ].map((delivery) => (
+                <button
+                  key={delivery.id}
+                  type="button"
+                  onClick={() => selectDelivery(delivery.id, delivery.name, delivery.price)}
+                  disabled={delivery.id === 'ship' && showDeliveryWarning}
+                  className={`
+                    w-full p-4 rounded-xl border-2 transition-all duration-300 text-left
+                    hover:shadow-md
+                    ${
+                      configData.delivery.id === delivery.id
+                        ? 'border-[#F78309] bg-[#F78309]/5'
+                        : 'border-border bg-card hover:border-[#F78309]/50'
+                    }
+                    ${delivery.id === 'ship' && showDeliveryWarning ? 'opacity-50 cursor-not-allowed' : ''}
+                  `}
+                >
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-semibold">{delivery.name}</h4>
+                    <p className="text-lg font-bold">${delivery.price.toFixed(0)}</p>
                   </div>
-                  <p className="text-lg font-bold text-green-600">FREE</p>
-                </div>
-              </button>
-
-              {/* Shipping Option */}
-              <div
-                className={`
-                  p-4 rounded-xl border-2 transition-all duration-300
-                  ${
-                    isShippingSelected
-                      ? 'border-[#F78309] bg-[#F78309]/5'
-                      : 'border-border bg-card'
-                  }
-                  ${showDeliveryWarning ? 'opacity-50' : ''}
-                `}
-              >
-                <div className="flex items-center gap-2 mb-3">
-                  <Truck className="w-5 h-5 text-[#0B5394]" />
-                  <h4 className="font-semibold">Freight Shipping</h4>
-                </div>
-
-                {/* ZIP Code Input */}
-                <div className="space-y-3">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={zipInput}
-                      onChange={(e) => setZipInput(e.target.value.replace(/\D/g, '').slice(0, 5))}
-                      placeholder="Enter ZIP code"
-                      disabled={showDeliveryWarning}
-                      className="flex-1 px-3 py-2 border border-border rounded-lg bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#0B5394]/50"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault()
-                          handleGetShippingQuote()
-                        }
-                      }}
-                    />
-                    <Button
-                      type="button"
-                      onClick={handleGetShippingQuote}
-                      disabled={zipInput.length < 5 || isLoadingShipping || showDeliveryWarning}
-                      className="bg-[#0B5394] hover:bg-[#0B5394]/90 text-white"
-                    >
-                      {isLoadingShipping ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        'Get Quote'
-                      )}
-                    </Button>
-                  </div>
-
-                  {/* Residential Toggle */}
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setIsResidential(true)}
-                      disabled={showDeliveryWarning}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm transition-colors ${
-                        isResidential
-                          ? 'bg-[#0B5394] text-white'
-                          : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                      }`}
-                    >
-                      <Home className="w-3.5 h-3.5" />
-                      Residential
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsResidential(false)}
-                      disabled={showDeliveryWarning}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm transition-colors ${
-                        !isResidential
-                          ? 'bg-[#0B5394] text-white'
-                          : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                      }`}
-                    >
-                      <Building2 className="w-3.5 h-3.5" />
-                      Commercial
-                    </button>
-                  </div>
-
-                  {/* Shipping Quote Result */}
-                  {shippingQuote?.success && (
-                    <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Check className="w-4 h-4 text-green-600" />
-                          <span className="text-sm font-medium text-green-800 dark:text-green-200">
-                            Shipping to {shippingZip}
-                          </span>
-                        </div>
-                        <span className="text-lg font-bold text-green-700 dark:text-green-300">
-                          ${configData.delivery.price.toFixed(2)}
-                        </span>
-                      </div>
-                      {shippingQuote.transitDays && (
-                        <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                          Estimated transit: {shippingQuote.transitDays} business days
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Error Message */}
-                  {shippingError && (
-                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
-                      <p className="text-sm text-red-700 dark:text-red-300">{shippingError}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
+                </button>
+              ))}
             </div>
 
             {showDeliveryWarning && (
               <div className="mt-3 bg-[#F78309]/10 border border-[#F78309] rounded-lg p-3 flex gap-2 text-sm">
                 <Info className="w-4 h-4 text-[#F78309] shrink-0 mt-0.5" />
                 <p className="text-muted-foreground">
-                  Shipping is not available with Demo service. Please select Not Assembled or Assembly Service.
+                  ⚠️ Shipping is not available with Demo service. Please select Not Assembled or Assembly Service.
                 </p>
               </div>
             )}

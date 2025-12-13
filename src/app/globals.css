@@ -95,7 +95,7 @@
   --popover-foreground: oklch(0.985 0 0);
   --primary: 203 79% 57%;
   --primary-dark: 203 53% 47%;
-  --primary-foreground: oklch(0.21 0.006 285.885);
+  --primary-foreground: oklch(0.985 0 0);
   --secondary: 21 96% 54%;
   --secondary-dark: 21 90% 48%;
   --secondary-foreground: oklch(0.985 0 0);
@@ -153,4 +153,25 @@
   100% {
     transform: rotate(360deg);
   }
+}
+
+/* Admin Layout - Hide main header/footer when in admin section */
+body.admin-layout header.sticky,
+body.admin-layout footer.border-t,
+body.admin-layout > div header,
+body.admin-layout > div footer {
+  display: none !important;
+}
+
+/* Hide FOMO banner, chat widget, scroll-to-top, and cart sheet in admin */
+body.admin-layout [data-fomo-banner],
+body.admin-layout [data-chat-widget],
+body.admin-layout [data-scroll-to-top] {
+  display: none !important;
+}
+
+/* Ensure admin main content fills the viewport */
+body.admin-layout > div > main {
+  min-height: 100vh !important;
+  padding: 0 !important;
 }

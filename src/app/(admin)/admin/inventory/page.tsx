@@ -234,7 +234,7 @@ export default function InventoryDashboardPage() {
           />
         </div>
         <Button
-          variant={showLowStockOnly ? 'default' : 'outline'}
+          variant={showLowStockOnly ? 'secondary' : 'outline'}
           onClick={() => setShowLowStockOnly(!showLowStockOnly)}
         >
           {showLowStockOnly ? 'Show All' : 'Show Low Stock Only'}
