@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { RefreshCw, DollarSign, ShoppingCart, Users, TrendingUp, Package, UserCircle, MessageSquare, LogOut, Truck } from 'lucide-react'
+import { RefreshCw, DollarSign, ShoppingCart, Users, TrendingUp, Calendar } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Select,
@@ -14,6 +15,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import {
   RevenueChart,
   OrderStatusChart,
@@ -55,6 +61,11 @@ export default function AdminDashboardPage() {
   const { user, profile, signOut } = useAuth()
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState('30')
+  const [customDateRange, setCustomDateRange] = useState<{ start: string; end: string }>({
+    start: '',
+    end: '',
+  })
+  const [showDatePicker, setShowDatePicker] = useState(false)
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [revenueTrend, setRevenueTrend] = useState<RevenueDataPoint[]>([])
   const [topProducts, setTopProducts] = useState<TopProduct[]>([])
@@ -98,14 +109,6 @@ export default function AdminDashboardPage() {
     fetchData()
   }, [period])
 
-  const quickLinks = [
-    { href: '/admin/orders', label: 'Orders', icon: ShoppingCart },
-    { href: '/admin/inventory', label: 'Inventory', icon: Package },
-    { href: '/admin/shipping', label: 'Shipping', icon: Truck },
-    { href: '/admin/crm', label: 'Customers', icon: UserCircle },
-    { href: '/admin/testimonials', label: 'Testimonials', icon: MessageSquare },
-    { href: '/admin/team', label: 'Team', icon: Users },
-  ]
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -117,17 +120,72 @@ export default function AdminDashboardPage() {
             Monitor your business performance
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-[140px]">
+        <div className="flex items-center gap-3 flex-wrap">
+          <Select value={period} onValueChange={(value) => {
+            setPeriod(value)
+            if (value !== 'custom') {
+              setShowDatePicker(false)
+            }
+          }}>
+            <SelectTrigger className="w-[160px]">
               <SelectValue placeholder="Select period" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="7">Last 7 days</SelectItem>
               <SelectItem value="30">Last 30 days</SelectItem>
               <SelectItem value="90">Last 90 days</SelectItem>
+              <SelectItem value="365">Last 12 months</SelectItem>
+              <SelectItem value="custom">Custom Range</SelectItem>
             </SelectContent>
           </Select>
+
+          {/* Custom Date Range Picker */}
+          {period === 'custom' && (
+            <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <Calendar className="h-4 w-4" />
+                  {customDateRange.start && customDateRange.end
+                    ? `${new Date(customDateRange.start).toLocaleDateString()} - ${new Date(customDateRange.end).toLocaleDateString()}`
+                    : 'Select dates'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-4" align="start">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Start Date</label>
+                    <Input
+                      type="date"
+                      value={customDateRange.start}
+                      onChange={(e) => setCustomDateRange({ ...customDateRange, start: e.target.value })}
+                      max={customDateRange.end || undefined}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">End Date</label>
+                    <Input
+                      type="date"
+                      value={customDateRange.end}
+                      onChange={(e) => setCustomDateRange({ ...customDateRange, end: e.target.value })}
+                      min={customDateRange.start || undefined}
+                      max={new Date().toISOString().split('T')[0]}
+                    />
+                  </div>
+                  <Button
+                    onClick={() => {
+                      setShowDatePicker(false)
+                      fetchData()
+                    }}
+                    disabled={!customDateRange.start || !customDateRange.end}
+                    className="w-full"
+                  >
+                    Apply Range
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
+
           <Button onClick={fetchData} disabled={loading} variant="outline">
             <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
@@ -135,17 +193,6 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* Quick Links */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        {quickLinks.map(link => (
-          <Link key={link.href} href={link.href}>
-            <Button variant="outline" size="sm">
-              <link.icon className="h-4 w-4 mr-2" />
-              {link.label}
-            </Button>
-          </Link>
-        ))}
-      </div>
 
       {/* KPI Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

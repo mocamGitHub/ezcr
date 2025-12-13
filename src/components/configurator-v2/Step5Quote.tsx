@@ -7,7 +7,8 @@ import { useToast } from '@/components/ui/toast'
 import { Button } from '@/components/ui/button'
 import { AnimatedCTAActionButton } from '@/components/ui/animated-cta-button'
 import { FEES, CONTACT } from '@/types/configurator-v2'
-import { Phone, Mail, Printer, Share2, Check, Copy, Calendar, Info, AlertTriangle } from 'lucide-react'
+import { Phone, Mail, Printer, Share2, Check, Copy, Calendar, Info, AlertTriangle, MapPin } from 'lucide-react'
+import { TFORCE_INFO, getPhoneLink } from '@/config/contact'
 import { CallScheduler } from '@/components/contact/CallScheduler'
 import { clearSharedConfiguratorData } from '@/lib/configurator-shared-data'
 
@@ -20,7 +21,7 @@ const formatCurrency = (amount: number): string => {
 }
 
 export function Step5Quote() {
-  const { configData, units, previousStep, setShowContactModal, setPendingAction, saveConfiguration, savedConfigId, executeEmailQuote, executePrintQuote, ufeResult } = useConfigurator()
+  const { configData, units, previousStep, setShowContactModal, setPendingAction, saveConfiguration, savedConfigId, executeEmailQuote, executePrintQuote, ufeResult, shippingQuote } = useConfigurator()
   const { addItem, openCart } = useCart()
   const { showToast } = useToast()
   const [showShareDialog, setShowShareDialog] = useState(false)
@@ -332,10 +333,48 @@ export function Step5Quote() {
                     <span className="font-bold">${formatCurrency(configData.service.price)}</span>
                   </div>
                 )}
-                {configData.delivery.price > 0 && (
+                {configData.delivery.id === 'ship' && configData.delivery.price > 0 && (
+                  <div className="py-2 border-b border-border">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">{configData.delivery.name}</span>
+                      <span className="font-bold">${formatCurrency(configData.delivery.price)}</span>
+                    </div>
+                    {/* T-Force Terminal Info */}
+                    {shippingQuote?.destinationTerminal && (
+                      <div className="mt-2 bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
+                        <div className="flex items-start gap-2">
+                          <MapPin className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
+                          <div className="text-sm">
+                            <p className="font-medium text-green-800 dark:text-green-200">
+                              Nearest {TFORCE_INFO.name} Terminal:
+                            </p>
+                            <p className="text-green-700 dark:text-green-300 font-semibold">
+                              {shippingQuote.destinationTerminal.name}
+                              {shippingQuote.destinationTerminal.code && (
+                                <span className="text-green-600 ml-1 font-normal">
+                                  ({shippingQuote.destinationTerminal.code})
+                                </span>
+                              )}
+                            </p>
+                            <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                              Terminal support:{' '}
+                              <a
+                                href={getPhoneLink(TFORCE_INFO.customerServiceRaw)}
+                                className="font-medium underline hover:no-underline"
+                              >
+                                {TFORCE_INFO.customerService}
+                              </a>
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {configData.delivery.id === 'pickup' && (
                   <div className="flex justify-between items-center py-2 border-b border-border">
                     <span className="font-medium">{configData.delivery.name}</span>
-                    <span className="font-bold">${formatCurrency(configData.delivery.price)}</span>
+                    <span className="font-bold text-green-600">FREE</span>
                   </div>
                 )}
               </div>

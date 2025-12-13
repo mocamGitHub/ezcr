@@ -1,164 +1,163 @@
-# Session Handoff - TypeScript Build Fixes & Staging 504 Resolution
+# Session Handoff Document
 
-**Date**: December 11, 2025
-**Time**: 1:51 PM EST
-**Previous Commits**: `948261d` through `dbcb11f`
-**Current Commits**:
-- `561fbb3` - fix: Resolve TypeScript build errors across multiple files
-- `b5d67e9` - fix: Use consistent SUPABASE_SERVICE_KEY env var in shipping routes
-**Current Status**: All fixes pushed, staging should now deploy successfully
+**Last Updated**: December 13, 2024 (Evening Session)
+**Commit Hash**: (see Git Commit Hashes below)
+**Dev Server**: Running on http://localhost:3000
 **Branch**: main
-**Dev Server**: Not running
-**Staging**: https://staging.ezcycleramp.com (waiting for Hetzner/Coolify to redeploy)
 
 ---
 
-## What Was Accomplished This Session
+## Session Summary
 
-### 1. Terminal Crash Recovery
-- User had 2 terminals that crashed during separate activities
-- Recovered state by analyzing git status, diffs, and project files
+This session focused on admin dashboard improvements, shipping UI enhancements, and UX improvements to the configurator selection indicators.
 
-### 2. TypeScript Build Fixes (Commit `561fbb3`)
-Fixed multiple TypeScript errors preventing build:
+### Completed Tasks
 
-- **Cart Interface Updates**: Updated `wishlist/page.tsx` and `CompareProducts.tsx` to use new cart interface (`productId`, `productName`, `productSlug`, `productImage`, `sku` instead of old `id`, `name`, `quantity`, `image`)
-- **Configurator Types**: Added missing tonneau cover fields to `ConfigData` type in `configurator-v2.ts`:
-  - `hasTonneauCover?: boolean`
-  - `tonneauType?: string`
-  - `tonneauRollDirection?: string`
-  - `rollupPosition?: string`
-- **Auth Context**: Fixed type annotations in `AuthContext.tsx` for Supabase `Session` and `AuthChangeEvent`
-- **Stripe API**: Updated version to `2025-10-29.clover` and fixed `shipping_details` access pattern in `shipping-webhook/route.ts`
-- **TestimonialSubmitForm**: Fixed auth loading property name (`loading` instead of `isLoading`)
-- **Export Utils**: Removed deprecated IE `msSaveBlob` fallback, added generic types to CSV functions
-- **tsconfig.json**: Excluded `docs` and `ezcycleramp-shipping` directories from compilation
+1. **FOMO Banner Management Page** (`/admin/fomo`)
+   - Created full CRUD interface for FOMO urgency banners
+   - Supports countdown, stock, visitors, recent purchase, custom types
+   - Color customization, scheduling, preview functionality
+   - Added to admin navigation
 
-### 3. Staging 504 Gateway Timeout Fix (Commit `b5d67e9`)
-**Root Cause**: Environment variable naming inconsistency
-- The new shipping routes used `SUPABASE_SERVICE_ROLE_KEY`
-- The rest of the app (including `admin.ts`) uses `SUPABASE_SERVICE_KEY`
-- `admin.ts` throws on startup if `SUPABASE_SERVICE_KEY` is missing
-- This caused the container to crash with a 504 timeout
+2. **Admin Dashboard Improvements**
+   - Removed quick links from dashboard (using sidebar navigation instead)
+   - Added date range picker with custom range support
+   - Added "Last 12 months" and "Custom Range" period options
 
-**Fix**: Changed `shipping-quote/route.ts` and `shipping-webhook/route.ts` to use `SUPABASE_SERVICE_KEY`
+3. **Admin Breadcrumbs Enhancement**
+   - Added back button for sub-pages navigation
 
----
+4. **Centralized Contact Configuration**
+   - Created `src/config/contact.ts` with company contact info
+   - Added T-Force Freight contact information
 
-## Files Modified This Session
+5. **Shipping UI Improvements** (Step 4 Configuration)
+   - Made shipping form collapsible - only shows when Freight Shipping is selected
+   - Added T-Force Freight terminal display with:
+     - Nearest terminal name and code
+     - Terminal support phone number (800) 333-7400
+   - Added fallback phone number on shipping errors
 
-### Commit `561fbb3` - TypeScript fixes
-- `src/app/(shop)/wishlist/page.tsx` - Cart interface update
-- `src/app/api/shipping-quote/route.ts` - Source type fix
-- `src/app/api/shipping-webhook/route.ts` - Stripe API version & shipping_details
-- `src/components/products/CompareProducts.tsx` - Cart interface update
-- `src/components/testimonials/TestimonialSubmitForm.tsx` - Auth loading prop
-- `src/contexts/AuthContext.tsx` - Supabase type imports
-- `src/lib/utils/export.ts` - Remove IE fallback, add generics
-- `src/types/configurator-v2.ts` - Add tonneau cover fields
-- `tsconfig.json` - Exclude directories
+6. **Quote Page Improvements** (Step 5 Quote)
+   - Added T-Force terminal display when shipping is selected
+   - Shows "Nearest T-Force Freight Terminal" with terminal info
+   - Green color scheme matching Step 4
 
-### Commit `b5d67e9` - Env var fix
-- `src/app/api/shipping-quote/route.ts` - SUPABASE_SERVICE_KEY
-- `src/app/api/shipping-webhook/route.ts` - SUPABASE_SERVICE_KEY
+7. **Selection Indicator Checkmarks** (Both Configurators)
+   - Added orange checkmark circles to all selected items
+   - Added ring glow effect on selected items
+   - Applied to: Ramp Models, Extensions, Delivery, Services, Boltless Kit, Tiedowns
+   - Updated both `/configure-smooth` (v2) and `/configure` (legacy)
 
----
+### Files Modified/Created
 
-## Current State
+**New Files:**
+- `src/app/(admin)/admin/fomo/page.tsx` - FOMO management page
+- `src/config/contact.ts` - Centralized contact info
+- `src/components/ui/popover.tsx` - shadcn popover component
+- `src/components/ui/switch.tsx` - shadcn switch component
 
-### What's Working
-- Build compiles successfully (verified locally)
-- All TypeScript errors resolved
-- Environment variable naming is now consistent across all files
-- Commits pushed to GitHub remote
-
-### What's Pending
-1. **Staging Deployment** - Waiting for Hetzner/Coolify to auto-redeploy after push
-2. **Verify Staging** - Once deployed, confirm site loads without 504 error
-
-### Shipping Project (ezcycleramp-shipping/)
-- All files created but **not yet deployed to Supabase**
-- Requires `supabase login` (manual step in terminal)
-- Then can deploy Edge Functions and set secrets
+**Modified Files:**
+- `src/config/admin-nav.ts` - Added FOMO nav item
+- `src/app/(admin)/admin/dashboard/page.tsx` - Date range picker, removed quick links
+- `src/components/admin/AdminBreadcrumbs.tsx` - Added back button
+- `src/components/configurator-v2/Step4Configuration.tsx` - Shipping UI, checkmarks
+- `src/components/configurator-v2/Step5Quote.tsx` - Terminal display
+- `src/components/configurator-legacy/Step4Configuration.tsx` - Checkmarks
 
 ---
 
-## Deployment Status
+## Current Status
 
-### Staging (staging.ezcycleramp.com)
-- **Previous Issue**: 504 Gateway Timeout (container crashing on startup)
-- **Root Cause**: SUPABASE_SERVICE_ROLE_KEY vs SUPABASE_SERVICE_KEY inconsistency
-- **Status**: Fix pushed (`b5d67e9`), waiting for auto-deploy
-- **Hosting**: Hetzner with Coolify
+### Working Features
+- All 186 UFE tests passing
+- Dev server running successfully
+- Both configurators functional with new selection indicators
+- Admin dashboard with date range picker
+- FOMO management page ready
 
-### Production
-- Not yet deployed
+### Staging Deployment
+- Last deployed: Previous session
+- T-Force credentials not configured on staging (expected)
+- Graceful fallback message displays when shipping quote fails
+
+### Known Issues
+- Pre-existing Clover API version mismatch in `src/app/api/shipping-webhook/route.ts` (unrelated to this session)
 
 ---
 
 ## Next Recommended Actions
 
-1. **Check Staging Site** - Wait 2-5 minutes for Coolify to redeploy, then test https://staging.ezcycleramp.com
-2. **If Still 504**: Check Coolify dashboard for build/deployment logs
-3. **Supabase Login** (for shipping project):
-   ```bash
-   cd ezcycleramp-shipping
-   npx supabase login
-   ```
-4. **Deploy Shipping Edge Functions** (after login):
-   ```bash
-   npx supabase functions deploy get-shipping-quote
-   npx supabase functions deploy stripe-webhook
-   npx supabase functions deploy trigger-post-purchase-emails
-   ```
+1. **Test in Browser**
+   - Visit http://localhost:3000/configure-smooth
+   - Test the selection checkmarks on all options
+   - Test shipping form expand/collapse behavior
+   - Verify terminal info displays after getting shipping quote
+
+2. **Test Admin Features**
+   - Visit http://localhost:3000/admin/dashboard
+   - Test date range picker (custom range)
+   - Visit http://localhost:3000/admin/fomo
+   - Test FOMO banner CRUD operations
+
+3. **Deploy to Staging**
+   - Commit and push changes
+   - Coolify auto-deploys on push to main
 
 ---
 
-## How to Resume After /clear
+## Resume Instructions
 
-### 1. Read this handoff document
+After running `/clear`, use these commands to resume:
+
 ```bash
+# 1. Read this handoff document
 cat SESSION_HANDOFF.md
-```
 
-### 2. Check git status and recent commits
-```bash
+# 2. Check dev server status (should still be running)
+curl -s -o /dev/null -w "%{http_code}" http://localhost:3000
+
+# 3. If dev server not running, start it
+pnpm dev
+
+# 4. Check git status
 git status
-git log -5 --oneline
+
+# 5. Run tests to verify everything works
+pnpm test
 ```
 
-### 3. Check staging site status
-```bash
-curl -I https://staging.ezcycleramp.com
-```
-Or just visit the URL in browser.
+### Key Files to Review
+- `src/components/configurator-v2/Step4Configuration.tsx` - Main shipping/selection UI
+- `src/components/configurator-v2/Step5Quote.tsx` - Quote page with terminal display
+- `src/config/contact.ts` - Contact and T-Force info
 
-### 4. Start dev server (if needed)
-```bash
-npm run dev
-```
+---
 
-### 5. Key files if troubleshooting
-- Shipping quote API: `src/app/api/shipping-quote/route.ts`
-- Shipping webhook: `src/app/api/shipping-webhook/route.ts`
-- Supabase admin client: `src/lib/supabase/admin.ts` (throws if env var missing)
-- Auth context: `src/contexts/AuthContext.tsx`
+## Technical Context
 
-### 6. If staging still down
-- Check Coolify dashboard for container logs
-- Look for "Missing SUPABASE_SERVICE_KEY" error
-- Verify all env vars are set correctly in Coolify
+### T-Force Freight Terminal Display
+The shipping quote API returns `destinationTerminal` with `name` and `code` fields. This is displayed in both Step 4 (when quote received) and Step 5 (on the quote summary).
+
+### Selection Checkmarks
+All selectable buttons now include:
+- `ring-2 ring-[#F78309]/20` - Orange glow when selected
+- Orange circle with white Check icon in top-left
+- `pl-6` padding on text to accommodate checkmark
+
+### Collapsible Shipping Form
+- Default: Pickup selected, shipping form hidden
+- Click "Freight Shipping" to expand and show ZIP input
+- Form collapses when "Pickup in Woodstock, GA" is selected
 
 ---
 
 ## Environment Notes
 
 - **Supabase**: https://supabase.nexcyte.com
-- **Staging**: Hetzner with Coolify (auto-deploys on push to main)
+- **Staging**: Hetzner with Coolify (auto-deploys on push)
 - **Env Var**: Use `SUPABASE_SERVICE_KEY` (not `SUPABASE_SERVICE_ROLE_KEY`)
 - **T-Force API**: Credentials in .env.local
-- **Resend**: API key in .env.local
-- **Twilio**: Credentials in .env.local
 
 ---
 
@@ -166,8 +165,8 @@ npm run dev
 
 | Commit | Description |
 |--------|-------------|
+| (pending) | feat: Add selection checkmarks, T-Force terminal display, FOMO admin |
+| `b0d7f5c` | Previous session |
+| `ec1a6f9` | docs: Update session handoff for TypeScript fixes |
 | `b5d67e9` | fix: Use consistent SUPABASE_SERVICE_KEY env var |
 | `561fbb3` | fix: Resolve TypeScript build errors |
-| `dbcb11f` | docs: Update session handoff |
-| `568da05` | fix: Add missing tooltip component |
-| `948261d` | feat: Shipping analytics, Resend email, inventory alerts |

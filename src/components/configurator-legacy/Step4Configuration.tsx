@@ -5,7 +5,7 @@ import { useConfigurator } from './ConfiguratorProvider'
 import { Button } from '@/components/ui/button'
 import { PRICING, PRODUCT_NAMES } from '@/types/configurator-v2'
 import { Badge } from '@/components/ui/badge'
-import { Info } from 'lucide-react'
+import { Info, Check } from 'lucide-react'
 
 export function Step4Configuration() {
   const {
@@ -100,11 +100,17 @@ export function Step4Configuration() {
                 hover:shadow-lg
                 ${
                   configData.selectedModel.id === 'AUN250'
-                    ? 'border-[#F78309] bg-[#F78309]/5'
+                    ? 'border-[#F78309] bg-[#F78309]/5 ring-2 ring-[#F78309]/20'
                     : 'border-border bg-card hover:border-[#F78309]/50'
                 }
               `}
             >
+              {/* Selection Checkmark */}
+              {configData.selectedModel.id === 'AUN250' && (
+                <div className="absolute top-3 left-3 w-6 h-6 bg-[#F78309] rounded-full flex items-center justify-center">
+                  <Check className="w-4 h-4 text-white" />
+                </div>
+              )}
               <Badge className="absolute top-3 right-3 bg-success text-white">RECOMMENDED</Badge>
               <div className="flex justify-between items-start mb-3">
                 <h4 className="text-xl font-bold">AUN250</h4>
@@ -135,11 +141,17 @@ export function Step4Configuration() {
                 hover:shadow-lg
                 ${
                   configData.selectedModel.id === 'AUN210'
-                    ? 'border-[#F78309] bg-[#F78309]/5'
+                    ? 'border-[#F78309] bg-[#F78309]/5 ring-2 ring-[#F78309]/20'
                     : 'border-border bg-card hover:border-[#F78309]/50'
                 }
               `}
             >
+              {/* Selection Checkmark */}
+              {configData.selectedModel.id === 'AUN210' && (
+                <div className="absolute top-3 left-3 w-6 h-6 bg-[#F78309] rounded-full flex items-center justify-center">
+                  <Check className="w-4 h-4 text-white" />
+                </div>
+              )}
               <div className="flex justify-between items-start mb-3">
                 <h4 className="text-xl font-bold">AUN210</h4>
                 <p className="text-2xl font-bold">${PRICING.models.AUN210.toFixed(0)}</p>
@@ -181,11 +193,17 @@ export function Step4Configuration() {
                   hover:shadow-md
                   ${
                     configData.extension.id === ext.id
-                      ? 'border-[#F78309] bg-[#F78309]/5'
+                      ? 'border-[#F78309] bg-[#F78309]/5 ring-2 ring-[#F78309]/20'
                       : 'border-border bg-card hover:border-[#F78309]/50'
                   }
                 `}
               >
+                {/* Selection Checkmark */}
+                {configData.extension.id === ext.id && (
+                  <div className="absolute top-2 left-2 w-5 h-5 bg-[#F78309] rounded-full flex items-center justify-center">
+                    <Check className="w-3 h-3 text-white" />
+                  </div>
+                )}
                 {ext.recommended && (
                   <Badge className={`absolute top-2 right-2 text-xs ${
                     configData.extension.id === ext.id ? 'bg-success text-white' : 'bg-muted text-muted-foreground'
@@ -193,7 +211,7 @@ export function Step4Configuration() {
                     RECOMMENDED
                   </Badge>
                 )}
-                <h4 className="font-semibold text-sm mb-1">{ext.name}</h4>
+                <h4 className="font-semibold text-sm mb-1 pl-6">{ext.name}</h4>
                 <p className="text-lg font-bold">${ext.price.toFixed(0)}</p>
               </button>
             ))}
@@ -216,18 +234,24 @@ export function Step4Configuration() {
                   onClick={() => selectDelivery(delivery.id, delivery.name, delivery.price)}
                   disabled={delivery.id === 'ship' && showDeliveryWarning}
                   className={`
-                    w-full p-4 rounded-xl border-2 transition-all duration-300 text-left
+                    relative w-full p-4 rounded-xl border-2 transition-all duration-300 text-left
                     hover:shadow-md
                     ${
                       configData.delivery.id === delivery.id
-                        ? 'border-[#F78309] bg-[#F78309]/5'
+                        ? 'border-[#F78309] bg-[#F78309]/5 ring-2 ring-[#F78309]/20'
                         : 'border-border bg-card hover:border-[#F78309]/50'
                     }
                     ${delivery.id === 'ship' && showDeliveryWarning ? 'opacity-50 cursor-not-allowed' : ''}
                   `}
                 >
+                  {/* Selection Checkmark */}
+                  {configData.delivery.id === delivery.id && (
+                    <div className="absolute top-3 left-3 w-5 h-5 bg-[#F78309] rounded-full flex items-center justify-center">
+                      <Check className="w-3 h-3 text-white" />
+                    </div>
+                  )}
                   <div className="flex justify-between items-center">
-                    <h4 className="font-semibold">{delivery.name}</h4>
+                    <h4 className="font-semibold pl-6">{delivery.name}</h4>
                     <p className="text-lg font-bold">${delivery.price.toFixed(0)}</p>
                   </div>
                 </button>
@@ -258,17 +282,23 @@ export function Step4Configuration() {
                   type="button"
                   onClick={() => selectService(service.id, service.name, service.price)}
                   className={`
-                    w-full p-4 rounded-xl border-2 transition-all duration-300 text-left
+                    relative w-full p-4 rounded-xl border-2 transition-all duration-300 text-left
                     hover:shadow-md
                     ${
                       configData.service.id === service.id
-                        ? 'border-[#F78309] bg-[#F78309]/5'
+                        ? 'border-[#F78309] bg-[#F78309]/5 ring-2 ring-[#F78309]/20'
                         : 'border-border bg-card hover:border-[#F78309]/50'
                     }
                   `}
                 >
+                  {/* Selection Checkmark */}
+                  {configData.service.id === service.id && (
+                    <div className="absolute top-3 left-3 w-5 h-5 bg-[#F78309] rounded-full flex items-center justify-center">
+                      <Check className="w-3 h-3 text-white" />
+                    </div>
+                  )}
                   <div className="flex justify-between items-center">
-                    <h4 className="font-semibold">{service.name}</h4>
+                    <h4 className="font-semibold pl-6">{service.name}</h4>
                     <p className="text-lg font-bold">${service.price.toFixed(0)}</p>
                   </div>
                 </button>
@@ -292,17 +322,23 @@ export function Step4Configuration() {
                   type="button"
                   onClick={() => selectBoltlessKit(kit.id, kit.name, kit.price)}
                   className={`
-                    w-full p-4 rounded-xl border-2 transition-all duration-300 text-left
+                    relative w-full p-4 rounded-xl border-2 transition-all duration-300 text-left
                     hover:shadow-md
                     ${
                       configData.boltlessKit.id === kit.id
-                        ? 'border-[#F78309] bg-[#F78309]/5'
+                        ? 'border-[#F78309] bg-[#F78309]/5 ring-2 ring-[#F78309]/20'
                         : 'border-border bg-card hover:border-[#F78309]/50'
                     }
                   `}
                 >
+                  {/* Selection Checkmark */}
+                  {configData.boltlessKit.id === kit.id && (
+                    <div className="absolute top-3 left-3 w-5 h-5 bg-[#F78309] rounded-full flex items-center justify-center">
+                      <Check className="w-3 h-3 text-white" />
+                    </div>
+                  )}
                   <div className="flex justify-between items-center">
-                    <h4 className="font-semibold">{kit.name}</h4>
+                    <h4 className="font-semibold pl-6">{kit.name}</h4>
                     <p className="text-lg font-bold">${kit.price.toFixed(0)}</p>
                   </div>
                 </button>
@@ -329,11 +365,17 @@ export function Step4Configuration() {
                     hover:shadow-md
                     ${
                       configData.tiedown.id === tiedown.id
-                        ? 'border-[#F78309] bg-[#F78309]/5'
+                        ? 'border-[#F78309] bg-[#F78309]/5 ring-2 ring-[#F78309]/20'
                         : 'border-border bg-card hover:border-[#F78309]/50'
                     }
                   `}
                 >
+                  {/* Selection Checkmark */}
+                  {configData.tiedown.id === tiedown.id && (
+                    <div className="absolute top-3 left-3 w-5 h-5 bg-[#F78309] rounded-full flex items-center justify-center">
+                      <Check className="w-3 h-3 text-white" />
+                    </div>
+                  )}
                   {tiedown.recommended && (
                     <Badge className={`absolute top-2 right-2 text-xs ${
                       configData.tiedown.id === tiedown.id ? 'bg-success text-white' : 'bg-muted text-muted-foreground'
@@ -342,7 +384,7 @@ export function Step4Configuration() {
                     </Badge>
                   )}
                   <div className="flex justify-between items-center">
-                    <h4 className="font-semibold text-sm">{tiedown.name}</h4>
+                    <h4 className="font-semibold text-sm pl-6">{tiedown.name}</h4>
                     <p className="text-lg font-bold">${tiedown.price.toFixed(0)}</p>
                   </div>
                 </button>

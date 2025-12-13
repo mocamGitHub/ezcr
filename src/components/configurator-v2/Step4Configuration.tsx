@@ -5,7 +5,8 @@ import { useConfigurator } from './ConfiguratorProvider'
 import { Button } from '@/components/ui/button'
 import { PRICING, PRODUCT_NAMES } from '@/types/configurator-v2'
 import { Badge } from '@/components/ui/badge'
-import { Info, Loader2, Truck, MapPin, Home, Building2, Check } from 'lucide-react'
+import { Info, Loader2, Truck, MapPin, Home, Building2, Check, Phone } from 'lucide-react'
+import { CONTACT_INFO, TFORCE_INFO, getPhoneLink } from '@/config/contact'
 
 export function Step4Configuration() {
   const {
@@ -141,11 +142,17 @@ export function Step4Configuration() {
                 hover:shadow-lg
                 ${
                   configData.selectedModel.id === 'AUN250'
-                    ? 'border-[#F78309] bg-[#F78309]/5'
+                    ? 'border-[#F78309] bg-[#F78309]/5 ring-2 ring-[#F78309]/20'
                     : 'border-border bg-card hover:border-[#F78309]/50'
                 }
               `}
             >
+              {/* Selection Checkmark */}
+              {configData.selectedModel.id === 'AUN250' && (
+                <div className="absolute top-3 left-3 w-6 h-6 bg-[#F78309] rounded-full flex items-center justify-center">
+                  <Check className="w-4 h-4 text-white" />
+                </div>
+              )}
               {(ufeRecommendedModel === 'AUN250' || (!ufeRecommendedModel && configData.vehicle === 'pickup')) && (
                 <Badge className="absolute top-3 right-3 bg-success text-white">
                   {ufeRecommendedModel === 'AUN250' ? 'UFE RECOMMENDED' : 'RECOMMENDED'}
@@ -180,11 +187,17 @@ export function Step4Configuration() {
                 hover:shadow-lg
                 ${
                   configData.selectedModel.id === 'AUN210'
-                    ? 'border-[#F78309] bg-[#F78309]/5'
+                    ? 'border-[#F78309] bg-[#F78309]/5 ring-2 ring-[#F78309]/20'
                     : 'border-border bg-card hover:border-[#F78309]/50'
                 }
               `}
             >
+              {/* Selection Checkmark */}
+              {configData.selectedModel.id === 'AUN210' && (
+                <div className="absolute top-3 left-3 w-6 h-6 bg-[#F78309] rounded-full flex items-center justify-center">
+                  <Check className="w-4 h-4 text-white" />
+                </div>
+              )}
               {ufeRecommendedModel === 'AUN210' && (
                 <Badge className="absolute top-3 right-3 bg-success text-white">UFE RECOMMENDED</Badge>
               )}
@@ -247,11 +260,17 @@ export function Step4Configuration() {
                   hover:shadow-md
                   ${
                     configData.extension.id === ext.id
-                      ? 'border-[#F78309] bg-[#F78309]/5'
+                      ? 'border-[#F78309] bg-[#F78309]/5 ring-2 ring-[#F78309]/20'
                       : 'border-border bg-card hover:border-[#F78309]/50'
                   }
                 `}
               >
+                {/* Selection Checkmark */}
+                {configData.extension.id === ext.id && (
+                  <div className="absolute top-2 left-2 w-5 h-5 bg-[#F78309] rounded-full flex items-center justify-center">
+                    <Check className="w-3 h-3 text-white" />
+                  </div>
+                )}
                 {ext.recommended && (
                   <Badge className={`absolute top-2 right-2 text-xs ${
                     configData.extension.id === ext.id ? 'bg-success text-white' : 'bg-muted text-muted-foreground'
@@ -259,7 +278,7 @@ export function Step4Configuration() {
                     RECOMMENDED
                   </Badge>
                 )}
-                <h4 className="font-semibold text-sm mb-1">{ext.name}</h4>
+                <h4 className="font-semibold text-sm mb-1 pl-6">{ext.name}</h4>
                 <p className="text-lg font-bold">${ext.price.toFixed(0)}</p>
               </button>
             ))}
@@ -277,17 +296,23 @@ export function Step4Configuration() {
                 type="button"
                 onClick={handleSelectPickup}
                 className={`
-                  w-full p-4 rounded-xl border-2 transition-all duration-300 text-left
+                  relative w-full p-4 rounded-xl border-2 transition-all duration-300 text-left
                   hover:shadow-md
                   ${
                     configData.delivery.id === 'pickup'
-                      ? 'border-[#F78309] bg-[#F78309]/5'
+                      ? 'border-[#F78309] bg-[#F78309]/5 ring-2 ring-[#F78309]/20'
                       : 'border-border bg-card hover:border-[#F78309]/50'
                   }
                 `}
               >
+                {/* Selection Checkmark */}
+                {configData.delivery.id === 'pickup' && (
+                  <div className="absolute top-3 left-3 w-5 h-5 bg-[#F78309] rounded-full flex items-center justify-center">
+                    <Check className="w-3 h-3 text-white" />
+                  </div>
+                )}
                 <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 pl-6">
                     <MapPin className="w-5 h-5 text-[#0B5394]" />
                     <h4 className="font-semibold">Pickup in Woodstock, GA</h4>
                   </div>
@@ -296,24 +321,50 @@ export function Step4Configuration() {
               </button>
 
               {/* Shipping Option */}
-              <div
-                className={`
-                  p-4 rounded-xl border-2 transition-all duration-300
-                  ${
-                    isShippingSelected
-                      ? 'border-[#F78309] bg-[#F78309]/5'
-                      : 'border-border bg-card'
+              <button
+                type="button"
+                onClick={() => {
+                  // When clicking freight shipping, show the expanded form
+                  if (configData.delivery.id === 'pickup') {
+                    // Switch to ship mode (will show expanded form)
+                    selectDelivery('ship', 'Freight Shipping', 0)
                   }
-                  ${showDeliveryWarning ? 'opacity-50' : ''}
+                }}
+                disabled={showDeliveryWarning}
+                className={`
+                  relative w-full p-4 rounded-xl border-2 transition-all duration-300 text-left
+                  hover:shadow-md
+                  ${
+                    configData.delivery.id === 'ship'
+                      ? 'border-[#F78309] bg-[#F78309]/5 ring-2 ring-[#F78309]/20'
+                      : 'border-border bg-card hover:border-[#F78309]/50'
+                  }
+                  ${showDeliveryWarning ? 'opacity-50 cursor-not-allowed' : ''}
                 `}
               >
-                <div className="flex items-center gap-2 mb-3">
-                  <Truck className="w-5 h-5 text-[#0B5394]" />
-                  <h4 className="font-semibold">Freight Shipping</h4>
+                {/* Selection Checkmark */}
+                {configData.delivery.id === 'ship' && (
+                  <div className="absolute top-3 left-3 w-5 h-5 bg-[#F78309] rounded-full flex items-center justify-center">
+                    <Check className="w-3 h-3 text-white" />
+                  </div>
+                )}
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2 pl-6">
+                    <Truck className="w-5 h-5 text-[#0B5394]" />
+                    <h4 className="font-semibold">Freight Shipping</h4>
+                  </div>
+                  {isShippingSelected && shippingQuote?.success ? (
+                    <p className="text-lg font-bold">${configData.delivery.price.toFixed(2)}</p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Get a quote</p>
+                  )}
                 </div>
+              </button>
 
-                {/* ZIP Code Input */}
-                <div className="space-y-3">
+              {/* Expanded Shipping Form - Only visible when Freight Shipping is selected */}
+              {configData.delivery.id === 'ship' && (
+                <div className="p-4 rounded-xl border-2 border-[#0B5394]/30 bg-[#0B5394]/5 space-y-3 animate-in slide-in-from-top-2 duration-200">
+                  {/* ZIP Code Input */}
                   <div className="flex gap-2">
                     <input
                       type="text"
@@ -375,7 +426,7 @@ export function Step4Configuration() {
 
                   {/* Shipping Quote Result */}
                   {shippingQuote?.success && (
-                    <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
+                    <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <Check className="w-4 h-4 text-green-600" />
@@ -388,21 +439,68 @@ export function Step4Configuration() {
                         </span>
                       </div>
                       {shippingQuote.transitDays && (
-                        <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                        <p className="text-xs text-green-600 dark:text-green-400">
                           Estimated transit: {shippingQuote.transitDays} business days
                         </p>
+                      )}
+
+                      {/* Destination Terminal Info */}
+                      {shippingQuote.destinationTerminal && (
+                        <div className="pt-2 border-t border-green-200 dark:border-green-700">
+                          <div className="flex items-start gap-2">
+                            <MapPin className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
+                            <div>
+                              <p className="text-xs font-medium text-green-800 dark:text-green-200">
+                                Nearest {TFORCE_INFO.name} Terminal:
+                              </p>
+                              <p className="text-sm text-green-700 dark:text-green-300 font-semibold">
+                                {shippingQuote.destinationTerminal.name}
+                                {shippingQuote.destinationTerminal.code && (
+                                  <span className="text-xs text-green-600 ml-1">
+                                    ({shippingQuote.destinationTerminal.code})
+                                  </span>
+                                )}
+                              </p>
+                              <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                                Terminal support:{' '}
+                                <a
+                                  href={getPhoneLink(TFORCE_INFO.customerServiceRaw)}
+                                  className="font-medium underline hover:no-underline"
+                                >
+                                  {TFORCE_INFO.customerService}
+                                </a>
+                              </p>
+                            </div>
+                          </div>
+                        </div>
                       )}
                     </div>
                   )}
 
                   {/* Error Message */}
                   {shippingError && (
-                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
-                      <p className="text-sm text-red-700 dark:text-red-300">{shippingError}</p>
+                    <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                      <div className="flex items-start gap-3">
+                        <Phone className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-amber-800 dark:text-amber-200 mb-1">
+                            {shippingError}
+                          </p>
+                          <p className="text-sm text-amber-700 dark:text-amber-300">
+                            Call us for a shipping quote:{' '}
+                            <a
+                              href={getPhoneLink(CONTACT_INFO.phoneRaw)}
+                              className="font-semibold underline hover:no-underline"
+                            >
+                              {CONTACT_INFO.phone}
+                            </a>
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
-              </div>
+              )}
             </div>
 
             {showDeliveryWarning && (
@@ -429,17 +527,23 @@ export function Step4Configuration() {
                   type="button"
                   onClick={() => selectService(service.id, service.name, service.price)}
                   className={`
-                    w-full p-4 rounded-xl border-2 transition-all duration-300 text-left
+                    relative w-full p-4 rounded-xl border-2 transition-all duration-300 text-left
                     hover:shadow-md
                     ${
                       configData.service.id === service.id
-                        ? 'border-[#F78309] bg-[#F78309]/5'
+                        ? 'border-[#F78309] bg-[#F78309]/5 ring-2 ring-[#F78309]/20'
                         : 'border-border bg-card hover:border-[#F78309]/50'
                     }
                   `}
                 >
+                  {/* Selection Checkmark */}
+                  {configData.service.id === service.id && (
+                    <div className="absolute top-3 left-3 w-5 h-5 bg-[#F78309] rounded-full flex items-center justify-center">
+                      <Check className="w-3 h-3 text-white" />
+                    </div>
+                  )}
                   <div className="flex justify-between items-center">
-                    <h4 className="font-semibold">{service.name}</h4>
+                    <h4 className="font-semibold pl-6">{service.name}</h4>
                     <p className="text-lg font-bold">${service.price.toFixed(0)}</p>
                   </div>
                 </button>
@@ -463,17 +567,23 @@ export function Step4Configuration() {
                   type="button"
                   onClick={() => selectBoltlessKit(kit.id, kit.name, kit.price)}
                   className={`
-                    w-full p-4 rounded-xl border-2 transition-all duration-300 text-left
+                    relative w-full p-4 rounded-xl border-2 transition-all duration-300 text-left
                     hover:shadow-md
                     ${
                       configData.boltlessKit.id === kit.id
-                        ? 'border-[#F78309] bg-[#F78309]/5'
+                        ? 'border-[#F78309] bg-[#F78309]/5 ring-2 ring-[#F78309]/20'
                         : 'border-border bg-card hover:border-[#F78309]/50'
                     }
                   `}
                 >
+                  {/* Selection Checkmark */}
+                  {configData.boltlessKit.id === kit.id && (
+                    <div className="absolute top-3 left-3 w-5 h-5 bg-[#F78309] rounded-full flex items-center justify-center">
+                      <Check className="w-3 h-3 text-white" />
+                    </div>
+                  )}
                   <div className="flex justify-between items-center">
-                    <h4 className="font-semibold">{kit.name}</h4>
+                    <h4 className="font-semibold pl-6">{kit.name}</h4>
                     <p className="text-lg font-bold">${kit.price.toFixed(0)}</p>
                   </div>
                 </button>
@@ -500,11 +610,17 @@ export function Step4Configuration() {
                     hover:shadow-md
                     ${
                       configData.tiedown.id === tiedown.id
-                        ? 'border-[#F78309] bg-[#F78309]/5'
+                        ? 'border-[#F78309] bg-[#F78309]/5 ring-2 ring-[#F78309]/20'
                         : 'border-border bg-card hover:border-[#F78309]/50'
                     }
                   `}
                 >
+                  {/* Selection Checkmark */}
+                  {configData.tiedown.id === tiedown.id && (
+                    <div className="absolute top-3 left-3 w-5 h-5 bg-[#F78309] rounded-full flex items-center justify-center">
+                      <Check className="w-3 h-3 text-white" />
+                    </div>
+                  )}
                   {tiedown.recommended && (
                     <Badge className={`absolute top-2 right-2 text-xs ${
                       configData.tiedown.id === tiedown.id ? 'bg-success text-white' : 'bg-muted text-muted-foreground'
@@ -513,7 +629,7 @@ export function Step4Configuration() {
                     </Badge>
                   )}
                   <div className="flex justify-between items-center">
-                    <h4 className="font-semibold text-sm">{tiedown.name}</h4>
+                    <h4 className="font-semibold text-sm pl-6">{tiedown.name}</h4>
                     <p className="text-lg font-bold">${tiedown.price.toFixed(0)}</p>
                   </div>
                 </button>
