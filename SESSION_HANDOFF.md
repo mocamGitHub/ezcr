@@ -1,142 +1,190 @@
-# Session Handoff Document
+# Session Handoff - Communications Pack Integration
 
-**Last Updated**: December 13, 2024 (Afternoon Session)
-**Commit Hash**: (see Git Commit Hashes below)
-**Dev Server**: Running on http://localhost:3000
+**Date**: 2025-12-17
+**Time**: Afternoon Session
+**Previous Commit**: `2bcc78f` - chore: Sync package-lock.json with package.json
+**Current Commit**: `5f784be` - feat: Add Communications Pack (Mailgun + Twilio) and shipping resources
+**Current Status**: ✅ Code committed and pushed
 **Branch**: main
+**Dev Server**: Not verified this session
 
 ---
 
-## Session Summary
+## What Was Accomplished This Session
 
-This session focused on initializing the Beads issue tracker for the project.
+### Communications Pack Integration
+- Integrated full Communications Pack with Mailgun (email) and Twilio (SMS) support
+- Added API endpoints for sending messages (`/api/comms/send`)
+- Added webhook handlers for Mailgun events and inbound messages
+- Added webhook handlers for Twilio inbound SMS and status callbacks
+- Added comms library with send pipeline, templating (Handlebars), and provider integrations
+- Added database migrations for 13 comms tables (contacts, templates, conversations, messages, etc.)
+- Created comprehensive deployment runbook (`COMMS_DEPLOYMENT_RUNBOOK.md`)
+- Created status document (`COMMS_PACK_STATUS.md`) and quick start guide (`START_HERE.md`)
 
-### Completed Tasks
+### Shipping Resources
+- Added `ezcycleramp-shipping/` standalone project structure with shipping integration code
+- Added shipping cost documentation and reference files in `docs/shipping_cost_files/`
+- Added T-Force shipping setup documentation
 
-1. **Beads Issue Tracker Initialization**
-   - Installed bd v0.29.0 binary to `C:\nvm4w\nodejs\bd.exe` (in PATH)
-   - Ran `bd init --quiet` to create `.beads/` directory and database
-   - Verified with `bd doctor` - all core checks passing
+### Supporting Documentation & Assets
+- Added `INFRASTRUCTURE.md` documentation
+- Added MySQL production data exports (products, measurements)
+- Added RAG management packs (assistant, scheduler, learning logger, supplemental)
+- Added financial management pack
+- Added configurator fitment rule review spreadsheets
 
-2. **Project Documentation Created**
-   - Created `AGENTS.md` with full bd workflow instructions for AI agents
-   - Created `CLAUDE.md` with project guide and Beads integration note
-   - Created `.github/copilot-instructions.md` for GitHub Copilot integration
+### Dependencies Added
+- `handlebars@^4.7.8` - Template rendering for communications
+- `dotenv@^17.2.3` (dev) - Environment variable loading
 
-3. **Claude Desktop MCP Configuration**
-   - Created `%APPDATA%\Claude\claude_desktop_config.json`
-   - Configured `beads-mcp` server for MCP integration
-   - Note: Claude Desktop restart required for MCP changes
+### Files Modified This Session (118 files)
 
-4. **VS Code Extension Installed**
-   - Installed `planet57.vscode-beads` v0.9.0
-   - Extension activated and detected the project
-   - Daemon running (PID 39432)
+**Core Comms Library (9 files)**
+1. `src/lib/comms/admin.ts` - Supabase service role client
+2. `src/lib/comms/mailgunSignature.ts` - Webhook signature verification
+3. `src/lib/comms/phoneNumbers.ts` - Twilio number resolution
+4. `src/lib/comms/policy.ts` - Rate limiting & consent check
+5. `src/lib/comms/sendPipeline.ts` - Main send orchestration
+6. `src/lib/comms/templating.ts` - Handlebars rendering
+7. `src/lib/comms/tenant.ts` - Tenant ID resolution
+8. `src/lib/comms/providers/mailgun.ts` - Mailgun email sender
+9. `src/lib/comms/providers/twilio.ts` - Twilio SMS sender
 
-5. **Test Issue Created**
-   - Created test issue: `ezcr-7ao [P4] [chore] open - Beads setup complete`
-   - Verified with `bd list`
+**API Routes (5 files)**
+1. `src/app/api/comms/send/route.ts` - POST /api/comms/send
+2. `src/app/api/webhooks/mailgun/events/route.ts` - Mailgun event tracking
+3. `src/app/api/webhooks/mailgun/inbound/[secret]/route.ts` - Mailgun inbound
+4. `src/app/api/webhooks/twilio/inbound/route.ts` - Twilio inbound SMS
+5. `src/app/api/webhooks/twilio/status/route.ts` - Twilio status callbacks
 
-### Files Created
+**Database Migrations (2 files)**
+1. `supabase/migrations/00025_comms_core_schema.sql` - 12 core tables
+2. `supabase/migrations/00026_comms_phone_numbers.sql` - Phone number mappings
 
-**New Files:**
-- `.beads/` directory with database and config
-- `AGENTS.md` - AI agent workflow documentation
-- `CLAUDE.md` - Claude Code project guide
-- `.github/copilot-instructions.md` - GitHub Copilot instructions
-- `.gitattributes` - Git merge driver for Beads
-
----
-
-## Current Status
-
-### Working Features
-- Beads issue tracker fully initialized
-- `bd` command available in PATH
-- VS Code extension active
-- Daemon running
-- All core `bd doctor` checks passing
-
-### Beads Doctor Warnings (Non-Critical)
-- Missing pre-push git hook (optional)
-- Claude integration hooks not configured (optional)
-- sync-branch not configured (only needed for multi-clone setups)
-
----
-
-## Next Recommended Actions
-
-1. **Close the Test Issue**
-   ```bash
-   bd close ezcr-7ao --reason "Setup verified"
-   ```
-
-2. **Install Git Hooks** (Optional)
-   ```bash
-   bd hooks install
-   ```
-
-3. **Set Up Claude Integration** (Optional)
-   ```bash
-   bd setup claude
-   ```
-
-4. **Start Using Beads for Task Tracking**
-   - Use `bd create "Task title" -t task -p 2` instead of markdown TODOs
-   - Use `bd ready` to see unblocked work
-   - Use `bd list` to see all issues
+**Documentation (4 files)**
+1. `COMMS_DEPLOYMENT_RUNBOOK.md` - Step-by-step deployment guide
+2. `COMMS_PACK_STATUS.md` - Integration status and verification
+3. `START_HERE.md` - Quick start 10-step guide
+4. `INFRASTRUCTURE.md` - Infrastructure documentation
 
 ---
 
-## Resume Instructions
+## Current State
 
-After running `/clear`, use these commands to resume:
+### What's Working ✅
+- ✅ All comms code integrated into main codebase
+- ✅ API endpoints defined and ready
+- ✅ Webhook handlers ready for provider configuration
+- ✅ Database migrations ready to apply
+- ✅ Comprehensive documentation available
 
-```bash
-# 1. Read this handoff document
-cat SESSION_HANDOFF.md
+### What's NOT Working / Pending
+- ⏳ Database migrations need to be applied to Supabase
+- ⏳ Environment variables need to be configured
+- ⏳ Mailgun domain needs to be set up and verified
+- ⏳ Mailgun webhooks need to be configured
+- ⏳ Twilio phone number webhooks need to be configured
+- ⏳ Seed script needs to be run after migrations
 
-# 2. Check Beads status
-bd doctor
+---
 
-# 3. Check dev server status (should still be running)
-curl -s -o /dev/null -w "%{http_code}" http://localhost:3000
+## Next Immediate Actions
 
-# 4. If dev server not running, start it
-pnpm dev
+### 1. Deploy Communications Database
+Follow `START_HERE.md` or `COMMS_DEPLOYMENT_RUNBOOK.md`:
+```powershell
+# Step 1: Discover database credentials
+ssh root@supabase.nexcyte.com 'bash -s' < .\scripts\ops\discover-supabase-db.sh
 
-# 5. Check git status
-git status
-
-# 6. Check for ready work
-bd ready
+# Step 2: Apply migrations
+.\scripts\ops\apply-comms-migrations.ps1
 ```
 
-### Key Files to Review
-- `AGENTS.md` - Beads workflow documentation
-- `CLAUDE.md` - Project guide
-- `.beads/config.yaml` - Beads configuration
+### 2. Configure Environment Variables
+```powershell
+# Copy template and edit
+cp .env.comms.example .env.local
+notepad .env.local
+
+# Required variables:
+# - MAILGUN_API_KEY
+# - MAILGUN_WEBHOOK_SIGNING_KEY
+# - TWILIO_ACCOUNT_SID
+# - TWILIO_AUTH_TOKEN
+# - NC_INTERNAL_API_KEY (generate random)
+# - EZCR_TENANT_ID (from database)
+```
+
+### 3. Set Up Provider Webhooks
+- Configure Mailgun inbound routes and event webhooks
+- Configure Twilio phone number messaging webhooks
+- See `COMMS_DEPLOYMENT_RUNBOOK.md` for detailed instructions
+
+### 4. Run Seed Script
+```powershell
+node .\scripts\seed-comms-full.ts
+```
+
+---
+
+## How to Resume After /clear
+
+Run the `/resume` command or:
+
+```bash
+# Check current state
+git log --oneline -5
+git status
+npm run dev  # If server not running
+
+# Read handoff document
+cat SESSION_HANDOFF.md
+
+# For comms deployment
+cat START_HERE.md
+```
+
+---
+
+## Known Issues / Blockers
+
+1. **Migrations not yet applied** - Database schema exists in files but hasn't been deployed to production Supabase
+2. **Provider credentials needed** - Mailgun and Twilio credentials must be obtained and configured
+3. **UI routes optional** - The comms pack includes UI route files in `/documents/` but they reference ShadCN components that may need adjustment
 
 ---
 
 ## Technical Context
 
-### Beads Commands Quick Reference
-```bash
-bd ready              # Show unblocked issues
-bd list               # List all issues
-bd create "Title" -t bug|feature|task -p 0-4
-bd update <id> --status in_progress
-bd close <id> --reason "Done"
-bd show <id>          # Show issue details
-bd doctor             # Health check
+### Communications Architecture
+```
+/api/comms/send (internal)
+    → sendPipeline.ts
+        → policy.ts (rate limit, consent check)
+        → templating.ts (Handlebars render)
+        → providers/mailgun.ts OR providers/twilio.ts
+        → Database logging
+
+/api/webhooks/mailgun/* (external)
+    → Signature verification
+    → Event/message processing
+    → Database updates
+
+/api/webhooks/twilio/* (external)
+    → Signature verification
+    → Message processing
+    → Database updates
 ```
 
-### Beads File Locations
-- Database: `.beads/beads.db` (not committed)
-- Issues JSONL: `.beads/issues.jsonl` (committed to git)
-- Config: `.beads/config.yaml`
-- Binary: `C:\nvm4w\nodejs\bd.exe`
+### Database Tables (13 total)
+- comms_contacts, comms_channel_preferences
+- comms_templates, comms_template_versions
+- comms_sequences, comms_sequence_steps
+- comms_conversations, comms_messages
+- comms_message_events, comms_message_attachments
+- comms_inbound_routes, comms_tenant_settings
+- comms_phone_numbers
 
 ---
 
@@ -145,8 +193,7 @@ bd doctor             # Health check
 - **Supabase**: https://supabase.nexcyte.com
 - **Staging**: Hetzner with Coolify (auto-deploys on push)
 - **Env Var**: Use `SUPABASE_SERVICE_KEY` (not `SUPABASE_SERVICE_ROLE_KEY`)
-- **T-Force API**: Credentials in .env.local
-- **Beads**: v0.29.0, daemon running
+- **Beads**: v0.29.0 installed, use `bd` for issue tracking
 
 ---
 
@@ -154,9 +201,17 @@ bd doctor             # Health check
 
 | Commit | Description |
 |--------|-------------|
-| `dbb75d5` | chore: Initialize Beads issue tracker |
+| `5f784be` | feat: Add Communications Pack (Mailgun + Twilio) and shipping resources |
+| `2bcc78f` | chore: Sync package-lock.json with package.json |
+| `a57fdd6` | chore: Initialize Beads issue tracker for project |
 | `044d266` | fix: FOMO admin API and hide banners on admin pages |
 | `65109d5` | feat: Add selection checkmarks, T-Force terminal display, FOMO admin |
 | `b0d7f5c` | feat: Add UFE (Universal Fitment Engine) and configurator improvements |
-| `ec1a6f9` | docs: Update session handoff for TypeScript fixes |
-| `b5d67e9` | fix: Use consistent SUPABASE_SERVICE_KEY env var |
+
+---
+
+**Session Status**: ✅ Complete - All code committed and pushed
+**Next Session**: Deploy comms migrations and configure providers
+**Handoff Complete**: 2025-12-17
+
+🎉 Communications Pack integrated! Ready for deployment.
