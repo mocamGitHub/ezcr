@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build
+.next/
+dist/
+build/
+
+# Supabase
+.supabase/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test data (do not commit to prod)
+supabase/migrations/005_test_data.sql

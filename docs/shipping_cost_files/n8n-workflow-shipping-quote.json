@@ -1,0 +1,445 @@
+{
+  "name": "EZ Cycle Ramp - T-Force Shipping Quote",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "shipping-quote",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook: Shipping Quote Request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [250, 300],
+      "webhookId": "shipping-quote-webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "validate-zip",
+              "leftValue": "={{ $json.body.destinationZip }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "regex",
+                "rightType": "string"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "validate-input",
+      "name": "Validate Input",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [450, 300],
+      "notes": "Validates ZIP code format (5 digits)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "client_credentials"
+            },
+            {
+              "name": "client_id",
+              "value": "={{ $env.TFORCE_CLIENT_ID }}"
+            },
+            {
+              "name": "client_secret",
+              "value": "={{ $env.TFORCE_CLIENT_SECRET }}"
+            },
+            {
+              "name": "scope",
+              "value": "https://api.tforcefreight.com/.default"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-oauth-token",
+      "name": "Get OAuth Token",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [650, 200],
+      "notes": "Gets OAuth2 access token from Microsoft Identity Platform"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.tforcefreight.com/rating/getRate",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "api-version",
+              "value": "v1"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $node['Get OAuth Token'].json.access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"requestOptions\": {\n    \"serviceCode\": \"308\",\n    \"pickupDate\": \"{{ $now.plus({days: 1}).toFormat('yyyy-MM-dd') }}\",\n    \"type\": \"L\",\n    \"timeInTransit\": true,\n    \"quoteNumber\": true,\n    \"customerContext\": \"{{ $json.body.leadId || $json.body.sessionId || 'n8n-quote' }}\"\n  },\n  \"shipFrom\": {\n    \"address\": {\n      \"city\": \"Woodstock\",\n      \"stateProvinceCode\": \"GA\",\n      \"postalCode\": \"30188\",\n      \"country\": \"US\"\n    },\n    \"isResidential\": false\n  },\n  \"shipTo\": {\n    \"address\": {\n      \"postalCode\": \"{{ $json.body.destinationZip }}\",\n      \"country\": \"US\"\n    },\n    \"isResidential\": {{ $json.body.isResidential || false }}\n  },\n  \"payment\": {\n    \"payer\": {\n      \"address\": {\n        \"postalCode\": \"30188\",\n        \"country\": \"US\"\n      }\n    },\n    \"billingCode\": \"10\"\n  },\n  \"serviceOptions\": {\n    \"delivery\": {{ $json.body.isResidential ? '[\"RESD\"]' : '[]' }}\n  },\n  \"commodities\": [{\n    \"class\": \"125\",\n    \"pieces\": 1,\n    \"weight\": {\n      \"weight\": {{ $json.body.productSku === 'AUN200' ? 300 : 350 }},\n      \"weightUnit\": \"LBS\"\n    },\n    \"packagingType\": \"PLT\",\n    \"dimensions\": {\n      \"length\": {{ $json.body.productSku === 'AUN200' ? 96 : 84 }},\n      \"width\": 48,\n      \"height\": {{ $json.body.productSku === 'AUN200' ? 12 : 14 }},\n      \"unit\": \"IN\"\n    }\n  }]\n}",
+        "options": {}
+      },
+      "id": "call-tforce-api",
+      "name": "Call T-Force Rating API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [850, 200],
+      "notes": "Calls T-Force Freight Rating API with shipment details"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse T-Force API response and extract rates\nconst response = $input.first().json;\nconst requestBody = $('Webhook: Shipping Quote Request').first().json.body;\n\n// Check for successful response\nif (response.summary?.responseStatus?.code !== 'OK') {\n  throw new Error(`T-Force error: ${response.summary?.responseStatus?.message || 'Unknown error'}`);\n}\n\nconst detail = response.detail?.[0];\nif (!detail) {\n  throw new Error('No rate details in response');\n}\n\n// Extract rates\nlet baseRate = 0;\nlet residentialSurcharge = 0;\n\nif (detail.rate && Array.isArray(detail.rate)) {\n  for (const rateItem of detail.rate) {\n    if (rateItem.code === 'AFTR_DSCNT' || rateItem.code === 'LND_GROSS') {\n      baseRate = parseFloat(rateItem.value) || 0;\n    }\n    if (rateItem.code === 'RESD') {\n      residentialSurcharge = parseFloat(rateItem.value) || 0;\n    }\n  }\n}\n\n// Get total from shipmentCharges if available\nlet totalRate = baseRate + residentialSurcharge;\nif (detail.shipmentCharges?.total?.value) {\n  totalRate = parseFloat(detail.shipmentCharges.total.value);\n  if (requestBody.isResidential && residentialSurcharge === 0) {\n    // Residential might be included in total\n    baseRate = totalRate - 150; // Fallback surcharge\n    residentialSurcharge = 150;\n  }\n}\n\n// Generate quote ID\nconst timestamp = Date.now().toString(36);\nconst random = Math.random().toString(36).substring(2, 8);\nconst quoteId = `EZC-${timestamp}-${random}`.toUpperCase();\n\n// Calculate validity\nconst validUntil = new Date();\nvalidUntil.setHours(validUntil.getHours() + 24);\n\nreturn {\n  success: true,\n  quoteId,\n  baseRate: Math.round(baseRate * 100) / 100,\n  residentialSurcharge: Math.round(residentialSurcharge * 100) / 100,\n  totalRate: Math.round(totalRate * 100) / 100,\n  originTerminal: detail.serviceCenter?.origin,\n  destinationTerminal: detail.serviceCenter?.destination,\n  transitDays: detail.timeInTransit?.value ? parseInt(detail.timeInTransit.value) : null,\n  validUntil: validUntil.toISOString(),\n  tforceQuoteNumber: response.summary?.quoteNumber\n};"
+      },
+      "id": "parse-response",
+      "name": "Parse Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1050, 200],
+      "notes": "Extracts and formats rate data from T-Force response"
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "shipping_quotes"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "quote_id": "={{ $json.quoteId }}",
+            "destination_zip": "={{ $('Webhook: Shipping Quote Request').first().json.body.destinationZip }}",
+            "destination_city": "={{ $('Webhook: Shipping Quote Request').first().json.body.destinationCity || null }}",
+            "destination_state": "={{ $('Webhook: Shipping Quote Request').first().json.body.destinationState || null }}",
+            "is_residential": "={{ $('Webhook: Shipping Quote Request').first().json.body.isResidential || false }}",
+            "product_sku": "={{ $('Webhook: Shipping Quote Request').first().json.body.productSku }}",
+            "base_rate": "={{ $json.baseRate }}",
+            "residential_surcharge": "={{ $json.residentialSurcharge }}",
+            "total_rate": "={{ $json.totalRate }}",
+            "destination_terminal_code": "={{ $json.destinationTerminal?.code || null }}",
+            "destination_terminal_name": "={{ $json.destinationTerminal?.name || null }}",
+            "tforce_quote_id": "={{ $json.tforceQuoteNumber || null }}",
+            "transit_days": "={{ $json.transitDays }}",
+            "valid_until": "={{ $json.validUntil }}",
+            "source": "={{ $('Webhook: Shipping Quote Request').first().json.body.source || 'n8n' }}",
+            "lead_id": "={{ $('Webhook: Shipping Quote Request').first().json.body.leadId || null }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "save-to-supabase",
+      "name": "Save Quote to Supabase",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1250, 200],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-credentials",
+          "name": "Supabase API"
+        }
+      },
+      "notes": "Caches quote in Supabase for 24 hours"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "success-response",
+      "name": "Return Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1450, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": {\n    \"type\": \"VALIDATION_ERROR\",\n    \"message\": \"Invalid request\",\n    \"userMessage\": \"Please enter a valid ZIP code.\"\n  }\n}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "validation-error-response",
+      "name": "Return Validation Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [650, 400]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "shipping_errors"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "destination_zip": "={{ $('Webhook: Shipping Quote Request').first().json.body.destinationZip }}",
+            "product_sku": "={{ $('Webhook: Shipping Quote Request').first().json.body.productSku }}",
+            "source": "={{ $('Webhook: Shipping Quote Request').first().json.body.source || 'n8n' }}",
+            "error_type": "API_ERROR",
+            "error_message": "={{ $json.message || $json.error || 'Unknown error' }}",
+            "user_email": "={{ $('Webhook: Shipping Quote Request').first().json.body.userEmail || null }}",
+            "session_id": "={{ $('Webhook: Shipping Quote Request').first().json.body.sessionId || null }}",
+            "support_notified_at": "={{ $now.toISO() }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "log-error",
+      "name": "Log Error to Supabase",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1050, 500],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-credentials",
+          "name": "Supabase API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@ezcycleramp.com",
+        "toEmail": "={{ $env.SUPPORT_EMAIL }}",
+        "subject": "=⚠️ Shipping Quote Error: {{ $json.error?.type || 'API_ERROR' }}",
+        "emailType": "text",
+        "message": "=Shipping Quote Error\n--------------------\nType: {{ $json.error?.type || 'API_ERROR' }}\nMessage: {{ $json.error?.message || $json.message || 'Unknown error' }}\nTime: {{ $now.toISO() }}\n\nRequest Details:\n- ZIP: {{ $('Webhook: Shipping Quote Request').first().json.body.destinationZip }}\n- Product: {{ $('Webhook: Shipping Quote Request').first().json.body.productSku }}\n- Residential: {{ $('Webhook: Shipping Quote Request').first().json.body.isResidential ? 'Yes' : 'No' }}\n- Source: {{ $('Webhook: Shipping Quote Request').first().json.body.source || 'unknown' }}\n- User Email: {{ $('Webhook: Shipping Quote Request').first().json.body.userEmail || 'N/A' }}",
+        "options": {}
+      },
+      "id": "send-error-email",
+      "name": "Send Error Email",
+      "type": "n8n-nodes-base.sendGrid",
+      "typeVersion": 1,
+      "position": [1250, 400],
+      "credentials": {
+        "sendGridApi": {
+          "id": "sendgrid-credentials",
+          "name": "SendGrid API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "from": "={{ $env.TWILIO_FROM_NUMBER }}",
+        "to": "={{ $env.SUPPORT_PHONE }}",
+        "message": "=⚠️ EZ Cycle Ramp Shipping Error\n{{ $json.error?.type || 'API_ERROR' }}: {{ $json.error?.message || $json.message || 'Unknown' }}\nZIP: {{ $('Webhook: Shipping Quote Request').first().json.body.destinationZip }}\nProduct: {{ $('Webhook: Shipping Quote Request').first().json.body.productSku }}"
+      },
+      "id": "send-error-sms",
+      "name": "Send Error SMS",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [1250, 600],
+      "credentials": {
+        "twilioApi": {
+          "id": "twilio-credentials",
+          "name": "Twilio API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": {\n    \"type\": \"API_ERROR\",\n    \"message\": \"{{ $json.message || 'Unable to calculate shipping' }}\",\n    \"userMessage\": \"We couldn't calculate shipping at this time. Please call (937) 725-6790 for a quote.\"\n  }\n}",
+        "options": {
+          "responseCode": 500
+        }
+      },
+      "id": "error-response",
+      "name": "Return Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1450, 500]
+    },
+    {
+      "parameters": {},
+      "id": "error-handler",
+      "name": "On Error",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [850, 500]
+    }
+  ],
+  "connections": {
+    "Webhook: Shipping Quote Request": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Get OAuth Token",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return Validation Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get OAuth Token": {
+      "main": [
+        [
+          {
+            "node": "Call T-Force Rating API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call T-Force Rating API": {
+      "main": [
+        [
+          {
+            "node": "Parse Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Response": {
+      "main": [
+        [
+          {
+            "node": "Save Quote to Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Quote to Supabase": {
+      "main": [
+        [
+          {
+            "node": "Return Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On Error": {
+      "main": [
+        [
+          {
+            "node": "Log Error to Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Error to Supabase": {
+      "main": [
+        [
+          {
+            "node": "Send Error Email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Error SMS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Error Email": {
+      "main": [
+        [
+          {
+            "node": "Return Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "errorWorkflow": "",
+    "callerPolicy": "any"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "EZ Cycle Ramp",
+      "id": "ezcycleramp"
+    },
+    {
+      "name": "Shipping",
+      "id": "shipping"
+    }
+  ],
+  "pinData": {},
+  "versionId": "1"
+}

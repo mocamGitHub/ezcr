@@ -1,8 +1,7 @@
 {
   "permissions": {
     "allow": [
-      // Project inherits from global settings (~/.claude/settings.local.json)
-      // Add project-specific permissions here if needed
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

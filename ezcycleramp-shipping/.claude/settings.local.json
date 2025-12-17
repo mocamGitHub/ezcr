@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx supabase login)",
+      "Bash(npx supabase:*)",
+      "Bash(ls:*)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(git add:*)",
+      "Bash(package.json )",
+      "Bash(package-lock.json )",
+      "Bash(src/app/\\(admin\\)/admin/dashboard/page.tsx )",
+      "Bash(src/app/\\(admin\\)/admin/inventory/page.tsx )",
+      "Bash(src/app/\\(admin\\)/admin/shipping/ )",
+      "Bash(src/app/api/stripe/webhook/route.ts )",
+      "Bash(src/app/api/inventory/suppress-alert/ )",
+      "Bash(src/app/api/post-purchase-emails/ )",
+      "Bash(src/app/api/shipping-quote/ )",
+      "Bash(src/app/api/shipping-webhook/ )",
+      "Bash(src/components/admin/InventoryAlerts.tsx )",
+      "Bash(src/components/admin/analytics/ )",
+      "Bash(src/actions/shipping-analytics.ts )",
+      "Bash(src/lib/email/order-confirmation.ts )",
+      "Bash(src/lib/email/resend-service.ts )",
+      "Bash(supabase/migrations/00024_inventory_alert_suppression.sql )",
+      "Bash(n8n/process-scheduled-emails-workflow.json)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(npm run build:*)",
+      "Bash(tasklist:*)",
+      "Bash(curl:*)"
+    ]
+  }
+}
