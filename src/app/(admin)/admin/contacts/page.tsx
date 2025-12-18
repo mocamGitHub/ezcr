@@ -238,11 +238,11 @@ export default function ContactsPage() {
       {/* Header */}
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
             <Building2 className="h-8 w-8" />
             Business Contacts
           </h1>
-          <p className="text-gray-600 mt-2">
+          <p className="text-muted-foreground mt-2">
             Manage vendors, suppliers, partners, and service providers
           </p>
         </div>
@@ -270,11 +270,11 @@ export default function ContactsPage() {
       )}
 
       {/* Filters */}
-      <div className="bg-white rounded-lg border p-4 mb-6">
+      <div className="bg-card rounded-lg border p-4 mb-6">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex-1 min-w-[200px]">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search contacts..."
                 value={searchQuery}
@@ -316,22 +316,22 @@ export default function ContactsPage() {
             </SelectContent>
           </Select>
 
-          <span className="text-sm text-gray-600">
+          <span className="text-sm text-muted-foreground">
             {contacts.length} contact{contacts.length !== 1 ? 's' : ''}
           </span>
         </div>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-lg border">
+      <div className="bg-card rounded-lg border">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : contacts.length === 0 ? (
           <div className="text-center py-12">
-            <Building2 className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">No contacts found</p>
+            <Building2 className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+            <p className="text-muted-foreground">No contacts found</p>
             <Button variant="outline" onClick={handleCreate} className="mt-4">
               <Plus className="h-4 w-4 mr-2" />
               Add your first contact
@@ -380,13 +380,13 @@ export default function ContactsPage() {
                         <p className="text-sm">{contact.contact_name}</p>
                       )}
                       {contact.email && (
-                        <p className="text-sm text-gray-500 flex items-center gap-1">
+                        <p className="text-sm text-muted-foreground flex items-center gap-1">
                           <Mail className="h-3 w-3" />
                           {contact.email}
                         </p>
                       )}
                       {contact.phone && (
-                        <p className="text-sm text-gray-500 flex items-center gap-1">
+                        <p className="text-sm text-muted-foreground flex items-center gap-1">
                           <Phone className="h-3 w-3" />
                           {contact.phone}
                         </p>
@@ -395,7 +395,7 @@ export default function ContactsPage() {
                   </TableCell>
                   <TableCell>
                     {(contact.city || contact.state) && (
-                      <p className="text-sm text-gray-600 flex items-center gap-1">
+                      <p className="text-sm text-muted-foreground flex items-center gap-1">
                         <MapPin className="h-3 w-3" />
                         {[contact.city, contact.state].filter(Boolean).join(', ')}
                       </p>

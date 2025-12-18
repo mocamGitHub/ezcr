@@ -8,10 +8,12 @@ import {
   ChevronRight,
   Menu,
   LogOut,
-  X,
+  Moon,
+  Sun,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { useTheme } from '@/contexts/ThemeContext'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Sheet,
@@ -43,6 +45,7 @@ interface AdminSidebarProps {
 export function AdminSidebar({ className }: AdminSidebarProps) {
   const pathname = usePathname()
   const { profile, signOut } = useAuth()
+  const { theme, toggleTheme } = useTheme()
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
 
@@ -182,6 +185,45 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
                 showTooltip={!isMobile}
               />
             ))}
+
+            {/* Theme Toggle */}
+            {collapsed && !isMobile ? (
+              <Tooltip delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={toggleTheme}
+                    className={cn(
+                      'flex items-center gap-3 rounded-lg px-2 py-2 text-sm transition-colors justify-center',
+                      'hover:bg-accent text-muted-foreground hover:text-accent-foreground'
+                    )}
+                  >
+                    {theme === 'dark' ? (
+                      <Sun className="h-5 w-5 shrink-0" />
+                    ) : (
+                      <Moon className="h-5 w-5 shrink-0" />
+                    )}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <button
+                onClick={toggleTheme}
+                className={cn(
+                  'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
+                  'hover:bg-accent text-muted-foreground hover:text-accent-foreground'
+                )}
+              >
+                {theme === 'dark' ? (
+                  <Sun className="h-5 w-5 shrink-0" />
+                ) : (
+                  <Moon className="h-5 w-5 shrink-0" />
+                )}
+                <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
+              </button>
+            )}
 
             {/* Sign Out */}
             {collapsed && !isMobile ? (

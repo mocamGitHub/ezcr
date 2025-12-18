@@ -342,11 +342,11 @@ export default function ToolsPage() {
       {/* Header */}
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
             <Wrench className="h-8 w-8" />
             Tools & Subscriptions
           </h1>
-          <p className="text-gray-600 mt-2">
+          <p className="text-muted-foreground mt-2">
             Track software, services, and subscription costs
           </p>
         </div>
@@ -375,40 +375,40 @@ export default function ToolsPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-lg border p-4">
+        <div className="bg-card rounded-lg border p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Wrench className="h-5 w-5 text-blue-600" />
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Wrench className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-sm text-gray-600">Total Tools</p>
-              <p className="text-2xl font-bold">{stats.total}</p>
+              <p className="text-sm text-muted-foreground">Total Tools</p>
+              <p className="text-2xl font-bold text-card-foreground">{stats.total}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border p-4">
+        <div className="bg-card rounded-lg border p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <DollarSign className="h-5 w-5 text-green-600" />
+            <div className="p-2 bg-green-500/10 rounded-lg">
+              <DollarSign className="h-5 w-5 text-green-500" />
             </div>
             <div>
-              <p className="text-sm text-gray-600">Monthly Cost</p>
-              <p className="text-2xl font-bold">
+              <p className="text-sm text-muted-foreground">Monthly Cost</p>
+              <p className="text-2xl font-bold text-card-foreground">
                 {formatCurrency(stats.totalMonthlyCost)}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border p-4">
+        <div className="bg-card rounded-lg border p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <TrendingUp className="h-5 w-5 text-purple-600" />
+            <div className="p-2 bg-purple-500/10 rounded-lg">
+              <TrendingUp className="h-5 w-5 text-purple-500" />
             </div>
             <div>
-              <p className="text-sm text-gray-600">Annual Cost</p>
-              <p className="text-2xl font-bold">
+              <p className="text-sm text-muted-foreground">Annual Cost</p>
+              <p className="text-2xl font-bold text-card-foreground">
                 {formatCurrency(stats.totalAnnualCost)}
               </p>
             </div>
@@ -418,10 +418,10 @@ export default function ToolsPage() {
 
       {/* Renewal Alerts */}
       {upcomingRenewals.length > 0 && (
-        <Alert className="mb-6 border-yellow-500 bg-yellow-50">
-          <AlertTriangle className="h-4 w-4 text-yellow-600" />
+        <Alert className="mb-6 border-yellow-500/50 bg-yellow-500/10">
+          <AlertTriangle className="h-4 w-4 text-yellow-500" />
           <AlertDescription>
-            <span className="font-medium text-yellow-800">
+            <span className="font-medium text-yellow-600 dark:text-yellow-400">
               {upcomingRenewals.length} renewal
               {upcomingRenewals.length !== 1 ? 's' : ''} coming up:
             </span>
@@ -429,13 +429,13 @@ export default function ToolsPage() {
               {upcomingRenewals.slice(0, 5).map((r) => (
                 <span
                   key={r.id}
-                  className="inline-flex items-center gap-1 text-sm text-yellow-700"
+                  className="inline-flex items-center gap-1 text-sm text-yellow-600 dark:text-yellow-400"
                 >
                   {r.name} {getRenewalBadge(r)}
                 </span>
               ))}
               {upcomingRenewals.length > 5 && (
-                <span className="text-sm text-yellow-600">
+                <span className="text-sm text-yellow-600 dark:text-yellow-400">
                   +{upcomingRenewals.length - 5} more
                 </span>
               )}
@@ -445,11 +445,11 @@ export default function ToolsPage() {
       )}
 
       {/* Filters */}
-      <div className="bg-white rounded-lg border p-4 mb-6">
+      <div className="bg-card rounded-lg border p-4 mb-6">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex-1 min-w-[200px]">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search tools..."
                 value={searchQuery}
@@ -492,22 +492,22 @@ export default function ToolsPage() {
             </SelectContent>
           </Select>
 
-          <span className="text-sm text-gray-600">
+          <span className="text-sm text-muted-foreground">
             {tools.length} tool{tools.length !== 1 ? 's' : ''}
           </span>
         </div>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-lg border">
+      <div className="bg-card rounded-lg border">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : tools.length === 0 ? (
           <div className="text-center py-12">
-            <Wrench className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">No tools found</p>
+            <Wrench className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+            <p className="text-muted-foreground">No tools found</p>
             <Button variant="outline" onClick={handleCreate} className="mt-4">
               <Plus className="h-4 w-4 mr-2" />
               Add your first tool
@@ -557,20 +557,20 @@ export default function ToolsPage() {
                           <p className="font-medium">
                             {formatCurrency(tool.cost_amount)}
                           </p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-muted-foreground">
                             {tool.billing_cycle
                               ? BILLING_CYCLE_LABELS[tool.billing_cycle]
                               : '-'}
                           </p>
                         </div>
                       ) : (
-                        <span className="text-gray-400">-</span>
+                        <span className="text-muted-foreground">-</span>
                       )}
                     </TableCell>
                     <TableCell>
                       {tool.renewal_date ? (
                         <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-gray-400" />
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
                           <div>
                             <p className="text-sm">
                               {new Date(tool.renewal_date).toLocaleDateString()}
@@ -588,7 +588,7 @@ export default function ToolsPage() {
                           </div>
                         </div>
                       ) : (
-                        <span className="text-gray-400">-</span>
+                        <span className="text-muted-foreground">-</span>
                       )}
                     </TableCell>
                     <TableCell>
