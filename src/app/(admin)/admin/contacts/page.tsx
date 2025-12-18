@@ -445,7 +445,7 @@ export default function ContactsPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Basic Info */}
             <div className="grid grid-cols-2 gap-4">
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="contact_type">Type *</Label>
                 <Select
                   value={formData.contact_type}
@@ -465,7 +465,7 @@ export default function ContactsPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="status">Status *</Label>
                 <Select
                   value={formData.status}
@@ -485,7 +485,7 @@ export default function ContactsPage() {
               </div>
             </div>
 
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="company_name">Company Name *</Label>
               <Input
                 id="company_name"
@@ -498,7 +498,7 @@ export default function ContactsPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="contact_name">Contact Person</Label>
                 <Input
                   id="contact_name"
@@ -508,7 +508,7 @@ export default function ContactsPage() {
                   }
                 />
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
@@ -522,7 +522,7 @@ export default function ContactsPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="phone">Phone</Label>
                 <Input
                   id="phone"
@@ -532,59 +532,87 @@ export default function ContactsPage() {
                   }
                 />
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="website">Website</Label>
-                <Input
-                  id="website"
-                  value={formData.website || ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, website: e.target.value })
-                  }
-                  placeholder="https://"
-                />
+                <div className="flex gap-1">
+                  <Input
+                    id="website"
+                    type="url"
+                    value={formData.website || ''}
+                    onChange={(e) =>
+                      setFormData({ ...formData, website: e.target.value })
+                    }
+                    placeholder="https://"
+                  />
+                  {formData.website && (
+                    <a
+                      href={formData.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center w-10 h-10 rounded-md border border-input bg-background hover:bg-accent"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
 
             {/* Address */}
             <div className="border-t pt-4">
               <h3 className="font-medium mb-3">Address</h3>
-              <div className="space-y-3">
-                <Input
-                  placeholder="Address Line 1"
-                  value={formData.address_line1 || ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, address_line1: e.target.value })
-                  }
-                />
-                <Input
-                  placeholder="Address Line 2"
-                  value={formData.address_line2 || ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, address_line2: e.target.value })
-                  }
-                />
-                <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="address_line1">Address Line 1</Label>
                   <Input
-                    placeholder="City"
-                    value={formData.city || ''}
+                    id="address_line1"
+                    value={formData.address_line1 || ''}
                     onChange={(e) =>
-                      setFormData({ ...formData, city: e.target.value })
+                      setFormData({ ...formData, address_line1: e.target.value })
                     }
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="address_line2">Address Line 2</Label>
                   <Input
-                    placeholder="State"
-                    value={formData.state || ''}
+                    id="address_line2"
+                    value={formData.address_line2 || ''}
                     onChange={(e) =>
-                      setFormData({ ...formData, state: e.target.value })
+                      setFormData({ ...formData, address_line2: e.target.value })
                     }
                   />
-                  <Input
-                    placeholder="Postal Code"
-                    value={formData.postal_code || ''}
-                    onChange={(e) =>
-                      setFormData({ ...formData, postal_code: e.target.value })
-                    }
-                  />
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="city">City</Label>
+                    <Input
+                      id="city"
+                      value={formData.city || ''}
+                      onChange={(e) =>
+                        setFormData({ ...formData, city: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="state">State</Label>
+                    <Input
+                      id="state"
+                      value={formData.state || ''}
+                      onChange={(e) =>
+                        setFormData({ ...formData, state: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="postal_code">Postal Code</Label>
+                    <Input
+                      id="postal_code"
+                      value={formData.postal_code || ''}
+                      onChange={(e) =>
+                        setFormData({ ...formData, postal_code: e.target.value })
+                      }
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -593,7 +621,7 @@ export default function ContactsPage() {
             <div className="border-t pt-4">
               <h3 className="font-medium mb-3">Business Details</h3>
               <div className="grid grid-cols-2 gap-4">
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="account_number">Account Number</Label>
                   <Input
                     id="account_number"
@@ -603,7 +631,7 @@ export default function ContactsPage() {
                     }
                   />
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="payment_terms">Payment Terms</Label>
                   <Input
                     id="payment_terms"
@@ -621,7 +649,7 @@ export default function ContactsPage() {
             <div className="border-t pt-4">
               <h3 className="font-medium mb-3">Contract Dates</h3>
               <div className="grid grid-cols-2 gap-4">
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="contract_start_date">Start Date</Label>
                   <Input
                     id="contract_start_date"
@@ -635,7 +663,7 @@ export default function ContactsPage() {
                     }
                   />
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="contract_end_date">End Date</Label>
                   <Input
                     id="contract_end_date"
@@ -653,7 +681,7 @@ export default function ContactsPage() {
             </div>
 
             {/* Notes */}
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="notes">Notes</Label>
               <Textarea
                 id="notes"

@@ -308,6 +308,8 @@ export default function ToolsPage() {
         return 'outline'
       case 'cancelled':
         return 'destructive'
+      case 'expired':
+        return 'destructive'
       default:
         return 'secondary'
     }
@@ -489,6 +491,7 @@ export default function ToolsPage() {
               <SelectItem value="inactive">Inactive</SelectItem>
               <SelectItem value="trial">Trial</SelectItem>
               <SelectItem value="cancelled">Cancelled</SelectItem>
+              <SelectItem value="expired">Expired</SelectItem>
             </SelectContent>
           </Select>
 
@@ -519,7 +522,7 @@ export default function ToolsPage() {
               <TableRow>
                 <TableHead>Tool</TableHead>
                 <TableHead>Category</TableHead>
-                <TableHead>Cost</TableHead>
+                <TableHead className="text-center">Cost</TableHead>
                 <TableHead>Renewal</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -532,17 +535,23 @@ export default function ToolsPage() {
                   <TableRow key={tool.id}>
                     <TableCell>
                       <div>
-                        <p className="font-medium">{tool.name}</p>
-                        {tool.website_url && (
+                        {tool.website_url ? (
                           <a
                             href={tool.website_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+                            className="font-medium text-blue-600 hover:underline flex items-center gap-1"
                           >
-                            Website
+                            {tool.name}
                             <ExternalLink className="h-3 w-3" />
                           </a>
+                        ) : (
+                          <p className="font-medium">{tool.name}</p>
+                        )}
+                        {tool.description && (
+                          <p className="text-xs text-muted-foreground truncate max-w-[200px]">
+                            {tool.description}
+                          </p>
                         )}
                       </div>
                     </TableCell>
@@ -551,7 +560,7 @@ export default function ToolsPage() {
                         {TOOL_CATEGORY_LABELS[tool.category]}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-center">
                       {tool.cost_amount ? (
                         <div>
                           <p className="font-medium">
@@ -636,7 +645,7 @@ export default function ToolsPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Basic Info */}
             <div className="grid grid-cols-2 gap-4">
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="name">Tool Name *</Label>
                 <Input
                   id="name"
@@ -647,7 +656,7 @@ export default function ToolsPage() {
                   required
                 />
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="category">Category *</Label>
                 <Select
                   value={formData.category}
@@ -671,7 +680,7 @@ export default function ToolsPage() {
               </div>
             </div>
 
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
@@ -684,7 +693,7 @@ export default function ToolsPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="status">Status *</Label>
                 <Select
                   value={formData.status}
@@ -700,10 +709,11 @@ export default function ToolsPage() {
                     <SelectItem value="inactive">Inactive</SelectItem>
                     <SelectItem value="trial">Trial</SelectItem>
                     <SelectItem value="cancelled">Cancelled</SelectItem>
+                    <SelectItem value="expired">Expired</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="vendor_contact_id">Vendor Contact</Label>
                 <Select
                   value={formData.vendor_contact_id || 'none'}
@@ -732,31 +742,82 @@ export default function ToolsPage() {
             {/* URLs */}
             <div className="border-t pt-4">
               <h3 className="font-medium mb-3">URLs & Links</h3>
-              <div className="grid grid-cols-3 gap-3">
-                <Input
-                  placeholder="Website URL"
-                  value={formData.website_url || ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, website_url: e.target.value })
-                  }
-                />
-                <Input
-                  placeholder="Login URL"
-                  value={formData.login_url || ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, login_url: e.target.value })
-                  }
-                />
-                <Input
-                  placeholder="Documentation URL"
-                  value={formData.documentation_url || ''}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      documentation_url: e.target.value,
-                    })
-                  }
-                />
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="website_url">Website URL</Label>
+                  <div className="flex gap-1">
+                    <Input
+                      id="website_url"
+                      type="url"
+                      placeholder="https://"
+                      value={formData.website_url || ''}
+                      onChange={(e) =>
+                        setFormData({ ...formData, website_url: e.target.value })
+                      }
+                    />
+                    {formData.website_url && (
+                      <a
+                        href={formData.website_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center w-10 h-10 rounded-md border border-input bg-background hover:bg-accent"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="login_url">Login URL</Label>
+                  <div className="flex gap-1">
+                    <Input
+                      id="login_url"
+                      type="url"
+                      placeholder="https://"
+                      value={formData.login_url || ''}
+                      onChange={(e) =>
+                        setFormData({ ...formData, login_url: e.target.value })
+                      }
+                    />
+                    {formData.login_url && (
+                      <a
+                        href={formData.login_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center w-10 h-10 rounded-md border border-input bg-background hover:bg-accent"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="documentation_url">Documentation URL</Label>
+                  <div className="flex gap-1">
+                    <Input
+                      id="documentation_url"
+                      type="url"
+                      placeholder="https://"
+                      value={formData.documentation_url || ''}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          documentation_url: e.target.value,
+                        })
+                      }
+                    />
+                    {formData.documentation_url && (
+                      <a
+                        href={formData.documentation_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center w-10 h-10 rounded-md border border-input bg-background hover:bg-accent"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -764,7 +825,7 @@ export default function ToolsPage() {
             <div className="border-t pt-4">
               <h3 className="font-medium mb-3">Account Information</h3>
               <div className="grid grid-cols-2 gap-4">
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="account_email">Account Email</Label>
                   <Input
                     id="account_email"
@@ -775,7 +836,7 @@ export default function ToolsPage() {
                     }
                   />
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="account_username">Username</Label>
                   <Input
                     id="account_username"
@@ -817,7 +878,7 @@ export default function ToolsPage() {
             <div className="border-t pt-4">
               <h3 className="font-medium mb-3">Billing</h3>
               <div className="grid grid-cols-3 gap-4">
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="billing_cycle">Billing Cycle</Label>
                   <Select
                     value={formData.billing_cycle || 'none'}
@@ -844,7 +905,7 @@ export default function ToolsPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="cost_amount">Cost Amount</Label>
                   <Input
                     id="cost_amount"
@@ -862,7 +923,7 @@ export default function ToolsPage() {
                     }
                   />
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="renewal_date">Renewal Date</Label>
                   <Input
                     id="renewal_date"
@@ -889,7 +950,7 @@ export default function ToolsPage() {
             {/* Integration */}
             <div className="border-t pt-4">
               <h3 className="font-medium mb-3">Integration</h3>
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="integration_status">Integration Status</Label>
                 <Select
                   value={formData.integration_status || 'not_integrated'}
@@ -917,7 +978,7 @@ export default function ToolsPage() {
             </div>
 
             {/* Notes */}
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="notes">Notes</Label>
               <Textarea
                 id="notes"

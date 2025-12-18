@@ -108,7 +108,7 @@ export type ToolCategory =
   | 'communication'
   | 'other'
 
-export type ToolStatus = 'active' | 'inactive' | 'trial' | 'cancelled'
+export type ToolStatus = 'active' | 'inactive' | 'trial' | 'cancelled' | 'expired'
 
 export type BillingCycle =
   | 'monthly'
@@ -372,6 +372,7 @@ export const STATUS_LABELS: Record<ToolStatus | ContactStatus, string> = {
   pending: 'Pending',
   trial: 'Trial',
   cancelled: 'Cancelled',
+  expired: 'Expired',
 }
 
 export const INTEGRATION_STATUS_LABELS: Record<IntegrationStatus, string> = {

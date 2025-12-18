@@ -32,82 +32,109 @@ export interface AdminNavSection {
 }
 
 /**
- * Main admin navigation items
+ * Grouped admin navigation sections
  */
-export const adminNavItems: AdminNavItem[] = [
+export const adminNavSections: AdminNavSection[] = [
   {
-    title: 'Dashboard',
-    href: '/admin/dashboard',
-    icon: LayoutDashboard,
-    description: 'Overview and analytics',
+    title: 'Main',
+    items: [
+      {
+        title: 'Dashboard',
+        href: '/admin/dashboard',
+        icon: LayoutDashboard,
+        description: 'Overview and analytics',
+      },
+    ],
   },
   {
-    title: 'Orders',
-    href: '/admin/orders',
-    icon: ShoppingCart,
-    description: 'Manage customer orders',
-  },
-  {
-    title: 'Inventory',
-    href: '/admin/inventory',
-    icon: Package,
-    description: 'Track product stock levels',
-  },
-  {
-    title: 'Shipping',
-    href: '/admin/shipping',
-    icon: Truck,
-    description: 'Shipping analytics and management',
+    title: 'Operations',
+    items: [
+      {
+        title: 'Orders',
+        href: '/admin/orders',
+        icon: ShoppingCart,
+        description: 'Manage customer orders',
+      },
+      {
+        title: 'Inventory',
+        href: '/admin/inventory',
+        icon: Package,
+        description: 'Track product stock levels',
+      },
+      {
+        title: 'Shipping',
+        href: '/admin/shipping',
+        icon: Truck,
+        description: 'Shipping analytics and management',
+      },
+    ],
   },
   {
     title: 'Customers',
-    href: '/admin/crm',
-    icon: UserCircle,
-    description: 'Customer relationship management',
-    minRole: 'customer_service',
+    items: [
+      {
+        title: 'Customers',
+        href: '/admin/crm',
+        icon: UserCircle,
+        description: 'Customer relationship management',
+        minRole: 'customer_service',
+      },
+      {
+        title: 'Communications',
+        href: '/admin/comms',
+        icon: Mail,
+        description: 'Email & SMS messaging',
+        minRole: 'customer_service',
+      },
+      {
+        title: 'Testimonials',
+        href: '/admin/testimonials',
+        icon: MessageSquare,
+        description: 'Manage customer reviews',
+      },
+    ],
   },
   {
-    title: 'Communications',
-    href: '/admin/comms',
-    icon: Mail,
-    description: 'Email & SMS messaging',
-    minRole: 'customer_service',
-  },
-  {
-    title: 'Testimonials',
-    href: '/admin/testimonials',
-    icon: MessageSquare,
-    description: 'Manage customer reviews',
-  },
-  {
-    title: 'Team',
-    href: '/admin/team',
-    icon: Users,
-    description: 'Manage team members',
-    minRole: 'admin',
-  },
-  {
-    title: 'FOMO Banners',
-    href: '/admin/fomo',
-    icon: Megaphone,
-    description: 'Manage urgency banners',
-    minRole: 'admin',
-  },
-  {
-    title: 'Business Contacts',
-    href: '/admin/contacts',
-    icon: Building2,
-    description: 'Vendors, suppliers, partners',
-    minRole: 'admin',
-  },
-  {
-    title: 'Tools',
-    href: '/admin/tools',
-    icon: Wrench,
-    description: 'Software subscriptions & services',
-    minRole: 'admin',
+    title: 'Admin',
+    items: [
+      {
+        title: 'Team',
+        href: '/admin/team',
+        icon: Users,
+        description: 'Manage team members',
+        minRole: 'admin',
+      },
+      {
+        title: 'FOMO Banners',
+        href: '/admin/fomo',
+        icon: Megaphone,
+        description: 'Manage urgency banners',
+        minRole: 'admin',
+      },
+      {
+        title: 'Business Contacts',
+        href: '/admin/contacts',
+        icon: Building2,
+        description: 'Vendors, suppliers, partners',
+        minRole: 'admin',
+      },
+      {
+        title: 'Tools',
+        href: '/admin/tools',
+        icon: Wrench,
+        description: 'Software subscriptions & services',
+        minRole: 'admin',
+      },
+    ],
   },
 ]
+
+/**
+ * Flat list of all admin nav items (for backwards compatibility and breadcrumbs)
+ */
+export const adminNavItems: AdminNavItem[] = adminNavSections.flatMap(
+  (section) => section.items
+)
 
 /**
  * Secondary nav items (user-specific)
@@ -132,6 +159,21 @@ export function getAccessibleNavItems(
     if (!item.minRole) return true
     return hasPermission(userRole, item.minRole)
   })
+}
+
+/**
+ * Get accessible nav sections with filtered items based on user role
+ */
+export function getAccessibleNavSections(
+  sections: AdminNavSection[],
+  userRole: UserRole
+): AdminNavSection[] {
+  return sections
+    .map((section) => ({
+      ...section,
+      items: getAccessibleNavItems(section.items, userRole),
+    }))
+    .filter((section) => section.items.length > 0)
 }
 
 /**

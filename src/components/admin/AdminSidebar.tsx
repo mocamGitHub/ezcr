@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import {
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Menu,
   LogOut,
   Moon,
@@ -29,14 +30,16 @@ import {
 } from '@/components/ui/tooltip'
 import { useAuth } from '@/contexts/AuthContext'
 import {
-  adminNavItems,
+  adminNavSections,
   adminUserNavItems,
   getAccessibleNavItems,
+  getAccessibleNavSections,
   type AdminNavItem,
 } from '@/config/admin-nav'
 import { type UserRole } from '@/lib/permissions'
 
 const SIDEBAR_COLLAPSED_KEY = 'admin-sidebar-collapsed'
+const SECTIONS_COLLAPSED_KEY = 'admin-sections-collapsed'
 
 interface AdminSidebarProps {
   className?: string
@@ -48,12 +51,28 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
   const { theme, toggleTheme } = useTheme()
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set())
 
   // Load collapsed state from localStorage
   useEffect(() => {
     const stored = localStorage.getItem(SIDEBAR_COLLAPSED_KEY)
     if (stored !== null) {
       setCollapsed(stored === 'true')
+    }
+    // Load collapsed sections - default to all collapsed if not set
+    const storedSections = localStorage.getItem(SECTIONS_COLLAPSED_KEY)
+    if (storedSections) {
+      try {
+        setCollapsedSections(new Set(JSON.parse(storedSections)))
+      } catch {
+        // Ignore parse errors - use default collapsed state
+        setCollapsedSections(new Set(adminNavSections.map((s) => s.title)))
+      }
+    } else {
+      // Default: all sections collapsed except "Main"
+      setCollapsedSections(
+        new Set(adminNavSections.filter((s) => s.title !== 'Main').map((s) => s.title))
+      )
     }
   }, [])
 
@@ -64,8 +83,22 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
     localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(newState))
   }
 
+  // Toggle section collapsed state
+  const toggleSection = (sectionTitle: string) => {
+    setCollapsedSections((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(sectionTitle)) {
+        newSet.delete(sectionTitle)
+      } else {
+        newSet.add(sectionTitle)
+      }
+      localStorage.setItem(SECTIONS_COLLAPSED_KEY, JSON.stringify([...newSet]))
+      return newSet
+    })
+  }
+
   const userRole = (profile?.role as UserRole) || 'viewer'
-  const mainNavItems = getAccessibleNavItems(adminNavItems, userRole)
+  const navSections = getAccessibleNavSections(adminNavSections, userRole)
   const userNavItems = getAccessibleNavItems(adminUserNavItems, userRole)
 
   const isActive = (href: string) => {
@@ -162,14 +195,49 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
       {/* Navigation */}
       <ScrollArea className="flex-1 px-2 py-4">
         <TooltipProvider>
-          <nav className="flex flex-col gap-1">
-            {mainNavItems.map((item) => (
-              <NavItem
-                key={item.href}
-                item={item}
-                showTooltip={!isMobile}
-              />
-            ))}
+          <nav className="flex flex-col gap-2">
+            {navSections.map((section) => {
+              const isSectionCollapsed = collapsedSections.has(section.title)
+              return (
+                <div key={section.title}>
+                  {/* Section Title - clickable to collapse, hidden when sidebar collapsed on desktop */}
+                  {(!collapsed || isMobile) && (
+                    <button
+                      onClick={() => toggleSection(section.title)}
+                      className="w-full flex items-center justify-between px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors rounded-md bg-muted/40 hover:bg-muted/70 border border-transparent hover:border-border/50"
+                    >
+                      <span>{section.title}</span>
+                      <ChevronDown
+                        className={cn(
+                          'h-3 w-3 transition-transform duration-200',
+                          isSectionCollapsed && '-rotate-90'
+                        )}
+                      />
+                    </button>
+                  )}
+                  {collapsed && !isMobile && (
+                    <div className="h-px bg-border mx-2 mb-2" />
+                  )}
+                  {/* Section Items - animate collapse */}
+                  <div
+                    className={cn(
+                      'flex flex-col gap-1 overflow-hidden transition-all duration-200',
+                      isSectionCollapsed && (!collapsed || isMobile)
+                        ? 'max-h-0 opacity-0'
+                        : 'max-h-[500px] opacity-100'
+                    )}
+                  >
+                    {section.items.map((item) => (
+                      <NavItem
+                        key={item.href}
+                        item={item}
+                        showTooltip={!isMobile}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
           </nav>
         </TooltipProvider>
       </ScrollArea>
