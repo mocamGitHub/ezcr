@@ -19,7 +19,10 @@
       "Bash(ls:*)",
       "Bash(echo:*)",
       "Bash(npx tsc:*)",
-      "Bash(npm uninstall:*)"
+      "Bash(npm uninstall:*)",
+      "Bash(gh run list:*)",
+      "mcp__github__list_commits",
+      "Bash(ssh:*)"
     ],
     "deny": [],
     "ask": []

@@ -123,7 +123,7 @@ export async function POST(req: Request, { params }: { params: { secret: string 
   const bodyHtml = safeStr(form.get("body-html")) || safeStr(form.get("stripped-html"));
   const messageIdHeader = safeStr(form.get("Message-Id")) || safeStr(form.get("message-id"));
 
-  const fromEmail = normalizeEmail((sender || fromField || "").match(/<([^>]+)>/)?.[1] ?? sender || fromField);
+  const fromEmail = normalizeEmail(((sender || fromField || "").match(/<([^>]+)>/)?.[1]) ?? (sender || fromField));
 
   // Create/lookup contact
   const contactId = await getOrCreateContact({ tenantId, email: fromEmail, name: null });
