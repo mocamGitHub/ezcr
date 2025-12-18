@@ -1,6 +1,6 @@
 // ============================================
 // NEXT.JS API ROUTE: /api/post-purchase-emails
-// Manages order lifecycle emails using Resend
+// Manages order lifecycle emails using Comms Pack (Mailgun/Twilio)
 // ============================================
 //
 // This endpoint can be called:
@@ -9,23 +9,18 @@
 // 3. Via cron job for scheduled emails (review requests)
 //
 // Required Environment Variables:
-//   RESEND_API_KEY=re_xxx
+//   EZCR_TENANT_ID=your-tenant-uuid
+//   MAILGUN_API_KEY=your-mailgun-key
+//   MAILGUN_DOMAIN=mg.yourdomain.com
+//   MAILGUN_FROM_EMAIL=orders@yourdomain.com
 //   TWILIO_ACCOUNT_SID=xxx (optional, for SMS)
 //   TWILIO_AUTH_TOKEN=xxx (optional, for SMS)
-//   TWILIO_FROM_NUMBER=+1xxx (optional, for SMS)
 //   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 //   SUPABASE_SERVICE_KEY=your_service_role_key
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import {
-  sendShippingNotification,
-  sendDeliveryConfirmation,
-  sendPickupReadyNotification,
-  sendReviewRequest,
-  sendInstallationTips,
-} from '@/lib/email/resend-service'
-import { sendOrderConfirmationEmail } from '@/lib/email/order-confirmation'
+import { sendOrderEmail } from '@/lib/comms/order-emails'
 
 // ============================================
 // TYPES
@@ -96,38 +91,39 @@ async function handleOrderConfirmation(supabase: any, order: Order) {
     return { skipped: true, reason: 'Already sent' }
   }
 
-  const result = await sendOrderConfirmationEmail({
-    orderNumber: order.order_number,
-    customerName: order.customer_name || 'Valued Customer',
-    customerEmail: order.customer_email,
-    items: [
-      {
-        product_name: order.product_name,
-        quantity: 1,
-        unit_price: order.product_price,
-        total_price: order.product_price,
-      },
-    ],
-    subtotal: order.product_price,
-    shipping: order.grand_total - order.product_price,
-    tax: 0,
-    total: order.grand_total,
-    shippingAddress: order.shipping_address
-      ? {
-          line1: order.shipping_address.line1 || order.shipping_address.street || '',
-          line2: order.shipping_address.line2 || '',
-          city: order.shipping_address.city || '',
-          state: order.shipping_address.state || '',
-          postalCode: order.shipping_address.postalCode || order.shipping_address.zip || '',
-          country: order.shipping_address.country || 'US',
-        }
-      : {
-          line1: '',
-          city: '',
-          state: '',
-          postalCode: '',
-          country: 'US',
+  const result = await sendOrderEmail({
+    type: 'order_confirmation',
+    order: {
+      orderNumber: order.order_number,
+      customerName: order.customer_name || 'Valued Customer',
+      customerEmail: order.customer_email,
+      customerPhone: order.customer_phone,
+      productName: order.product_name,
+      productSku: order.product_sku,
+      items: [
+        {
+          product_name: order.product_name,
+          quantity: 1,
+          unit_price: order.product_price,
+          total_price: order.product_price,
         },
+      ],
+      subtotal: order.product_price,
+      shipping: order.grand_total - order.product_price,
+      tax: 0,
+      total: order.grand_total,
+      shippingAddress: order.shipping_address
+        ? {
+            line1: order.shipping_address.line1 || order.shipping_address.street || '',
+            line2: order.shipping_address.line2 || '',
+            city: order.shipping_address.city || '',
+            state: order.shipping_address.state || '',
+            postalCode: order.shipping_address.postalCode || order.shipping_address.zip || '',
+            country: order.shipping_address.country || 'US',
+          }
+        : undefined,
+    },
+    channel: order.customer_phone ? 'both' : 'email',
   })
 
   if (result.success) {
@@ -137,7 +133,7 @@ async function handleOrderConfirmation(supabase: any, order: Order) {
       .eq('id', order.id)
   }
 
-  return result
+  return { success: result.success, error: result.errors?.join(', ') }
 }
 
 async function handleShippingNotification(
@@ -167,26 +163,35 @@ async function handleShippingNotification(
     shipping.trackingUrl ||
     `https://www.tforcefreight.com/ltl/apps/Tracking?TrackingNumber=${shipping.trackingNumber}`
 
-  const result = await sendShippingNotification({
-    to: order.customer_email,
-    customerName: order.customer_name,
-    orderNumber: order.order_number,
-    productName: order.product_name,
-    trackingNumber: shipping.trackingNumber || '',
-    trackingUrl,
-    carrier: shipping.carrier || 'T-Force Freight',
-    estimatedDelivery: shipping.estimatedDelivery,
-    shippingAddress: order.shipping_address
-      ? {
-          line1: order.shipping_address.line1 || order.shipping_address.street || '',
-          line2: order.shipping_address.line2,
-          city: order.shipping_address.city || '',
-          state: order.shipping_address.state || '',
-          postalCode: order.shipping_address.postalCode || order.shipping_address.zip || '',
-          isResidential: order.shipping_address.is_residential,
-        }
-      : undefined,
-    destinationTerminal: order.destination_terminal,
+  const result = await sendOrderEmail({
+    type: 'shipping',
+    order: {
+      orderNumber: order.order_number,
+      customerName: order.customer_name || 'Valued Customer',
+      customerEmail: order.customer_email,
+      customerPhone: order.customer_phone,
+      productName: order.product_name,
+      productSku: order.product_sku,
+      total: order.grand_total,
+      shippingAddress: order.shipping_address
+        ? {
+            line1: order.shipping_address.line1 || order.shipping_address.street || '',
+            line2: order.shipping_address.line2,
+            city: order.shipping_address.city || '',
+            state: order.shipping_address.state || '',
+            postalCode: order.shipping_address.postalCode || order.shipping_address.zip || '',
+            isResidential: order.shipping_address.is_residential,
+          }
+        : undefined,
+      destinationTerminal: order.destination_terminal,
+    },
+    trackingInfo: {
+      trackingNumber: shipping.trackingNumber || '',
+      trackingUrl,
+      carrier: shipping.carrier || 'T-Force Freight',
+      estimatedDelivery: shipping.estimatedDelivery,
+    },
+    channel: order.customer_phone ? 'both' : 'email',
   })
 
   if (result.success) {
@@ -196,7 +201,7 @@ async function handleShippingNotification(
       .eq('id', order.id)
   }
 
-  return result
+  return { success: result.success, error: result.errors?.join(', ') }
 }
 
 async function handleDeliveryConfirmation(supabase: any, order: Order) {
@@ -209,11 +214,18 @@ async function handleDeliveryConfirmation(supabase: any, order: Order) {
     })
     .eq('id', order.id)
 
-  const result = await sendDeliveryConfirmation({
-    to: order.customer_email,
-    customerName: order.customer_name,
-    orderNumber: order.order_number,
-    productName: order.product_name,
+  const result = await sendOrderEmail({
+    type: 'delivery',
+    order: {
+      orderNumber: order.order_number,
+      customerName: order.customer_name || 'Valued Customer',
+      customerEmail: order.customer_email,
+      customerPhone: order.customer_phone,
+      productName: order.product_name,
+      productSku: order.product_sku,
+      total: order.grand_total,
+    },
+    channel: 'email', // Delivery confirmation is email only
   })
 
   if (result.success) {
@@ -243,7 +255,7 @@ async function handleDeliveryConfirmation(supabase: any, order: Order) {
     })
   }
 
-  return result
+  return { success: result.success, error: result.errors?.join(', ') }
 }
 
 async function handlePickupReady(supabase: any, order: Order) {
@@ -256,46 +268,22 @@ async function handlePickupReady(supabase: any, order: Order) {
     })
     .eq('id', order.id)
 
-  const result = await sendPickupReadyNotification({
-    to: order.customer_email,
-    customerName: order.customer_name,
-    orderNumber: order.order_number,
-    productName: order.product_name,
+  // Send email and SMS (if phone available) via Comms Pack
+  const result = await sendOrderEmail({
+    type: 'pickup_ready',
+    order: {
+      orderNumber: order.order_number,
+      customerName: order.customer_name || 'Valued Customer',
+      customerEmail: order.customer_email,
+      customerPhone: order.customer_phone,
+      productName: order.product_name,
+      productSku: order.product_sku,
+      total: order.grand_total,
+    },
+    channel: order.customer_phone ? 'both' : 'email',
   })
 
-  // Also send SMS if phone number available
-  if (order.customer_phone) {
-    await sendPickupReadySMS(order)
-  }
-
-  return result
-}
-
-async function sendPickupReadySMS(order: Order) {
-  const twilioSid = process.env.TWILIO_ACCOUNT_SID
-  const twilioAuth = process.env.TWILIO_AUTH_TOKEN
-  const twilioFrom = process.env.TWILIO_FROM_NUMBER
-
-  if (!twilioSid || !twilioAuth || !twilioFrom || !order.customer_phone) {
-    return { skipped: true }
-  }
-
-  try {
-    await fetch(`https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Basic ${Buffer.from(`${twilioSid}:${twilioAuth}`).toString('base64')}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        To: order.customer_phone,
-        From: twilioFrom,
-        Body: `Your EZ Cycle Ramp is ready for pickup! Order ${order.order_number}. Location: 2500 Continental Blvd, Woodstock, GA 30188. Hours: Mon-Fri 8am-5pm. Questions? (937) 725-6790`,
-      }),
-    })
-  } catch (error) {
-    console.error('SMS send failed:', error)
-  }
+  return { success: result.success, error: result.errors?.join(', ') }
 }
 
 async function handleReviewRequest(supabase: any, order: Order) {
@@ -303,11 +291,18 @@ async function handleReviewRequest(supabase: any, order: Order) {
     return { skipped: true, reason: 'Already sent' }
   }
 
-  const result = await sendReviewRequest({
-    to: order.customer_email,
-    customerName: order.customer_name,
-    orderNumber: order.order_number,
-    productName: order.product_name,
+  const result = await sendOrderEmail({
+    type: 'review_request',
+    order: {
+      orderNumber: order.order_number,
+      customerName: order.customer_name || 'Valued Customer',
+      customerEmail: order.customer_email,
+      customerPhone: order.customer_phone,
+      productName: order.product_name,
+      productSku: order.product_sku,
+      total: order.grand_total,
+    },
+    channel: 'email', // Review request is email only
   })
 
   if (result.success) {
@@ -317,19 +312,25 @@ async function handleReviewRequest(supabase: any, order: Order) {
       .eq('id', order.id)
   }
 
-  return result
+  return { success: result.success, error: result.errors?.join(', ') }
 }
 
 async function handleInstallationTips(supabase: any, order: Order) {
-  const result = await sendInstallationTips({
-    to: order.customer_email,
-    customerName: order.customer_name,
-    orderNumber: order.order_number,
-    productName: order.product_name,
-    productSku: order.product_sku,
+  const result = await sendOrderEmail({
+    type: 'installation_tips',
+    order: {
+      orderNumber: order.order_number,
+      customerName: order.customer_name || 'Valued Customer',
+      customerEmail: order.customer_email,
+      customerPhone: order.customer_phone,
+      productName: order.product_name,
+      productSku: order.product_sku,
+      total: order.grand_total,
+    },
+    channel: 'email', // Installation tips is email only
   })
 
-  return result
+  return { success: result.success, error: result.errors?.join(', ') }
 }
 
 // ============================================
@@ -470,16 +471,36 @@ export async function POST(req: NextRequest) {
         break
 
       case 'out_for_delivery':
-        // For out_for_delivery, we just send a reminder - no special handling needed
-        result = await sendShippingNotification({
-          to: order.customer_email,
-          customerName: order.customer_name,
-          orderNumber: order.order_number,
-          productName: order.product_name,
-          trackingNumber: order.tracking_number || '',
-          trackingUrl: `https://www.tforcefreight.com/ltl/apps/Tracking?TrackingNumber=${order.tracking_number}`,
-          carrier: order.carrier || 'T-Force Freight',
-          estimatedDelivery: 'Today',
+        // For out_for_delivery, we send a shipping reminder with "Today" as the ETA
+        result = await sendOrderEmail({
+          type: 'shipping',
+          order: {
+            orderNumber: order.order_number,
+            customerName: order.customer_name || 'Valued Customer',
+            customerEmail: order.customer_email,
+            customerPhone: order.customer_phone,
+            productName: order.product_name,
+            productSku: order.product_sku,
+            total: order.grand_total,
+            shippingAddress: order.shipping_address
+              ? {
+                  line1: order.shipping_address.line1 || order.shipping_address.street || '',
+                  line2: order.shipping_address.line2,
+                  city: order.shipping_address.city || '',
+                  state: order.shipping_address.state || '',
+                  postalCode: order.shipping_address.postalCode || order.shipping_address.zip || '',
+                  isResidential: order.shipping_address.is_residential,
+                }
+              : undefined,
+            destinationTerminal: order.destination_terminal,
+          },
+          trackingInfo: {
+            trackingNumber: order.tracking_number || '',
+            trackingUrl: `https://www.tforcefreight.com/ltl/apps/Tracking?TrackingNumber=${order.tracking_number}`,
+            carrier: order.carrier || 'T-Force Freight',
+            estimatedDelivery: 'Today',
+          },
+          channel: 'email', // Out for delivery is email only
         })
         break
 
