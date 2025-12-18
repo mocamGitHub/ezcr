@@ -8,6 +8,7 @@ import {
   UserCog,
   UserCircle,
   Megaphone,
+  Mail,
   type LucideIcon,
 } from 'lucide-react'
 import { type UserRole, hasPermission } from '@/lib/permissions'
@@ -61,6 +62,13 @@ export const adminNavItems: AdminNavItem[] = [
     href: '/admin/crm',
     icon: UserCircle,
     description: 'Customer relationship management',
+    minRole: 'customer_service',
+  },
+  {
+    title: 'Communications',
+    href: '/admin/comms',
+    icon: Mail,
+    description: 'Email & SMS messaging',
     minRole: 'customer_service',
   },
   {
