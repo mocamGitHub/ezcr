@@ -9,6 +9,8 @@ import {
   UserCircle,
   Megaphone,
   Mail,
+  Building2,
+  Wrench,
   type LucideIcon,
 } from 'lucide-react'
 import { type UserRole, hasPermission } from '@/lib/permissions'
@@ -89,6 +91,20 @@ export const adminNavItems: AdminNavItem[] = [
     href: '/admin/fomo',
     icon: Megaphone,
     description: 'Manage urgency banners',
+    minRole: 'admin',
+  },
+  {
+    title: 'Business Contacts',
+    href: '/admin/contacts',
+    icon: Building2,
+    description: 'Vendors, suppliers, partners',
+    minRole: 'admin',
+  },
+  {
+    title: 'Tools',
+    href: '/admin/tools',
+    icon: Wrench,
+    description: 'Software subscriptions & services',
     minRole: 'admin',
   },
 ]
