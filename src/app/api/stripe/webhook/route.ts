@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe/config'
 import { supabaseAdmin } from '@/lib/supabase/admin'
-import { sendOrderConfirmationEmail } from '@/lib/email/order-confirmation'
+import { sendOrderEmail } from '@/lib/comms/order-emails'
 import Stripe from 'stripe'
 
 // ============================================
@@ -175,24 +175,31 @@ export async function POST(request: NextRequest) {
           .eq('id', orderId)
           .single()
 
-        // Send order confirmation email
+        // Send order confirmation email via Comms Pack (Mailgun)
         if (order && orderItems) {
           try {
-            await sendOrderConfirmationEmail({
-              orderNumber: orderNumber || order.order_number,
-              customerName: order.customer_name,
-              customerEmail: order.customer_email,
-              items: orderItems.map((item: any) => ({
-                product_name: item.product_name || 'Product',
-                quantity: item.quantity,
-                unit_price: item.unit_price,
-                total_price: item.total_price,
-              })),
-              subtotal: order.subtotal,
-              shipping: order.shipping_amount,
-              tax: order.tax_amount,
-              total: order.total_amount,
-              shippingAddress: order.shipping_address,
+            await sendOrderEmail({
+              type: 'order_confirmation',
+              order: {
+                orderNumber: orderNumber || order.order_number,
+                customerName: order.customer_name,
+                customerEmail: order.customer_email,
+                customerPhone: order.customer_phone,
+                productName: orderItems[0]?.product_name || 'EZ Cycle Ramp',
+                productSku: orderItems[0]?.product_sku,
+                items: orderItems.map((item: any) => ({
+                  product_name: item.product_name || 'Product',
+                  quantity: item.quantity,
+                  unit_price: item.unit_price,
+                  total_price: item.total_price,
+                })),
+                subtotal: order.subtotal,
+                shipping: order.shipping_amount,
+                tax: order.tax_amount,
+                total: order.total_amount,
+                shippingAddress: order.shipping_address,
+              },
+              channel: order.customer_phone ? 'both' : 'email',
             })
           } catch (emailError) {
             console.error('Failed to send order confirmation email:', emailError)

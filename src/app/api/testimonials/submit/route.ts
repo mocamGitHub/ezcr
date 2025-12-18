@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
-import { sendNewTestimonialNotification } from '@/lib/email/testimonial-notifications';
+import { sendNewTestimonialNotification } from '@/lib/email/admin-notifications';
 
 // =====================================================
 // VALIDATION SCHEMA
