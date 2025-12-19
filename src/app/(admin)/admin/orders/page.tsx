@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,6 +18,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  SortableTableHead,
+  type SortDirection,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -102,6 +104,24 @@ export default function AdminOrdersPage() {
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set())
   const [bulkUpdating, setBulkUpdating] = useState(false)
 
+  // Sorting
+  const [sortColumn, setSortColumn] = useState<string | null>(null)
+  const [sortDirection, setSortDirection] = useState<SortDirection>(null)
+
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      if (sortDirection === 'asc') {
+        setSortDirection('desc')
+      } else if (sortDirection === 'desc') {
+        setSortColumn(null)
+        setSortDirection(null)
+      }
+    } else {
+      setSortColumn(column)
+      setSortDirection('asc')
+    }
+  }
+
   const fetchOrders = async () => {
     setLoading(true)
     try {
@@ -166,6 +186,51 @@ export default function AdminOrdersPage() {
     )
   })
 
+  // Sorted orders
+  const sortedOrders = useMemo(() => {
+    if (!sortColumn || !sortDirection) return filteredOrders
+
+    return [...filteredOrders].sort((a, b) => {
+      let aVal: string | number | null = null
+      let bVal: string | number | null = null
+
+      switch (sortColumn) {
+        case 'order_number':
+          aVal = a.order_number
+          bVal = b.order_number
+          break
+        case 'customer':
+          aVal = a.customer_name
+          bVal = b.customer_name
+          break
+        case 'status':
+          aVal = a.status
+          bVal = b.status
+          break
+        case 'payment':
+          aVal = a.payment_status
+          bVal = b.payment_status
+          break
+        case 'total':
+          aVal = a.total_amount
+          bVal = b.total_amount
+          break
+        case 'date':
+          aVal = a.created_at
+          bVal = b.created_at
+          break
+        default:
+          return 0
+      }
+
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal
+      }
+      const comparison = String(aVal || '').localeCompare(String(bVal || ''))
+      return sortDirection === 'asc' ? comparison : -comparison
+    })
+  }, [filteredOrders, sortColumn, sortDirection])
+
   // Stats
   const totalRevenue = orders
     .filter((o) => o.payment_status === 'paid')
@@ -189,10 +254,10 @@ export default function AdminOrdersPage() {
   }
 
   const toggleAllOrders = () => {
-    if (selectedOrders.size === filteredOrders.length) {
+    if (selectedOrders.size === sortedOrders.length) {
       setSelectedOrders(new Set())
     } else {
-      setSelectedOrders(new Set(filteredOrders.map(o => o.id)))
+      setSelectedOrders(new Set(sortedOrders.map(o => o.id)))
     }
   }
 
@@ -225,8 +290,8 @@ export default function AdminOrdersPage() {
 
   const handleExportOrders = () => {
     const dataToExport = selectedOrders.size > 0
-      ? filteredOrders.filter(o => selectedOrders.has(o.id))
-      : filteredOrders
+      ? sortedOrders.filter(o => selectedOrders.has(o.id))
+      : sortedOrders
     exportToCSV(dataToExport, orderColumns, getExportFilename('orders'))
     toast.success(`Exported ${dataToExport.length} orders to CSV`)
   }
@@ -383,17 +448,60 @@ export default function AdminOrdersPage() {
             <TableRow>
               <TableHead className="w-[40px]">
                 <Checkbox
-                  checked={selectedOrders.size === filteredOrders.length && filteredOrders.length > 0}
+                  checked={selectedOrders.size === sortedOrders.length && sortedOrders.length > 0}
                   onCheckedChange={toggleAllOrders}
                   aria-label="Select all"
                 />
               </TableHead>
-              <TableHead>Order #</TableHead>
-              <TableHead>Customer</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Payment</TableHead>
-              <TableHead className="text-right">Total</TableHead>
-              <TableHead>Date</TableHead>
+              <SortableTableHead
+                sortKey="order_number"
+                currentSort={sortColumn}
+                currentDirection={sortDirection}
+                onSort={handleSort}
+              >
+                Order #
+              </SortableTableHead>
+              <SortableTableHead
+                sortKey="customer"
+                currentSort={sortColumn}
+                currentDirection={sortDirection}
+                onSort={handleSort}
+              >
+                Customer
+              </SortableTableHead>
+              <SortableTableHead
+                sortKey="status"
+                currentSort={sortColumn}
+                currentDirection={sortDirection}
+                onSort={handleSort}
+              >
+                Status
+              </SortableTableHead>
+              <SortableTableHead
+                sortKey="payment"
+                currentSort={sortColumn}
+                currentDirection={sortDirection}
+                onSort={handleSort}
+              >
+                Payment
+              </SortableTableHead>
+              <SortableTableHead
+                sortKey="total"
+                currentSort={sortColumn}
+                currentDirection={sortDirection}
+                onSort={handleSort}
+                className="text-right"
+              >
+                Total
+              </SortableTableHead>
+              <SortableTableHead
+                sortKey="date"
+                currentSort={sortColumn}
+                currentDirection={sortDirection}
+                onSort={handleSort}
+              >
+                Date
+              </SortableTableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -404,14 +512,14 @@ export default function AdminOrdersPage() {
                   Loading orders...
                 </TableCell>
               </TableRow>
-            ) : filteredOrders.length === 0 ? (
+            ) : sortedOrders.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                   No orders found
                 </TableCell>
               </TableRow>
             ) : (
-              filteredOrders.map((order) => (
+              sortedOrders.map((order) => (
                 <TableRow
                   key={order.id}
                   className={selectedOrders.has(order.id) ? 'bg-primary/5' : ''}

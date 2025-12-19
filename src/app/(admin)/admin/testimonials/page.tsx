@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { StaticStarRating } from '@/components/ui/star-rating';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +28,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  SortableTableHead,
+  type SortDirection,
 } from '@/components/ui/table';
 import {
   CheckCircle,
@@ -94,6 +96,61 @@ export default function AdminTestimonialsPage() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Sorting
+  const [sortColumn, setSortColumn] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>(null);
+
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      if (sortDirection === 'asc') {
+        setSortDirection('desc');
+      } else if (sortDirection === 'desc') {
+        setSortColumn(null);
+        setSortDirection(null);
+      }
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  // Sorted testimonials
+  const sortedTestimonials = useMemo(() => {
+    if (!sortColumn || !sortDirection) return testimonials;
+
+    return [...testimonials].sort((a, b) => {
+      let aVal: string | number | null = null;
+      let bVal: string | number | null = null;
+
+      switch (sortColumn) {
+        case 'customer':
+          aVal = a.customer_name;
+          bVal = b.customer_name;
+          break;
+        case 'rating':
+          aVal = a.rating;
+          bVal = b.rating;
+          break;
+        case 'status':
+          aVal = a.status;
+          bVal = b.status;
+          break;
+        case 'date':
+          aVal = a.created_at;
+          bVal = b.created_at;
+          break;
+        default:
+          return 0;
+      }
+
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+      const comparison = String(aVal || '').localeCompare(String(bVal || ''));
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+  }, [testimonials, sortColumn, sortDirection]);
 
   // Fetch testimonials
   useEffect(() => {
@@ -364,16 +421,44 @@ export default function AdminTestimonialsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Rating</TableHead>
+                  <SortableTableHead
+                    sortKey="customer"
+                    currentSort={sortColumn}
+                    currentDirection={sortDirection}
+                    onSort={handleSort}
+                  >
+                    Customer
+                  </SortableTableHead>
+                  <SortableTableHead
+                    sortKey="rating"
+                    currentSort={sortColumn}
+                    currentDirection={sortDirection}
+                    onSort={handleSort}
+                  >
+                    Rating
+                  </SortableTableHead>
                   <TableHead>Review</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Date</TableHead>
+                  <SortableTableHead
+                    sortKey="status"
+                    currentSort={sortColumn}
+                    currentDirection={sortDirection}
+                    onSort={handleSort}
+                  >
+                    Status
+                  </SortableTableHead>
+                  <SortableTableHead
+                    sortKey="date"
+                    currentSort={sortColumn}
+                    currentDirection={sortDirection}
+                    onSort={handleSort}
+                  >
+                    Date
+                  </SortableTableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {testimonials.map((testimonial) => (
+                {sortedTestimonials.map((testimonial) => (
                   <TableRow key={testimonial.id}>
                     <TableCell>
                       <div>

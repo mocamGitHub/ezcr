@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -12,6 +12,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  SortableTableHead,
+  type SortDirection,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -75,6 +77,69 @@ export default function ProductInventoryHistoryPage() {
   const [data, setData] = useState<HistoryResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // Sorting
+  const [sortColumn, setSortColumn] = useState<string | null>(null)
+  const [sortDirection, setSortDirection] = useState<SortDirection>(null)
+
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      if (sortDirection === 'asc') {
+        setSortDirection('desc')
+      } else if (sortDirection === 'desc') {
+        setSortColumn(null)
+        setSortDirection(null)
+      }
+    } else {
+      setSortColumn(column)
+      setSortDirection('asc')
+    }
+  }
+
+  // Sorted transactions
+  const sortedTransactions = useMemo(() => {
+    if (!data?.transactions || !sortColumn || !sortDirection) return data?.transactions || []
+
+    return [...data.transactions].sort((a, b) => {
+      let aVal: string | number | null = null
+      let bVal: string | number | null = null
+
+      switch (sortColumn) {
+        case 'date':
+          aVal = a.created_at
+          bVal = b.created_at
+          break
+        case 'type':
+          aVal = a.transaction_type
+          bVal = b.transaction_type
+          break
+        case 'change':
+          aVal = a.quantity_change
+          bVal = b.quantity_change
+          break
+        case 'previous':
+          aVal = a.previous_quantity
+          bVal = b.previous_quantity
+          break
+        case 'new':
+          aVal = a.new_quantity
+          bVal = b.new_quantity
+          break
+        case 'reason':
+          aVal = a.reason
+          bVal = b.reason
+          break
+        default:
+          return 0
+      }
+
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal
+      }
+      const comparison = String(aVal || '').localeCompare(String(bVal || ''))
+      return sortDirection === 'asc' ? comparison : -comparison
+    })
+  }, [data?.transactions, sortColumn, sortDirection])
 
   const fetchHistory = async () => {
     setLoading(true)
@@ -258,18 +323,63 @@ export default function ProductInventoryHistoryPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date & Time</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead className="text-right">Change</TableHead>
-                <TableHead className="text-right">Previous</TableHead>
-                <TableHead className="text-right">New</TableHead>
-                <TableHead>Reason</TableHead>
+                <SortableTableHead
+                  sortKey="date"
+                  currentSort={sortColumn}
+                  currentDirection={sortDirection}
+                  onSort={handleSort}
+                >
+                  Date & Time
+                </SortableTableHead>
+                <SortableTableHead
+                  sortKey="type"
+                  currentSort={sortColumn}
+                  currentDirection={sortDirection}
+                  onSort={handleSort}
+                >
+                  Type
+                </SortableTableHead>
+                <SortableTableHead
+                  sortKey="change"
+                  currentSort={sortColumn}
+                  currentDirection={sortDirection}
+                  onSort={handleSort}
+                  className="text-right"
+                >
+                  Change
+                </SortableTableHead>
+                <SortableTableHead
+                  sortKey="previous"
+                  currentSort={sortColumn}
+                  currentDirection={sortDirection}
+                  onSort={handleSort}
+                  className="text-right"
+                >
+                  Previous
+                </SortableTableHead>
+                <SortableTableHead
+                  sortKey="new"
+                  currentSort={sortColumn}
+                  currentDirection={sortDirection}
+                  onSort={handleSort}
+                  className="text-right"
+                >
+                  New
+                </SortableTableHead>
+                <SortableTableHead
+                  sortKey="reason"
+                  currentSort={sortColumn}
+                  currentDirection={sortDirection}
+                  onSort={handleSort}
+                >
+                  Reason
+                </SortableTableHead>
                 <TableHead>Reference</TableHead>
                 <TableHead>By</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.transactions.map((transaction) => (
+              {sortedTransactions.map((transaction) => (
                 <TableRow key={transaction.id}>
                   <TableCell className="text-sm">
                     {format(new Date(transaction.created_at), 'MMM d, yyyy h:mm a')}

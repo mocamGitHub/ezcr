@@ -1,5 +1,15 @@
 import * as React from "react"
+import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
 import { cn } from "@/lib/utils"
+
+export type SortDirection = 'asc' | 'desc' | null
+
+interface SortableTableHeadProps extends React.ThHTMLAttributes<HTMLTableCellElement> {
+  sortKey: string
+  currentSort: string | null
+  currentDirection: SortDirection
+  onSort: (key: string) => void
+}
 
 const Table = React.forwardRef<
   HTMLTableElement,
@@ -80,6 +90,39 @@ const TableHead = React.forwardRef<
 ))
 TableHead.displayName = "TableHead"
 
+const SortableTableHead = React.forwardRef<
+  HTMLTableCellElement,
+  SortableTableHeadProps
+>(({ className, sortKey, currentSort, currentDirection, onSort, children, ...props }, ref) => {
+  const isActive = currentSort === sortKey
+
+  return (
+    <th
+      ref={ref}
+      className={cn(
+        "h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer select-none hover:bg-muted/50 transition-colors [&:has([role=checkbox])]:pr-0",
+        className
+      )}
+      onClick={() => onSort(sortKey)}
+      {...props}
+    >
+      <div className="flex items-center gap-1">
+        {children}
+        {isActive ? (
+          currentDirection === 'asc' ? (
+            <ArrowUp className="h-4 w-4" />
+          ) : (
+            <ArrowDown className="h-4 w-4" />
+          )
+        ) : (
+          <ArrowUpDown className="h-4 w-4 opacity-50" />
+        )}
+      </div>
+    </th>
+  )
+})
+SortableTableHead.displayName = "SortableTableHead"
+
 const TableCell = React.forwardRef<
   HTMLTableCellElement,
   React.TdHTMLAttributes<HTMLTableCellElement>
@@ -110,6 +153,7 @@ export {
   TableBody,
   TableFooter,
   TableHead,
+  SortableTableHead,
   TableRow,
   TableCell,
   TableCaption,

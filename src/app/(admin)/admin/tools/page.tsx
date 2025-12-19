@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useTransition } from 'react'
+import React, { useState, useEffect, useTransition, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -29,6 +29,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  SortableTableHead,
+  type SortDirection,
 } from '@/components/ui/table'
 import {
   Wrench,
@@ -118,6 +120,66 @@ export default function ToolsPage() {
   // Messages
   const [error, setError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+
+  // Sorting
+  const [sortColumn, setSortColumn] = useState<string | null>(null)
+  const [sortDirection, setSortDirection] = useState<SortDirection>(null)
+
+  // Handle sort
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      if (sortDirection === 'asc') {
+        setSortDirection('desc')
+      } else if (sortDirection === 'desc') {
+        setSortColumn(null)
+        setSortDirection(null)
+      }
+    } else {
+      setSortColumn(column)
+      setSortDirection('asc')
+    }
+  }
+
+  // Sorted tools
+  const sortedTools = useMemo(() => {
+    if (!sortColumn || !sortDirection) return tools
+
+    return [...tools].sort((a, b) => {
+      let aVal: string | number | null = null
+      let bVal: string | number | null = null
+
+      switch (sortColumn) {
+        case 'name':
+          aVal = a.name
+          bVal = b.name
+          break
+        case 'category':
+          aVal = a.category
+          bVal = b.category
+          break
+        case 'cost':
+          aVal = a.cost_amount || 0
+          bVal = b.cost_amount || 0
+          break
+        case 'renewal':
+          aVal = a.renewal_date || ''
+          bVal = b.renewal_date || ''
+          break
+        case 'status':
+          aVal = a.status
+          bVal = b.status
+          break
+        default:
+          return 0
+      }
+
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal
+      }
+      const comparison = String(aVal || '').localeCompare(String(bVal || ''))
+      return sortDirection === 'asc' ? comparison : -comparison
+    })
+  }, [tools, sortColumn, sortDirection])
 
   // Fetch data
   useEffect(() => {
@@ -520,16 +582,52 @@ export default function ToolsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Tool</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead className="text-center">Cost</TableHead>
-                <TableHead>Renewal</TableHead>
-                <TableHead>Status</TableHead>
+                <SortableTableHead
+                  sortKey="name"
+                  currentSort={sortColumn}
+                  currentDirection={sortDirection}
+                  onSort={handleSort}
+                >
+                  Tool
+                </SortableTableHead>
+                <SortableTableHead
+                  sortKey="category"
+                  currentSort={sortColumn}
+                  currentDirection={sortDirection}
+                  onSort={handleSort}
+                >
+                  Category
+                </SortableTableHead>
+                <SortableTableHead
+                  sortKey="cost"
+                  currentSort={sortColumn}
+                  currentDirection={sortDirection}
+                  onSort={handleSort}
+                  className="text-center"
+                >
+                  Cost
+                </SortableTableHead>
+                <SortableTableHead
+                  sortKey="renewal"
+                  currentSort={sortColumn}
+                  currentDirection={sortDirection}
+                  onSort={handleSort}
+                >
+                  Renewal
+                </SortableTableHead>
+                <SortableTableHead
+                  sortKey="status"
+                  currentSort={sortColumn}
+                  currentDirection={sortDirection}
+                  onSort={handleSort}
+                >
+                  Status
+                </SortableTableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tools.map((tool) => {
+              {sortedTools.map((tool) => {
                 const daysUntil = getDaysUntilRenewal(tool.renewal_date)
                 return (
                   <TableRow key={tool.id}>
@@ -549,16 +647,47 @@ export default function ToolsPage() {
                           <p className="font-medium">{tool.name}</p>
                         )}
                         {tool.description && (
-                          <p className="text-xs text-muted-foreground truncate max-w-[200px]">
+                          <p className="text-xs text-muted-foreground max-w-[300px]">
                             {tool.description}
                           </p>
                         )}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">
-                        {TOOL_CATEGORY_LABELS[tool.category]}
-                      </Badge>
+                      <Select
+                        value={tool.category}
+                        onValueChange={(v) => {
+                          const newCategory = v as ToolCategory
+                          // Optimistic update
+                          setTools(prev => prev.map(t =>
+                            t.id === tool.id ? { ...t, category: newCategory } : t
+                          ))
+                          // Background save
+                          startTransition(async () => {
+                            try {
+                              await updateTool(tool.id, { category: newCategory })
+                            } catch (err) {
+                              // Revert on error
+                              setTools(prev => prev.map(t =>
+                                t.id === tool.id ? { ...t, category: tool.category } : t
+                              ))
+                              setError('Failed to update category')
+                              console.error(err)
+                            }
+                          })
+                        }}
+                      >
+                        <SelectTrigger className="h-8 w-[130px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(TOOL_CATEGORY_LABELS).map(([value, label]) => (
+                            <SelectItem key={value} value={value}>
+                              {label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </TableCell>
                     <TableCell className="text-center">
                       {tool.cost_amount ? (
@@ -601,9 +730,42 @@ export default function ToolsPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={getStatusBadgeVariant(tool.status)}>
-                        {STATUS_LABELS[tool.status]}
-                      </Badge>
+                      <Select
+                        value={tool.status}
+                        onValueChange={(v) => {
+                          const newStatus = v as ToolStatus
+                          // Optimistic update
+                          setTools(prev => prev.map(t =>
+                            t.id === tool.id ? { ...t, status: newStatus } : t
+                          ))
+                          // Background save
+                          startTransition(async () => {
+                            try {
+                              await updateTool(tool.id, { status: newStatus })
+                              // Refresh stats since status affects active tool counts
+                              fetchStats()
+                            } catch (err) {
+                              // Revert on error
+                              setTools(prev => prev.map(t =>
+                                t.id === tool.id ? { ...t, status: tool.status } : t
+                              ))
+                              setError('Failed to update status')
+                              console.error(err)
+                            }
+                          })
+                        }}
+                      >
+                        <SelectTrigger className="h-8 w-[110px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="inactive">Inactive</SelectItem>
+                          <SelectItem value="trial">Trial</SelectItem>
+                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                          <SelectItem value="expired">Expired</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">

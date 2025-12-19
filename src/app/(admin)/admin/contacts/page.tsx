@@ -1,8 +1,7 @@
 'use client'
 
-import React, { useState, useEffect, useTransition } from 'react'
+import React, { useState, useEffect, useTransition, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -28,6 +27,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  SortableTableHead,
+  type SortDirection,
 } from '@/components/ui/table'
 import {
   Building2,
@@ -37,7 +38,6 @@ import {
   Trash2,
   Mail,
   Phone,
-  Globe,
   MapPin,
   CheckCircle,
   AlertCircle,
@@ -89,6 +89,64 @@ export default function ContactsPage() {
   // Messages
   const [error, setError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+
+  // Sorting
+  const [sortColumn, setSortColumn] = useState<string | null>(null)
+  const [sortDirection, setSortDirection] = useState<SortDirection>(null)
+
+  // Handle sort
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      // Toggle direction or clear
+      if (sortDirection === 'asc') {
+        setSortDirection('desc')
+      } else if (sortDirection === 'desc') {
+        setSortColumn(null)
+        setSortDirection(null)
+      }
+    } else {
+      setSortColumn(column)
+      setSortDirection('asc')
+    }
+  }
+
+  // Sorted contacts
+  const sortedContacts = useMemo(() => {
+    if (!sortColumn || !sortDirection) return contacts
+
+    return [...contacts].sort((a, b) => {
+      let aVal: string | null = null
+      let bVal: string | null = null
+
+      switch (sortColumn) {
+        case 'contact_name':
+          aVal = a.contact_name || ''
+          bVal = b.contact_name || ''
+          break
+        case 'company_name':
+          aVal = a.company_name
+          bVal = b.company_name
+          break
+        case 'contact_type':
+          aVal = a.contact_type
+          bVal = b.contact_type
+          break
+        case 'location':
+          aVal = [a.city, a.state].filter(Boolean).join(', ')
+          bVal = [b.city, b.state].filter(Boolean).join(', ')
+          break
+        case 'status':
+          aVal = a.status
+          bVal = b.status
+          break
+        default:
+          return 0
+      }
+
+      const comparison = (aVal || '').localeCompare(bVal || '')
+      return sortDirection === 'asc' ? comparison : -comparison
+    })
+  }, [contacts, sortColumn, sortDirection])
 
   // Fetch contacts
   useEffect(() => {
@@ -341,57 +399,129 @@ export default function ContactsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Company</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Status</TableHead>
+                <SortableTableHead
+                  sortKey="contact_name"
+                  currentSort={sortColumn}
+                  currentDirection={sortDirection}
+                  onSort={handleSort}
+                >
+                  Contact
+                </SortableTableHead>
+                <SortableTableHead
+                  sortKey="company_name"
+                  currentSort={sortColumn}
+                  currentDirection={sortDirection}
+                  onSort={handleSort}
+                >
+                  Company
+                </SortableTableHead>
+                <SortableTableHead
+                  sortKey="contact_type"
+                  currentSort={sortColumn}
+                  currentDirection={sortDirection}
+                  onSort={handleSort}
+                >
+                  Type
+                </SortableTableHead>
+                <SortableTableHead
+                  sortKey="location"
+                  currentSort={sortColumn}
+                  currentDirection={sortDirection}
+                  onSort={handleSort}
+                >
+                  Location
+                </SortableTableHead>
+                <SortableTableHead
+                  sortKey="status"
+                  currentSort={sortColumn}
+                  currentDirection={sortDirection}
+                  onSort={handleSort}
+                >
+                  Status
+                </SortableTableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {contacts.map((contact) => (
+              {sortedContacts.map((contact) => (
                 <TableRow key={contact.id}>
                   <TableCell>
-                    <div>
-                      <p className="font-medium">{contact.company_name}</p>
-                      {contact.website && (
+                    <div className="space-y-1">
+                      {contact.contact_name && (
+                        <p className="text-sm font-medium">{contact.contact_name}</p>
+                      )}
+                      {contact.email && (
                         <a
-                          href={contact.website}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                          href={`mailto:${contact.email}`}
                           className="text-sm text-blue-600 hover:underline flex items-center gap-1"
                         >
-                          <Globe className="h-3 w-3" />
-                          Website
-                          <ExternalLink className="h-3 w-3" />
+                          <Mail className="h-3 w-3" />
+                          {contact.email}
+                        </a>
+                      )}
+                      {contact.phone && (
+                        <a
+                          href={`tel:${contact.phone.replace(/\D/g, '')}`}
+                          className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+                        >
+                          <Phone className="h-3 w-3" />
+                          {contact.phone}
                         </a>
                       )}
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline">
-                      {CONTACT_TYPE_LABELS[contact.contact_type]}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      {contact.contact_name && (
-                        <p className="text-sm">{contact.contact_name}</p>
-                      )}
-                      {contact.email && (
-                        <p className="text-sm text-muted-foreground flex items-center gap-1">
-                          <Mail className="h-3 w-3" />
-                          {contact.email}
-                        </p>
-                      )}
-                      {contact.phone && (
-                        <p className="text-sm text-muted-foreground flex items-center gap-1">
-                          <Phone className="h-3 w-3" />
-                          {contact.phone}
-                        </p>
+                    <div>
+                      {contact.website ? (
+                        <a
+                          href={contact.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-medium text-blue-600 hover:underline flex items-center gap-1"
+                        >
+                          {contact.company_name}
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      ) : (
+                        <p className="font-medium">{contact.company_name}</p>
                       )}
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    <Select
+                      value={contact.contact_type}
+                      onValueChange={(v) => {
+                        const newType = v as ContactType
+                        // Optimistic update
+                        setContacts(prev => prev.map(c =>
+                          c.id === contact.id ? { ...c, contact_type: newType } : c
+                        ))
+                        // Background save
+                        startTransition(async () => {
+                          try {
+                            await updateContact(contact.id, { contact_type: newType })
+                          } catch (err) {
+                            // Revert on error
+                            setContacts(prev => prev.map(c =>
+                              c.id === contact.id ? { ...c, contact_type: contact.contact_type } : c
+                            ))
+                            setError('Failed to update type')
+                            console.error(err)
+                          }
+                        })
+                      }}
+                    >
+                      <SelectTrigger className="h-8 w-[140px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(CONTACT_TYPE_LABELS).map(([value, label]) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </TableCell>
                   <TableCell>
                     {(contact.city || contact.state) && (
@@ -402,9 +532,38 @@ export default function ContactsPage() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={getStatusBadgeVariant(contact.status)}>
-                      {STATUS_LABELS[contact.status]}
-                    </Badge>
+                    <Select
+                      value={contact.status}
+                      onValueChange={(v) => {
+                        const newStatus = v as ContactStatus
+                        // Optimistic update
+                        setContacts(prev => prev.map(c =>
+                          c.id === contact.id ? { ...c, status: newStatus } : c
+                        ))
+                        // Background save
+                        startTransition(async () => {
+                          try {
+                            await updateContact(contact.id, { status: newStatus })
+                          } catch (err) {
+                            // Revert on error
+                            setContacts(prev => prev.map(c =>
+                              c.id === contact.id ? { ...c, status: contact.status } : c
+                            ))
+                            setError('Failed to update status')
+                            console.error(err)
+                          }
+                        })
+                      }}
+                    >
+                      <SelectTrigger className="h-8 w-[110px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
