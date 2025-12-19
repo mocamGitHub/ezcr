@@ -1,0 +1,26 @@
+{
+  "name": "ezcr-qbo-sync",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "sync:full": "node dist/index.js sync --mode=full",
+    "sync:cdc": "node dist/index.js sync --mode=cdc",
+    "auth:url": "node dist/index.js auth-url",
+    "auth:exchange": "node dist/index.js auth-exchange"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "node-fetch": "^3.3.2",
+    "pg": "^8.12.0",
+    "yargs": "^17.7.2",
+    "yargs-parser": "^21.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/pg": "^8.11.11",
+    "@types/yargs": "^17.0.33",
+    "typescript": "^5.7.2"
+  }
+}
