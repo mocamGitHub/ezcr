@@ -114,25 +114,25 @@ export default function TeamManagementPage() {
 
       {/* Team Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div className="border rounded-lg p-4">
+        <div className="border rounded-lg p-4 text-center">
           <div className="text-sm text-muted-foreground">Total Members</div>
-          <div className="text-2xl font-bold">{members.length}</div>
+          <div className="text-2xl font-bold mt-1">{members.length}</div>
         </div>
-        <div className="border rounded-lg p-4">
+        <div className="border rounded-lg p-4 text-center">
           <div className="text-sm text-muted-foreground">Active</div>
-          <div className="text-2xl font-bold text-green-600">
+          <div className="text-2xl font-bold mt-1 text-green-600">
             {members.filter(m => m.is_active).length}
           </div>
         </div>
-        <div className="border rounded-lg p-4">
+        <div className="border rounded-lg p-4 text-center">
           <div className="text-sm text-muted-foreground">Inactive</div>
-          <div className="text-2xl font-bold text-orange-600">
+          <div className="text-2xl font-bold mt-1 text-orange-600">
             {members.filter(m => !m.is_active).length}
           </div>
         </div>
-        <div className="border rounded-lg p-4">
+        <div className="border rounded-lg p-4 text-center">
           <div className="text-sm text-muted-foreground">Owners</div>
-          <div className="text-2xl font-bold text-purple-600">
+          <div className="text-2xl font-bold mt-1 text-purple-600">
             {members.filter(m => m.role === 'owner').length}
           </div>
         </div>

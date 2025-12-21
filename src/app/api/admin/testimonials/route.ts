@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
 
     // -------------------- Parse Query Parameters --------------------
     const status = searchParams.get('status') || 'all'; // all, pending, approved, rejected
+    const search = searchParams.get('search') || '';
     const product_id = searchParams.get('product_id');
     const rating = searchParams.get('rating') ? parseInt(searchParams.get('rating')!) : undefined;
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
@@ -26,11 +27,16 @@ export async function GET(request: NextRequest) {
     // -------------------- Build Query --------------------
     let query = supabase
       .from('testimonials')
-      .select('*, user_profiles!inner(first_name, last_name, email)', { count: 'exact' });
+      .select('*', { count: 'exact' });
 
     // Apply status filter
     if (status !== 'all') {
       query = query.eq('status', status);
+    }
+
+    // Apply search filter
+    if (search) {
+      query = query.or(`customer_name.ilike.%${search}%,customer_email.ilike.%${search}%,review_text.ilike.%${search}%`);
     }
 
     // Apply other filters

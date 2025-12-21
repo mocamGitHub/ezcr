@@ -44,14 +44,14 @@ export function StatsCard({ title, value, change, icon, format }: StatsCardProps
   }
 
   return (
-    <div className="bg-card border rounded-lg p-4">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm text-muted-foreground">{title}</span>
-        {icon && <span className="text-muted-foreground">{icon}</span>}
+    <div className="bg-card border rounded-lg p-4 text-center">
+      <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-2">
+        {icon && <span>{icon}</span>}
+        <span>{title}</span>
       </div>
       <div className="text-2xl font-bold mb-1">{formatValue(value)}</div>
       {change !== undefined && (
-        <div className={cn('flex items-center gap-1 text-sm', getTrendColor())}>
+        <div className={cn('flex items-center justify-center gap-1 text-sm', getTrendColor())}>
           {getTrendIcon()}
           <span>{Math.abs(change).toFixed(1)}% vs last period</span>
         </div>

@@ -439,43 +439,31 @@ export default function ToolsPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-card rounded-lg border p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <Wrench className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Total Tools</p>
-              <p className="text-2xl font-bold text-card-foreground">{stats.total}</p>
-            </div>
+        <div className="bg-card rounded-lg border p-4 text-center">
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <Wrench className="h-4 w-4" />
+            Total Tools
+          </div>
+          <div className="text-2xl font-bold mt-1">{stats.total}</div>
+        </div>
+
+        <div className="bg-card rounded-lg border p-4 text-center">
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <DollarSign className="h-4 w-4" />
+            Monthly Cost
+          </div>
+          <div className="text-2xl font-bold mt-1 text-green-600 dark:text-green-400">
+            {formatCurrency(stats.totalMonthlyCost)}
           </div>
         </div>
 
-        <div className="bg-card rounded-lg border p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-500/10 rounded-lg">
-              <DollarSign className="h-5 w-5 text-green-500" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Monthly Cost</p>
-              <p className="text-2xl font-bold text-card-foreground">
-                {formatCurrency(stats.totalMonthlyCost)}
-              </p>
-            </div>
+        <div className="bg-card rounded-lg border p-4 text-center">
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <TrendingUp className="h-4 w-4" />
+            Annual Cost
           </div>
-        </div>
-
-        <div className="bg-card rounded-lg border p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-500/10 rounded-lg">
-              <TrendingUp className="h-5 w-5 text-purple-500" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Annual Cost</p>
-              <p className="text-2xl font-bold text-card-foreground">
-                {formatCurrency(stats.totalAnnualCost)}
-              </p>
-            </div>
+          <div className="text-2xl font-bold mt-1 text-purple-600 dark:text-purple-400">
+            {formatCurrency(stats.totalAnnualCost)}
           </div>
         </div>
       </div>

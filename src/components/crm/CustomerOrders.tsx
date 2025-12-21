@@ -15,8 +15,6 @@ export function CustomerOrders({ orders }: CustomerOrdersProps) {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold">Orders ({orders.length})</h3>
-      
       <div className="border rounded-lg overflow-hidden">
         <table className="w-full">
           <thead className="bg-muted/50 border-b">
@@ -50,7 +48,7 @@ export function CustomerOrders({ orders }: CustomerOrdersProps) {
                   <StatusBadge status={order.status} />
                 </td>
                 <td className="px-4 py-3 text-right font-medium">
-                  {formatCurrency(order.total_amount)}
+                  {formatCurrency(order.grand_total ?? order.total_amount ?? 0)}
                 </td>
                 <td className="px-4 py-3 text-sm text-muted-foreground">
                   {order.expected_delivery_date
@@ -63,7 +61,11 @@ export function CustomerOrders({ orders }: CustomerOrdersProps) {
                         month: 'short',
                         day: 'numeric',
                       })}`
-                    : 'TBD'}
+                    : order.status === 'delivered'
+                    ? 'Delivered'
+                    : order.status === 'shipped'
+                    ? 'In Transit'
+                    : '-'}
                 </td>
               </tr>
             ))}

@@ -167,18 +167,12 @@ export async function getCustomerActivities(
 export async function getCustomerOrders(email: string) {
   try {
     const supabase = createServiceClient()
-    const tenantId = await getTenantId()
 
+    // Fetch orders directly without joins (FK relationship issues with order_items)
+    // Product info is stored directly on order for QBO imports
     const { data, error } = await supabase
       .from('orders')
-      .select(`
-        *,
-        order_items (
-          *,
-          products (name, sku)
-        )
-      `)
-      .eq('tenant_id', tenantId)
+      .select('*')
       .eq('customer_email', email)
       .order('created_at', { ascending: false })
 

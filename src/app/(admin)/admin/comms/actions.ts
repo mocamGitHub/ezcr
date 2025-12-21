@@ -56,6 +56,7 @@ export async function getMessages(filters: {
   channel?: string
   direction?: string
   status?: string
+  search?: string
 }) {
   const supabase = getAdminClient()
 
@@ -73,6 +74,9 @@ export async function getMessages(filters: {
   }
   if (filters.status && filters.status !== 'all') {
     query = query.eq('status', filters.status)
+  }
+  if (filters.search) {
+    query = query.or(`to_address.ilike.%${filters.search}%,from_address.ilike.%${filters.search}%,subject.ilike.%${filters.search}%`)
   }
 
   const { data, error } = await query

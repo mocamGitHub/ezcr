@@ -1,0 +1,22 @@
+{
+  "name": "qbo-import",
+  "version": "1.0.0",
+  "description": "Import QuickBooks Online invoices into app orders",
+  "type": "module",
+  "scripts": {
+    "import": "node --import tsx src/index.ts",
+    "import:dry-run": "node --import tsx src/index.ts --dry-run",
+    "backfill-items": "node --import tsx src/backfill-order-items.ts",
+    "backfill-items:dry-run": "node --import tsx src/backfill-order-items.ts --dry-run"
+  },
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "pg": "^8.11.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/pg": "^8.10.9",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.2"
+  }
+}

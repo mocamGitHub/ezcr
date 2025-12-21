@@ -257,8 +257,8 @@ export default function ProductInventoryHistoryPage() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-card border rounded-lg p-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+        <div className="bg-card border rounded-lg p-4 text-center">
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-1">
             <Package className="h-4 w-4" />
             Current Stock
           </div>
@@ -272,8 +272,8 @@ export default function ProductInventoryHistoryPage() {
           )}
         </div>
 
-        <div className="bg-card border rounded-lg p-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+        <div className="bg-card border rounded-lg p-4 text-center">
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-1">
             <TrendingDown className="h-4 w-4" />
             Total Sales
           </div>
@@ -282,8 +282,8 @@ export default function ProductInventoryHistoryPage() {
           </div>
         </div>
 
-        <div className="bg-card border rounded-lg p-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+        <div className="bg-card border rounded-lg p-4 text-center">
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-1">
             <TrendingUp className="h-4 w-4" />
             Total Refunds
           </div>
@@ -292,8 +292,8 @@ export default function ProductInventoryHistoryPage() {
           </div>
         </div>
 
-        <div className="bg-card border rounded-lg p-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+        <div className="bg-card border rounded-lg p-4 text-center">
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-1">
             <Package className="h-4 w-4" />
             Net Adjustments
           </div>

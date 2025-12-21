@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useTransition } from 'react';
 import { StaticStarRating } from '@/components/ui/star-rating';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -35,13 +35,24 @@ import {
   CheckCircle,
   XCircle,
   MessageSquare,
+  MessageSquareText,
   Star,
   Trash2,
   ChevronLeft,
   ChevronRight,
   AlertCircle,
   Loader2,
+  Search,
+  RotateCcw,
+  ShoppingCart,
+  Clock,
+  User,
+  Mail,
+  CalendarDays,
+  ExternalLink,
+  BadgeCheck,
 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
 // =====================================================
@@ -50,6 +61,7 @@ import { cn } from '@/lib/utils';
 
 interface Testimonial {
   id: string;
+  user_id: string;
   customer_name: string;
   customer_email: string;
   customer_avatar_url: string | null;
@@ -58,9 +70,25 @@ interface Testimonial {
   product_id: string | null;
   status: 'pending' | 'approved' | 'rejected';
   is_featured: boolean;
+  is_verified_customer: boolean;
   admin_response: string | null;
+  admin_response_by: string | null;
+  admin_response_at: string | null;
+  approved_by: string | null;
+  approved_at: string | null;
+  rejected_by: string | null;
+  rejected_at: string | null;
+  rejection_reason: string | null;
   created_at: string;
-  rejected_reason?: string | null;
+  updated_at: string;
+}
+
+interface CustomerOrder {
+  id: string;
+  order_number: string;
+  status: string;
+  total_amount: number;
+  created_at: string;
 }
 
 interface PaginationMeta {
@@ -81,14 +109,21 @@ export default function AdminTestimonialsPage() {
   const [pagination, setPagination] = useState<PaginationMeta | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [isPending, startTransition] = useTransition();
 
   // Dialog states
   const [selectedTestimonial, setSelectedTestimonial] = useState<Testimonial | null>(null);
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false);
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [isRespondDialogOpen, setIsRespondDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  // Customer orders for detail view
+  const [customerOrders, setCustomerOrders] = useState<CustomerOrder[]>([]);
+  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
 
   // Form states
   const [rejectionReason, setRejectionReason] = useState('');
@@ -152,10 +187,26 @@ export default function AdminTestimonialsPage() {
     });
   }, [testimonials, sortColumn, sortDirection]);
 
+  // Auto-dismiss success message
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => setSuccessMessage(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
   // Fetch testimonials
   useEffect(() => {
     fetchTestimonials();
   }, [statusFilter, currentPage]);
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchTestimonials();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const fetchTestimonials = async () => {
     setIsLoading(true);
@@ -165,6 +216,10 @@ export default function AdminTestimonialsPage() {
         limit: '20',
         status: statusFilter,
       });
+
+      if (searchQuery.trim()) {
+        params.set('search', searchQuery.trim());
+      }
 
       const response = await fetch(`/api/admin/testimonials?${params.toString()}`);
       const data = await response.json();
@@ -183,8 +238,32 @@ export default function AdminTestimonialsPage() {
     }
   };
 
-  // Handle approve
-  const handleApprove = async () => {
+  // Fetch customer orders
+  const fetchCustomerOrders = async (email: string) => {
+    setIsLoadingOrders(true);
+    setCustomerOrders([]);
+    try {
+      const response = await fetch(`/api/admin/orders?search=${encodeURIComponent(email)}&limit=10`);
+      const data = await response.json();
+      if (response.ok && data.orders) {
+        setCustomerOrders(data.orders);
+      }
+    } catch (error) {
+      console.error('Error fetching customer orders:', error);
+    } finally {
+      setIsLoadingOrders(false);
+    }
+  };
+
+  // Open detail dialog
+  const openDetailDialog = (testimonial: Testimonial) => {
+    setSelectedTestimonial(testimonial);
+    setIsDetailDialogOpen(true);
+    fetchCustomerOrders(testimonial.customer_email);
+  };
+
+  // Handle approve (also used for un-reject)
+  const handleApprove = async (fromDetail = false) => {
     if (!selectedTestimonial) return;
 
     setIsSubmitting(true);
@@ -197,8 +276,14 @@ export default function AdminTestimonialsPage() {
       );
 
       if (response.ok) {
-        setSuccessMessage('Testimonial approved successfully');
+        const wasRejected = selectedTestimonial.status === 'rejected';
+        setSuccessMessage(wasRejected ? 'Testimonial restored and approved' : 'Testimonial approved successfully');
         setIsApproveDialogOpen(false);
+        if (fromDetail) {
+          // Update the selected testimonial in detail view
+          const data = await response.json();
+          setSelectedTestimonial(data.testimonial);
+        }
         fetchTestimonials();
       } else {
         const data = await response.json();
@@ -283,27 +368,56 @@ export default function AdminTestimonialsPage() {
     }
   };
 
-  // Handle toggle featured
-  const handleToggleFeatured = async (testimonial: Testimonial) => {
-    try {
-      const response = await fetch(
-        `/api/admin/testimonials/${testimonial.id}/feature`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ is_featured: !testimonial.is_featured }),
-        }
-      );
+  // Handle toggle featured with optimistic update
+  const handleToggleFeatured = async (testimonial: Testimonial, e?: React.MouseEvent) => {
+    e?.stopPropagation(); // Prevent row click
 
-      if (response.ok) {
-        setSuccessMessage(
-          `Testimonial ${!testimonial.is_featured ? 'featured' : 'unfeatured'}`
-        );
-        fetchTestimonials();
-      }
-    } catch (error) {
-      console.error('Error toggling featured:', error);
+    const newFeaturedState = !testimonial.is_featured;
+
+    // Optimistic update
+    setTestimonials(prev => prev.map(t =>
+      t.id === testimonial.id ? { ...t, is_featured: newFeaturedState } : t
+    ));
+
+    // Also update selected testimonial if open in detail
+    if (selectedTestimonial?.id === testimonial.id) {
+      setSelectedTestimonial(prev => prev ? { ...prev, is_featured: newFeaturedState } : null);
     }
+
+    startTransition(async () => {
+      try {
+        const response = await fetch(
+          `/api/admin/testimonials/${testimonial.id}/feature`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ is_featured: newFeaturedState }),
+          }
+        );
+
+        if (response.ok) {
+          setSuccessMessage(`Testimonial ${newFeaturedState ? 'featured' : 'unfeatured'}`);
+        } else {
+          // Revert on error
+          setTestimonials(prev => prev.map(t =>
+            t.id === testimonial.id ? { ...t, is_featured: !newFeaturedState } : t
+          ));
+          if (selectedTestimonial?.id === testimonial.id) {
+            setSelectedTestimonial(prev => prev ? { ...prev, is_featured: !newFeaturedState } : null);
+          }
+          setError('Failed to update featured status');
+        }
+      } catch (error) {
+        // Revert on error
+        setTestimonials(prev => prev.map(t =>
+          t.id === testimonial.id ? { ...t, is_featured: !newFeaturedState } : t
+        ));
+        if (selectedTestimonial?.id === testimonial.id) {
+          setSelectedTestimonial(prev => prev ? { ...prev, is_featured: !newFeaturedState } : null);
+        }
+        setError('Failed to update featured status');
+      }
+    });
   };
 
   // Handle delete
@@ -322,6 +436,7 @@ export default function AdminTestimonialsPage() {
       if (response.ok) {
         setSuccessMessage('Testimonial deleted successfully');
         setIsDeleteDialogOpen(false);
+        setIsDetailDialogOpen(false);
         fetchTestimonials();
       } else {
         const data = await response.json();
@@ -335,11 +450,24 @@ export default function AdminTestimonialsPage() {
   };
 
   // Format date
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
+    });
+  };
+
+  // Format date with time
+  const formatDateTime = (dateString: string | null) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
     });
   };
 
@@ -357,21 +485,40 @@ export default function AdminTestimonialsPage() {
     }
   };
 
+  // Order status colors
+  const getOrderStatusColor = (status: string) => {
+    switch (status) {
+      case 'delivered':
+        return 'text-green-600';
+      case 'shipped':
+        return 'text-blue-600';
+      case 'processing':
+        return 'text-yellow-600';
+      case 'pending':
+        return 'text-gray-600';
+      default:
+        return 'text-muted-foreground';
+    }
+  };
+
   return (
     <div className="p-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Testimonials Management</h1>
-        <p className="text-gray-600 mt-2">
+        <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
+          <MessageSquareText className="h-8 w-8" />
+          Testimonials Management
+        </h1>
+        <p className="text-muted-foreground mt-2">
           Approve, reject, and respond to customer testimonials
         </p>
       </div>
 
       {/* Success/Error Messages */}
       {successMessage && (
-        <Alert className="mb-6 border-green-500 bg-green-50">
+        <Alert className="mb-6 border-green-500 bg-green-50 dark:bg-green-950/20">
           <CheckCircle className="h-4 w-4 text-green-600" />
-          <AlertDescription className="text-green-800">{successMessage}</AlertDescription>
+          <AlertDescription className="text-green-800 dark:text-green-200">{successMessage}</AlertDescription>
         </Alert>
       )}
 
@@ -383,38 +530,60 @@ export default function AdminTestimonialsPage() {
       )}
 
       {/* Filters */}
-      <div className="bg-white rounded-lg border p-4 mb-6">
-        <div className="flex items-center gap-4">
-          <Label>Status:</Label>
+      <div className="bg-card rounded-lg border p-4 mb-6">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex-1 min-w-[200px]">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name, email, or review..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[200px]">
+            <SelectTrigger className="w-[150px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="all">All Statuses</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="approved">Approved</SelectItem>
               <SelectItem value="rejected">Rejected</SelectItem>
             </SelectContent>
           </Select>
 
-          {pagination && (
-            <span className="ml-auto text-sm text-gray-600">
-              {pagination.total} total
-            </span>
-          )}
+          <span className="text-sm text-muted-foreground">
+            {pagination?.total ?? 0} testimonial{(pagination?.total ?? 0) !== 1 ? 's' : ''}
+          </span>
         </div>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-lg border">
+      <div className="bg-card rounded-lg border">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : testimonials.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500">No testimonials found</p>
+            <MessageSquareText className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+            <p className="text-muted-foreground">No testimonials found</p>
+            {(searchQuery || statusFilter !== 'all') && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSearchQuery('');
+                  setStatusFilter('all');
+                }}
+                className="mt-4"
+              >
+                Clear filters
+              </Button>
+            )}
           </div>
         ) : (
           <>
@@ -459,11 +628,15 @@ export default function AdminTestimonialsPage() {
               </TableHeader>
               <TableBody>
                 {sortedTestimonials.map((testimonial) => (
-                  <TableRow key={testimonial.id}>
+                  <TableRow
+                    key={testimonial.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => openDetailDialog(testimonial)}
+                  >
                     <TableCell>
                       <div>
                         <p className="font-medium">{testimonial.customer_name}</p>
-                        <p className="text-sm text-gray-500">{testimonial.customer_email}</p>
+                        <p className="text-sm text-muted-foreground">{testimonial.customer_email}</p>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -478,23 +651,24 @@ export default function AdminTestimonialsPage() {
                           {testimonial.status}
                         </Badge>
                         {testimonial.is_featured && (
-                          <Badge variant="outline" className="border-yellow-500 text-yellow-700">
-                            <Star className="h-3 w-3 mr-1" />
+                          <Badge variant="outline" className="border-yellow-500 text-yellow-700 dark:text-yellow-400">
+                            <Star className="h-3 w-3 mr-1 fill-current" />
                             Featured
                           </Badge>
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="text-sm text-gray-600">
+                    <TableCell className="text-sm text-muted-foreground">
                       {formatDate(testimonial.created_at)}
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                         {testimonial.status === 'pending' && (
                           <>
                             <Button
                               size="sm"
                               variant="outline"
+                              title="Approve"
                               onClick={() => {
                                 setSelectedTestimonial(testimonial);
                                 setIsApproveDialogOpen(true);
@@ -505,6 +679,7 @@ export default function AdminTestimonialsPage() {
                             <Button
                               size="sm"
                               variant="outline"
+                              title="Reject"
                               onClick={() => {
                                 setSelectedTestimonial(testimonial);
                                 setIsRejectDialogOpen(true);
@@ -519,6 +694,7 @@ export default function AdminTestimonialsPage() {
                             <Button
                               size="sm"
                               variant="outline"
+                              title="Add Response"
                               onClick={() => {
                                 setSelectedTestimonial(testimonial);
                                 setAdminResponse(testimonial.admin_response || '');
@@ -530,7 +706,8 @@ export default function AdminTestimonialsPage() {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleToggleFeatured(testimonial)}
+                              title={testimonial.is_featured ? 'Unfeature' : 'Feature'}
+                              onClick={(e) => handleToggleFeatured(testimonial, e)}
                             >
                               <Star
                                 className={cn(
@@ -541,9 +718,23 @@ export default function AdminTestimonialsPage() {
                             </Button>
                           </>
                         )}
+                        {testimonial.status === 'rejected' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            title="Restore & Approve"
+                            onClick={() => {
+                              setSelectedTestimonial(testimonial);
+                              setIsApproveDialogOpen(true);
+                            }}
+                          >
+                            <RotateCcw className="h-4 w-4 text-blue-600" />
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="outline"
+                          title="Delete"
                           onClick={() => {
                             setSelectedTestimonial(testimonial);
                             setIsDeleteDialogOpen(true);
@@ -569,7 +760,7 @@ export default function AdminTestimonialsPage() {
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <span className="text-sm text-gray-700">
+                <span className="text-sm text-muted-foreground">
                   Page {pagination.page} of {pagination.total_pages}
                 </span>
                 <Button
@@ -586,19 +777,276 @@ export default function AdminTestimonialsPage() {
         )}
       </div>
 
+      {/* Detail Dialog */}
+      <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageSquareText className="h-5 w-5" />
+              Testimonial Details
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedTestimonial && (
+            <div className="space-y-6">
+              {/* Customer Info */}
+              <div className="bg-muted/50 rounded-lg p-4">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">{selectedTestimonial.customer_name}</span>
+                      {selectedTestimonial.is_verified_customer && (
+                        <Badge variant="outline" className="text-xs">
+                          <BadgeCheck className="h-3 w-3 mr-1" />
+                          Verified
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Mail className="h-4 w-4" />
+                      <a href={`mailto:${selectedTestimonial.customer_email}`} className="hover:underline">
+                        {selectedTestimonial.customer_email}
+                      </a>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <CalendarDays className="h-4 w-4" />
+                      Submitted {formatDateTime(selectedTestimonial.created_at)}
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-2">
+                    <Badge variant={getStatusBadgeVariant(selectedTestimonial.status)} className="capitalize">
+                      {selectedTestimonial.status}
+                    </Badge>
+                    {selectedTestimonial.is_featured && (
+                      <Badge variant="outline" className="border-yellow-500 text-yellow-700 dark:text-yellow-400">
+                        <Star className="h-3 w-3 mr-1 fill-current" />
+                        Featured
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Rating and Review */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <StaticStarRating rating={selectedTestimonial.rating} size="md" />
+                  <span className="text-lg font-medium">{selectedTestimonial.rating}/5</span>
+                </div>
+                <p className="text-sm leading-relaxed">{selectedTestimonial.review_text}</p>
+              </div>
+
+              {/* Admin Response */}
+              {selectedTestimonial.admin_response && (
+                <div className="border rounded-lg p-4 bg-blue-50/50 dark:bg-blue-950/20">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MessageSquare className="h-4 w-4 text-blue-600" />
+                    <span className="font-medium text-sm">Admin Response</span>
+                    {selectedTestimonial.admin_response_at && (
+                      <span className="text-xs text-muted-foreground">
+                        {formatDateTime(selectedTestimonial.admin_response_at)}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm">{selectedTestimonial.admin_response}</p>
+                </div>
+              )}
+
+              {/* Rejection Reason */}
+              {selectedTestimonial.status === 'rejected' && selectedTestimonial.rejection_reason && (
+                <div className="border border-red-200 rounded-lg p-4 bg-red-50/50 dark:bg-red-950/20">
+                  <div className="flex items-center gap-2 mb-2">
+                    <XCircle className="h-4 w-4 text-red-600" />
+                    <span className="font-medium text-sm text-red-700 dark:text-red-400">Rejection Reason</span>
+                    {selectedTestimonial.rejected_at && (
+                      <span className="text-xs text-muted-foreground">
+                        {formatDateTime(selectedTestimonial.rejected_at)}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm">{selectedTestimonial.rejection_reason}</p>
+                </div>
+              )}
+
+              {/* History Timeline */}
+              <div className="space-y-2">
+                <h4 className="font-medium flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  History
+                </h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <div className="w-2 h-2 rounded-full bg-gray-400" />
+                    <span>Created: {formatDateTime(selectedTestimonial.created_at)}</span>
+                  </div>
+                  {selectedTestimonial.approved_at && (
+                    <div className="flex items-center gap-2 text-green-600">
+                      <div className="w-2 h-2 rounded-full bg-green-500" />
+                      <span>Approved: {formatDateTime(selectedTestimonial.approved_at)}</span>
+                    </div>
+                  )}
+                  {selectedTestimonial.rejected_at && (
+                    <div className="flex items-center gap-2 text-red-600">
+                      <div className="w-2 h-2 rounded-full bg-red-500" />
+                      <span>Rejected: {formatDateTime(selectedTestimonial.rejected_at)}</span>
+                    </div>
+                  )}
+                  {selectedTestimonial.admin_response_at && (
+                    <div className="flex items-center gap-2 text-blue-600">
+                      <div className="w-2 h-2 rounded-full bg-blue-500" />
+                      <span>Response added: {formatDateTime(selectedTestimonial.admin_response_at)}</span>
+                    </div>
+                  )}
+                  {selectedTestimonial.updated_at !== selectedTestimonial.created_at && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <div className="w-2 h-2 rounded-full bg-gray-400" />
+                      <span>Last updated: {formatDateTime(selectedTestimonial.updated_at)}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Customer Orders */}
+              <div className="space-y-2">
+                <h4 className="font-medium flex items-center gap-2">
+                  <ShoppingCart className="h-4 w-4" />
+                  Customer Orders
+                </h4>
+                {isLoadingOrders ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading orders...
+                  </div>
+                ) : customerOrders.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No orders found for this customer.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {customerOrders.map((order) => (
+                      <a
+                        key={order.id}
+                        href={`/admin/orders?search=${order.order_number}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="font-mono text-sm">{order.order_number}</span>
+                          <span className={cn('text-sm capitalize', getOrderStatusColor(order.status))}>
+                            {order.status}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">
+                            ${(order.total_amount / 100).toFixed(2)}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {formatDate(order.created_at)}
+                          </span>
+                          <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="flex flex-wrap gap-2 pt-4 border-t">
+                {selectedTestimonial.status === 'pending' && (
+                  <>
+                    <Button
+                      onClick={() => handleApprove(true)}
+                      disabled={isSubmitting}
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Approve
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={() => {
+                        setIsDetailDialogOpen(false);
+                        setIsRejectDialogOpen(true);
+                      }}
+                    >
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Reject
+                    </Button>
+                  </>
+                )}
+                {selectedTestimonial.status === 'approved' && (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setAdminResponse(selectedTestimonial.admin_response || '');
+                        setIsDetailDialogOpen(false);
+                        setIsRespondDialogOpen(true);
+                      }}
+                    >
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      {selectedTestimonial.admin_response ? 'Edit Response' : 'Add Response'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => handleToggleFeatured(selectedTestimonial)}
+                    >
+                      <Star className={cn(
+                        'h-4 w-4 mr-2',
+                        selectedTestimonial.is_featured && 'fill-yellow-400 text-yellow-400'
+                      )} />
+                      {selectedTestimonial.is_featured ? 'Unfeature' : 'Feature'}
+                    </Button>
+                  </>
+                )}
+                {selectedTestimonial.status === 'rejected' && (
+                  <Button
+                    onClick={() => handleApprove(true)}
+                    disabled={isSubmitting}
+                  >
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    Restore & Approve
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  className="text-red-600 hover:text-red-700"
+                  onClick={() => {
+                    setIsDetailDialogOpen(false);
+                    setIsDeleteDialogOpen(true);
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Approve Dialog */}
       <Dialog open={isApproveDialogOpen} onOpenChange={setIsApproveDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Approve Testimonial</DialogTitle>
+            <DialogTitle>
+              {selectedTestimonial?.status === 'rejected' ? 'Restore & Approve Testimonial' : 'Approve Testimonial'}
+            </DialogTitle>
           </DialogHeader>
-          <p>Are you sure you want to approve this testimonial?</p>
+          <p>
+            {selectedTestimonial?.status === 'rejected'
+              ? 'This will restore the rejected testimonial and approve it for display.'
+              : 'Are you sure you want to approve this testimonial?'
+            }
+          </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsApproveDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleApprove} disabled={isSubmitting}>
-              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Approve'}
+            <Button onClick={() => handleApprove(false)} disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                selectedTestimonial?.status === 'rejected' ? 'Restore & Approve' : 'Approve'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -637,7 +1085,9 @@ export default function AdminTestimonialsPage() {
       <Dialog open={isRespondDialogOpen} onOpenChange={setIsRespondDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Admin Response</DialogTitle>
+            <DialogTitle>
+              {selectedTestimonial?.admin_response ? 'Edit Admin Response' : 'Add Admin Response'}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>

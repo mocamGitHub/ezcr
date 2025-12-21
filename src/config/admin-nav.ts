@@ -11,6 +11,7 @@ import {
   Mail,
   Building2,
   Wrench,
+  Receipt,
   type LucideIcon,
 } from 'lucide-react'
 import { type UserRole, hasPermission } from '@/lib/permissions'
@@ -29,6 +30,8 @@ export interface AdminNavItem {
 export interface AdminNavSection {
   title: string
   items: AdminNavItem[]
+  /** Color for the section heading */
+  color?: string
 }
 
 /**
@@ -37,6 +40,7 @@ export interface AdminNavSection {
 export const adminNavSections: AdminNavSection[] = [
   {
     title: 'Main',
+    color: 'text-amber-600 dark:text-amber-400',
     items: [
       {
         title: 'Dashboard',
@@ -48,12 +52,19 @@ export const adminNavSections: AdminNavSection[] = [
   },
   {
     title: 'Operations',
+    color: 'text-blue-600 dark:text-blue-400',
     items: [
       {
         title: 'Orders',
         href: '/admin/orders',
         icon: ShoppingCart,
         description: 'Manage customer orders',
+      },
+      {
+        title: 'QBO Invoices',
+        href: '/admin/qbo',
+        icon: Receipt,
+        description: 'QuickBooks Online invoices',
       },
       {
         title: 'Inventory',
@@ -71,6 +82,7 @@ export const adminNavSections: AdminNavSection[] = [
   },
   {
     title: 'Customers',
+    color: 'text-emerald-600 dark:text-emerald-400',
     items: [
       {
         title: 'Customers',
@@ -96,6 +108,7 @@ export const adminNavSections: AdminNavSection[] = [
   },
   {
     title: 'Admin',
+    color: 'text-purple-600 dark:text-purple-400',
     items: [
       {
         title: 'Team',
@@ -185,6 +198,33 @@ export interface BreadcrumbItem {
 }
 
 /**
+ * Find the section containing a given href
+ */
+export function findSectionForHref(href: string): AdminNavSection | null {
+  for (const section of adminNavSections) {
+    const found = section.items.some((item) => href.startsWith(item.href))
+    if (found) return section
+  }
+  return null
+}
+
+/**
+ * Find the section containing the current pathname
+ */
+export function findSectionForPath(pathname: string): AdminNavSection | null {
+  for (const section of adminNavSections) {
+    const found = section.items.some((item) => {
+      if (item.href === '/admin/dashboard') {
+        return pathname === item.href
+      }
+      return pathname.startsWith(item.href)
+    })
+    if (found) return section
+  }
+  return null
+}
+
+/**
  * Generate breadcrumbs from pathname
  */
 export function generateBreadcrumbs(pathname: string): BreadcrumbItem[] {
@@ -196,6 +236,21 @@ export function generateBreadcrumbs(pathname: string): BreadcrumbItem[] {
     title: 'Dashboard',
     href: '/admin/dashboard',
   })
+
+  // Skip if we're on dashboard
+  if (pathname === '/admin/dashboard') {
+    return breadcrumbs
+  }
+
+  // Find the section for this path and add it to breadcrumbs
+  const section = findSectionForPath(pathname)
+  if (section && section.title !== 'Main') {
+    // Add section as a non-clickable breadcrumb (sections don't have their own page)
+    breadcrumbs.push({
+      title: section.title,
+      // No href - section headers aren't clickable pages
+    })
+  }
 
   // Skip 'admin' segment, start from index 1
   for (let i = 1; i < segments.length; i++) {

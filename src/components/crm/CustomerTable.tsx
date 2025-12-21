@@ -1,16 +1,20 @@
 'use client'
 
+import { useMemo } from 'react'
 import type { CustomerProfile } from '@/types/crm'
 import { formatCurrency } from '@/lib/utils'
 import { HealthScoreBadge } from './HealthScoreBadge'
 import { CustomerTagBadges } from './CustomerTagBadges'
+import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+
+export type SortField = 'name' | 'health_score' | 'order_count' | 'lifetime_value' | 'last_order_date' | 'open_task_count'
 
 interface CustomerTableProps {
   customers: CustomerProfile[]
   loading: boolean
-  sortBy: 'lifetime_value' | 'last_order_date' | 'order_count'
+  sortBy: SortField
   sortOrder: 'asc' | 'desc'
-  onSortChange: (column: 'lifetime_value' | 'last_order_date' | 'order_count') => void
+  onSortChange: (column: SortField) => void
   onCustomerClick: (email: string) => void
 }
 
@@ -22,12 +26,54 @@ export function CustomerTable({
   onSortChange,
   onCustomerClick,
 }: CustomerTableProps) {
-  const SortIcon = ({ column }: { column: typeof sortBy }) => {
+  const SortIcon = ({ column }: { column: SortField }) => {
     if (sortBy !== column) {
-      return <span className="text-muted-foreground ml-1">↕</span>
+      return <ArrowUpDown className="h-4 w-4 ml-1 text-muted-foreground" />
     }
-    return <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+    return sortOrder === 'asc'
+      ? <ArrowUp className="h-4 w-4 ml-1" />
+      : <ArrowDown className="h-4 w-4 ml-1" />
   }
+
+  // Client-side sorting for columns not supported by server
+  const sortedCustomers = useMemo(() => {
+    // Server sorts: lifetime_value, last_order_date, order_count
+    // Client sorts: name, health_score, open_task_count
+    const clientSortFields = ['name', 'health_score', 'open_task_count']
+
+    if (!clientSortFields.includes(sortBy)) {
+      return customers // Already sorted by server
+    }
+
+    return [...customers].sort((a, b) => {
+      let aVal: string | number | null = null
+      let bVal: string | number | null = null
+
+      switch (sortBy) {
+        case 'name':
+          aVal = (a.name || '').toLowerCase()
+          bVal = (b.name || '').toLowerCase()
+          break
+        case 'health_score':
+          aVal = a.health_score ?? -1
+          bVal = b.health_score ?? -1
+          break
+        case 'open_task_count':
+          aVal = a.open_task_count ?? 0
+          bVal = b.open_task_count ?? 0
+          break
+        default:
+          return 0
+      }
+
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortOrder === 'asc' ? aVal - bVal : bVal - aVal
+      }
+
+      const comparison = String(aVal).localeCompare(String(bVal))
+      return sortOrder === 'asc' ? comparison : -comparison
+    })
+  }, [customers, sortBy, sortOrder])
 
   if (loading) {
     return (
@@ -50,40 +96,72 @@ export function CustomerTable({
     )
   }
 
+  const headerClass = "px-4 py-3 font-medium text-sm cursor-pointer hover:bg-muted/70 transition-colors select-none"
+
   return (
     <div className="border rounded-lg overflow-hidden">
       <table className="w-full">
         <thead className="bg-muted/50 border-b">
           <tr>
-            <th className="text-left px-4 py-3 font-medium text-sm">Customer</th>
-            <th className="text-left px-4 py-3 font-medium text-sm">Health</th>
+            <th
+              className={`text-left ${headerClass}`}
+              onClick={() => onSortChange('name')}
+            >
+              <div className="flex items-center">
+                Customer
+                <SortIcon column="name" />
+              </div>
+            </th>
+            <th
+              className={`text-left ${headerClass}`}
+              onClick={() => onSortChange('health_score')}
+            >
+              <div className="flex items-center">
+                Health
+                <SortIcon column="health_score" />
+              </div>
+            </th>
             <th className="text-left px-4 py-3 font-medium text-sm">Tags</th>
-            <th 
-              className="text-right px-4 py-3 font-medium text-sm cursor-pointer hover:bg-muted/70 transition-colors"
+            <th
+              className={`text-right ${headerClass}`}
               onClick={() => onSortChange('order_count')}
             >
-              Orders
-              <SortIcon column="order_count" />
+              <div className="flex items-center justify-end">
+                Orders
+                <SortIcon column="order_count" />
+              </div>
             </th>
-            <th 
-              className="text-right px-4 py-3 font-medium text-sm cursor-pointer hover:bg-muted/70 transition-colors"
+            <th
+              className={`text-right ${headerClass}`}
               onClick={() => onSortChange('lifetime_value')}
             >
-              Lifetime Value
-              <SortIcon column="lifetime_value" />
+              <div className="flex items-center justify-end">
+                Lifetime Value
+                <SortIcon column="lifetime_value" />
+              </div>
             </th>
-            <th 
-              className="text-left px-4 py-3 font-medium text-sm cursor-pointer hover:bg-muted/70 transition-colors"
+            <th
+              className={`text-left ${headerClass}`}
               onClick={() => onSortChange('last_order_date')}
             >
-              Last Order
-              <SortIcon column="last_order_date" />
+              <div className="flex items-center">
+                Last Order
+                <SortIcon column="last_order_date" />
+              </div>
             </th>
-            <th className="text-center px-4 py-3 font-medium text-sm">Tasks</th>
+            <th
+              className={`text-center ${headerClass}`}
+              onClick={() => onSortChange('open_task_count')}
+            >
+              <div className="flex items-center justify-center">
+                Tasks
+                <SortIcon column="open_task_count" />
+              </div>
+            </th>
           </tr>
         </thead>
         <tbody>
-          {customers.map((customer) => (
+          {sortedCustomers.map((customer) => (
             <tr
               key={customer.customer_email}
               onClick={() => onCustomerClick(customer.customer_email)}
@@ -99,9 +177,7 @@ export function CustomerTable({
                 </div>
               </td>
               <td className="px-4 py-3">
-                {customer.health_score !== undefined && (
-                  <HealthScoreBadge score={customer.health_score} />
-                )}
+                <HealthScoreBadge score={customer.health_score ?? 0} />
               </td>
               <td className="px-4 py-3">
                 <CustomerTagBadges tags={customer.tags || []} />
@@ -122,10 +198,12 @@ export function CustomerTable({
                   : 'Never'}
               </td>
               <td className="px-4 py-3 text-center">
-                {customer.open_task_count > 0 && (
+                {(customer.open_task_count ?? 0) > 0 ? (
                   <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-medium bg-primary text-primary-foreground rounded-full">
                     {customer.open_task_count}
                   </span>
+                ) : (
+                  <span className="text-muted-foreground">-</span>
                 )}
               </td>
             </tr>

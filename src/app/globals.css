@@ -175,3 +175,8 @@ body.admin-layout > div > main {
   min-height: 100vh !important;
   padding: 0 !important;
 }
+
+/* Hide admin breadcrumb on pages that render their own (e.g., CRM customer detail) */
+div:has(> .hide-admin-breadcrumb) > nav[aria-label="Breadcrumb"] {
+  display: none !important;
+}

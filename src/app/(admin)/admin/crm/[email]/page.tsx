@@ -36,7 +36,8 @@ export default async function CustomerDetailPage({ params }: CustomerDetailPageP
   }
 
   return (
-    <div className="container mx-auto py-8 px-4">
+    <div className="py-8 px-4 hide-admin-breadcrumb">
+      {/* CustomerDetailView renders its own breadcrumb with customer name */}
       <Suspense fallback={<CustomerDetailSkeleton />}>
         <CustomerDetailView customer={customer} />
       </Suspense>

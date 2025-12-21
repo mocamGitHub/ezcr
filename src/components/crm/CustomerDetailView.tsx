@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { ChevronRight, Home, ArrowLeft } from 'lucide-react'
 import type { CustomerProfile, CRMActivity, CustomerNote, CustomerTask } from '@/types/crm'
 import { getCustomerActivities, getCustomerNotes, getCustomerTasks, getCustomerOrders } from '@/actions/crm'
 import { CustomerProfileCard } from './CustomerProfileCard'
@@ -16,7 +18,7 @@ interface CustomerDetailViewProps {
 
 export function CustomerDetailView({ customer }: CustomerDetailViewProps) {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<'timeline' | 'notes' | 'tasks' | 'orders'>('timeline')
+  const [activeTab, setActiveTab] = useState<'orders' | 'timeline' | 'notes' | 'tasks'>('orders')
   
   const [activities, setActivities] = useState<CRMActivity[]>([])
   const [notes, setNotes] = useState<CustomerNote[]>([])
@@ -67,22 +69,48 @@ export function CustomerDetailView({ customer }: CustomerDetailViewProps) {
   }
 
   const tabs = [
-    { id: 'timeline' as const, label: 'Activity Timeline', count: activities.length },
+    { id: 'orders' as const, label: 'Orders', count: orders.length },
+    { id: 'timeline' as const, label: 'Activity', count: activities.length },
     { id: 'notes' as const, label: 'Notes', count: notes.length },
     { id: 'tasks' as const, label: 'Tasks', count: tasks.filter(t => t.status !== 'completed').length },
-    { id: 'orders' as const, label: 'Orders', count: orders.length },
   ]
+
+  const customerName = customer.name || 'Unknown Customer'
 
   return (
     <div className="space-y-6">
-      {/* Back Button */}
-      <button
-        onClick={() => router.push('/admin/crm')}
-        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <span>←</span>
-        Back to Customers
-      </button>
+      {/* Breadcrumb with customer name */}
+      <nav className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
+        <button
+          onClick={() => router.push('/admin/crm')}
+          className="h-8 px-2 flex items-center gap-1 rounded-md hover:bg-accent hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </button>
+        <ol className="flex items-center gap-1">
+          <li className="flex items-center gap-1">
+            <Link href="/admin/dashboard" className="hover:text-foreground transition-colors flex items-center gap-1">
+              <Home className="h-4 w-4" />
+              <span className="sr-only md:not-sr-only">Dashboard</span>
+            </Link>
+          </li>
+          <li className="flex items-center gap-1">
+            <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+            <span>Customers</span>
+          </li>
+          <li className="flex items-center gap-1">
+            <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+            <Link href="/admin/crm" className="hover:text-foreground transition-colors">
+              Customers
+            </Link>
+          </li>
+          <li className="flex items-center gap-1">
+            <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+            <span className="font-medium text-foreground">{customerName}</span>
+          </li>
+        </ol>
+      </nav>
 
       {/* Customer Profile Card */}
       <CustomerProfileCard customer={customer} onUpdate={loadData} />
@@ -119,6 +147,9 @@ export function CustomerDetailView({ customer }: CustomerDetailViewProps) {
           </div>
         ) : (
           <>
+            {activeTab === 'orders' && (
+              <CustomerOrders orders={orders} />
+            )}
             {activeTab === 'timeline' && (
               <ActivityTimeline activities={activities} />
             )}
@@ -135,9 +166,6 @@ export function CustomerDetailView({ customer }: CustomerDetailViewProps) {
                 customerEmail={customer.customer_email}
                 onUpdate={handleTasksUpdate}
               />
-            )}
-            {activeTab === 'orders' && (
-              <CustomerOrders orders={orders} />
             )}
           </>
         )}

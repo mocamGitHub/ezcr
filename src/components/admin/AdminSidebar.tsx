@@ -34,6 +34,7 @@ import {
   adminUserNavItems,
   getAccessibleNavItems,
   getAccessibleNavSections,
+  findSectionForPath,
   type AdminNavItem,
 } from '@/config/admin-nav'
 import { type UserRole } from '@/lib/permissions'
@@ -75,6 +76,20 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
       )
     }
   }, [])
+
+  // Auto-expand section containing the current page
+  useEffect(() => {
+    if (!pathname) return
+    const currentSection = findSectionForPath(pathname)
+    if (currentSection && collapsedSections.has(currentSection.title)) {
+      setCollapsedSections((prev) => {
+        const newSet = new Set(prev)
+        newSet.delete(currentSection.title)
+        localStorage.setItem(SECTIONS_COLLAPSED_KEY, JSON.stringify([...newSet]))
+        return newSet
+      })
+    }
+  }, [pathname])
 
   // Save collapsed state to localStorage
   const toggleCollapsed = () => {
@@ -204,7 +219,10 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
                   {(!collapsed || isMobile) && (
                     <button
                       onClick={() => toggleSection(section.title)}
-                      className="w-full flex items-center justify-between px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors rounded-md bg-muted/40 hover:bg-muted/70 border border-transparent hover:border-border/50"
+                      className={cn(
+                        'w-full flex items-center justify-between px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors rounded-md bg-muted/40 hover:bg-muted/70 border border-transparent hover:border-border/50',
+                        section.color || 'text-muted-foreground'
+                      )}
                     >
                       <span>{section.title}</span>
                       <ChevronDown

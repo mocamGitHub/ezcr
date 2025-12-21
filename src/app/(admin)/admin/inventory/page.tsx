@@ -188,23 +188,23 @@ export default function InventoryDashboardPage() {
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-card border rounded-lg p-4">
+        <div className="bg-card border rounded-lg p-4 text-center">
           <div className="text-sm text-muted-foreground">Total Products</div>
           <div className="text-2xl font-bold mt-1">{products.length}</div>
         </div>
-        <div className="bg-card border rounded-lg p-4">
+        <div className="bg-card border rounded-lg p-4 text-center">
           <div className="text-sm text-muted-foreground">Low Stock</div>
           <div className="text-2xl font-bold mt-1 text-yellow-600">
             {lowStockCount}
           </div>
         </div>
-        <div className="bg-card border rounded-lg p-4">
+        <div className="bg-card border rounded-lg p-4 text-center">
           <div className="text-sm text-muted-foreground">Out of Stock</div>
           <div className="text-2xl font-bold mt-1 text-red-600">
             {outOfStockCount}
           </div>
         </div>
-        <div className="bg-card border rounded-lg p-4">
+        <div className="bg-card border rounded-lg p-4 text-center">
           <div className="text-sm text-muted-foreground">Total Inventory Value</div>
           <div className="text-2xl font-bold mt-1">
             ${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}

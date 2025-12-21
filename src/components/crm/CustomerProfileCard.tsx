@@ -6,6 +6,7 @@ import { HealthScoreBadge } from './HealthScoreBadge'
 import { CustomerTagBadges } from './CustomerTagBadges'
 import { formatCurrency } from '@/lib/utils'
 import { getCustomerTags, addTagToCustomer, removeTagFromCustomer, calculateHealthScore } from '@/actions/crm'
+import { toast } from 'sonner'
 
 interface CustomerProfileCardProps {
   customer: CustomerProfile
@@ -222,7 +223,7 @@ export function CustomerProfileCard({ customer, onUpdate }: CustomerProfileCardP
         <button
           onClick={() => {
             navigator.clipboard.writeText(customer.customer_email)
-            alert('Email copied to clipboard')
+            toast.success('Email copied to clipboard')
           }}
           className="px-4 py-2 text-sm font-medium border rounded-md hover:bg-muted transition-colors"
         >

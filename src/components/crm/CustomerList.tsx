@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { getCustomers, getCRMDashboardStats } from '@/actions/crm'
 import type { CustomerProfile, CustomerListFilters, CustomerSegment } from '@/types/crm'
 import { DEFAULT_SEGMENTS } from '@/types/crm'
-import { CustomerTable } from './CustomerTable'
+import { CustomerTable, type SortField } from './CustomerTable'
 import { CustomerFilters } from './CustomerFilters'
 import { CustomerSegmentTabs } from './CustomerSegmentTabs'
 import { CRMStats } from './CRMStats'
@@ -25,7 +25,7 @@ export function CustomerList() {
   
   const [activeSegment, setActiveSegment] = useState<string>('all')
   const [filters, setFilters] = useState<CustomerListFilters>({})
-  const [sortBy, setSortBy] = useState<'lifetime_value' | 'last_order_date' | 'order_count'>('last_order_date')
+  const [sortBy, setSortBy] = useState<SortField>('last_order_date')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
 
   // Load customers on mount and when filters change
@@ -90,7 +90,7 @@ export function CustomerList() {
     setActiveSegment('all') // Reset segment when manually filtering
   }
 
-  const handleSortChange = (column: 'lifetime_value' | 'last_order_date' | 'order_count') => {
+  const handleSortChange = (column: SortField) => {
     if (sortBy === column) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
     } else {

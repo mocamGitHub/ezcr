@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { RefreshCw, Mail, MessageSquare, ArrowUpRight, ArrowDownLeft } from 'lucide-react'
+import { useSearchParams } from 'next/navigation'
+import { RefreshCw, Mail, MessageSquare, ArrowUpRight, ArrowDownLeft, Search, X, Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Select,
@@ -28,11 +30,13 @@ type Message = {
 }
 
 export default function MessagesPage() {
+  const searchParams = useSearchParams()
   const [loading, setLoading] = useState(true)
   const [messages, setMessages] = useState<Message[]>([])
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '')
   const [channelFilter, setChannelFilter] = useState<string>('all')
   const [directionFilter, setDirectionFilter] = useState<string>('all')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [statusFilter, setStatusFilter] = useState<string>(searchParams.get('status') || 'all')
 
   const fetchData = async () => {
     setLoading(true)
@@ -41,6 +45,7 @@ export default function MessagesPage() {
         channel: channelFilter,
         direction: directionFilter,
         status: statusFilter,
+        search: searchQuery,
       })
       setMessages(data)
     } catch (error) {
@@ -54,6 +59,14 @@ export default function MessagesPage() {
     fetchData()
   }, [channelFilter, directionFilter, statusFilter])
 
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchData()
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'delivered': return 'bg-green-100 text-green-700'
@@ -65,17 +78,49 @@ export default function MessagesPage() {
     }
   }
 
+  const clearSearch = () => {
+    setSearchQuery('')
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Messages</h1>
+          <h1 className="text-3xl font-bold flex items-center gap-3">
+            <Send className="h-8 w-8" />
+            Messages
+          </h1>
           <p className="text-muted-foreground mt-1">
             View all sent and received messages
           </p>
         </div>
-        <div className="flex items-center gap-3 flex-wrap">
+        <Button onClick={fetchData} disabled={loading} variant="outline">
+          <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
+      </div>
+
+      {/* Search and Filters */}
+      <div className="bg-card border rounded-lg p-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by email or phone..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-10"
+            />
+            {searchQuery && (
+              <button
+                onClick={clearSearch}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
           <Select value={channelFilter} onValueChange={setChannelFilter}>
             <SelectTrigger className="w-[130px]">
               <SelectValue placeholder="Channel" />
@@ -110,11 +155,6 @@ export default function MessagesPage() {
               <SelectItem value="queued">Queued</SelectItem>
             </SelectContent>
           </Select>
-
-          <Button onClick={fetchData} disabled={loading} variant="outline">
-            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
         </div>
       </div>
 
