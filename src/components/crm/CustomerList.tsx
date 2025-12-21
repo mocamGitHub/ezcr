@@ -9,11 +9,16 @@ import { CustomerTable, type SortField } from './CustomerTable'
 import { CustomerFilters } from './CustomerFilters'
 import { CustomerSegmentTabs } from './CustomerSegmentTabs'
 import { CRMStats } from './CRMStats'
+import { useAuth } from '@/contexts/AuthContext'
 
 export function CustomerList() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  
+  const { profile } = useAuth()
+
+  // Get health score visibility preference from user metadata
+  const showHealthScore = profile?.metadata?.crm_preferences?.show_health_score ?? true
+
   const [customers, setCustomers] = useState<CustomerProfile[]>([])
   const [stats, setStats] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -140,6 +145,7 @@ export function CustomerList() {
         sortOrder={sortOrder}
         onSortChange={handleSortChange}
         onCustomerClick={handleCustomerClick}
+        showHealthScore={showHealthScore}
       />
 
       {/* Pagination */}

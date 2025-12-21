@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import { User, Bell, Palette, Shield, Save } from 'lucide-react'
+import { User, Bell, Palette, Shield, Save, BarChart3 } from 'lucide-react'
 
 export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
@@ -18,6 +18,9 @@ export default function SettingsPage() {
     email_notifications: true,
     order_alerts: true,
     weekly_summary: true,
+  })
+  const [crmPreferences, setCrmPreferences] = useState({
+    show_health_score: true,
   })
 
   useEffect(() => {
@@ -44,6 +47,12 @@ export default function SettingsPage() {
             last_name: profileData.last_name || '',
             phone: profileData.phone || '',
           })
+          // Load CRM preferences from metadata
+          if (profileData.metadata?.crm_preferences) {
+            setCrmPreferences({
+              show_health_score: profileData.metadata.crm_preferences.show_health_score ?? true,
+            })
+          }
         }
       }
     } catch (err) {
@@ -76,6 +85,44 @@ export default function SettingsPage() {
     } catch (err) {
       console.error('Error saving profile:', err)
       toast.error('Failed to save profile')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleSaveCrmPreferences = async () => {
+    if (!user) return
+
+    try {
+      setSaving(true)
+      const supabase = createClient()
+
+      // First get current metadata to merge with
+      const { data: currentProfile } = await supabase
+        .from('user_profiles')
+        .select('metadata')
+        .eq('id', user.id)
+        .single()
+
+      const currentMetadata = currentProfile?.metadata || {}
+
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({
+          metadata: {
+            ...currentMetadata,
+            crm_preferences: crmPreferences,
+          },
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', user.id)
+
+      if (error) throw error
+
+      toast.success('CRM preferences saved')
+    } catch (err) {
+      console.error('Error saving CRM preferences:', err)
+      toast.error('Failed to save preferences')
     } finally {
       setSaving(false)
     }
@@ -162,6 +209,47 @@ export default function SettingsPage() {
             >
               <Save className="h-4 w-4" />
               {saving ? 'Saving...' : 'Save Profile'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* CRM Preferences Section */}
+      <div className="border rounded-lg p-6 bg-card">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
+            <BarChart3 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold">CRM Preferences</h2>
+            <p className="text-sm text-muted-foreground">Configure CRM display options</p>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <label className="flex items-center justify-between py-3 border-b">
+            <div>
+              <div className="font-medium">Show Health Score</div>
+              <div className="text-sm text-muted-foreground">
+                Display customer health scores in the CRM customer list and detail pages
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              checked={crmPreferences.show_health_score}
+              onChange={(e) => setCrmPreferences({ ...crmPreferences, show_health_score: e.target.checked })}
+              className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary"
+            />
+          </label>
+
+          <div className="pt-4">
+            <button
+              onClick={handleSaveCrmPreferences}
+              disabled={saving}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+            >
+              <Save className="h-4 w-4" />
+              {saving ? 'Saving...' : 'Save CRM Preferences'}
             </button>
           </div>
         </div>

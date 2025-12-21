@@ -11,6 +11,7 @@ import { ActivityTimeline } from './ActivityTimeline'
 import { CustomerTasks } from './CustomerTasks'
 import { CustomerOrders } from './CustomerOrders'
 import { CustomerNotes } from './CustomerNotes'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface CustomerDetailViewProps {
   customer: CustomerProfile
@@ -18,7 +19,11 @@ interface CustomerDetailViewProps {
 
 export function CustomerDetailView({ customer }: CustomerDetailViewProps) {
   const router = useRouter()
+  const { profile } = useAuth()
   const [activeTab, setActiveTab] = useState<'orders' | 'timeline' | 'tasks' | 'notes'>('orders')
+
+  // Get health score visibility preference from user metadata
+  const showHealthScore = profile?.metadata?.crm_preferences?.show_health_score ?? true
 
   const [activities, setActivities] = useState<CRMActivity[]>([])
   const [notes, setNotes] = useState<CustomerNote[]>([])
@@ -76,17 +81,44 @@ export function CustomerDetailView({ customer }: CustomerDetailViewProps) {
     setActivities(activitiesData)
   }
 
-  // Extract billing address and phone from the most recent order
-  const customerAddress = orders.length > 0 && orders[0].billing_address
-    ? orders[0].billing_address
-    : null
+  // Find phone from any order (check all orders, not just first)
+  const findPhone = (): string | null => {
+    // First check the customer profile (from unified view)
+    if (customer.phone) return customer.phone
 
-  // Try to get phone from order (customer_phone field) or billing/shipping address
-  const customerPhone = orders.length > 0
-    ? orders[0].customer_phone ||
-      orders[0].billing_address?.phone ||
-      orders[0].shipping_address?.phone
-    : null
+    // Then check orders for customer_phone or address phone
+    for (const order of orders) {
+      if (order.customer_phone) return order.customer_phone
+      if (order.billing_address?.phone) return order.billing_address.phone
+      if (order.shipping_address?.phone) return order.shipping_address.phone
+    }
+    return null
+  }
+
+  // Find address from any order (prefer billing, then shipping)
+  const findAddress = () => {
+    for (const order of orders) {
+      // Check billing address first
+      if (order.billing_address) {
+        const addr = order.billing_address
+        // Check if it has meaningful data (city, state, or postal code)
+        if (addr.city || addr.state || addr.postal_code || addr.postalCode || addr.zip_code) {
+          return addr
+        }
+      }
+      // Fall back to shipping address
+      if (order.shipping_address) {
+        const addr = order.shipping_address
+        if (addr.city || addr.state || addr.postal_code || addr.postalCode || addr.zip_code) {
+          return addr
+        }
+      }
+    }
+    return null
+  }
+
+  const customerPhone = findPhone()
+  const customerAddress = findAddress()
 
   const tabs = [
     { id: 'orders' as const, label: 'Orders', count: orders.length },
@@ -136,6 +168,7 @@ export function CustomerDetailView({ customer }: CustomerDetailViewProps) {
       <CustomerProfileCard
         customer={customer}
         onUpdate={loadData}
+        showHealthScore={showHealthScore}
         address={customerAddress}
         phone={customerPhone}
         notesCount={notes.length}

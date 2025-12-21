@@ -4,6 +4,14 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { User, Session, AuthChangeEvent } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 
+interface CRMPreferences {
+  show_health_score?: boolean
+}
+
+interface UserMetadata {
+  crm_preferences?: CRMPreferences
+}
+
 interface UserProfile {
   id: string
   email: string
@@ -12,6 +20,7 @@ interface UserProfile {
   role: 'owner' | 'admin' | 'customer_service' | 'viewer' | 'customer'
   is_active: boolean
   tenant_id: string
+  metadata?: UserMetadata
 }
 
 interface AuthContextType {

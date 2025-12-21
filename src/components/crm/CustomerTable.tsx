@@ -16,6 +16,7 @@ interface CustomerTableProps {
   sortOrder: 'asc' | 'desc'
   onSortChange: (column: SortField) => void
   onCustomerClick: (email: string) => void
+  showHealthScore?: boolean
 }
 
 export function CustomerTable({
@@ -25,6 +26,7 @@ export function CustomerTable({
   sortOrder,
   onSortChange,
   onCustomerClick,
+  showHealthScore = true,
 }: CustomerTableProps) {
   const SortIcon = ({ column }: { column: SortField }) => {
     if (sortBy !== column) {
@@ -112,15 +114,17 @@ export function CustomerTable({
                 <SortIcon column="name" />
               </div>
             </th>
-            <th
-              className={`text-left ${headerClass}`}
-              onClick={() => onSortChange('health_score')}
-            >
-              <div className="flex items-center">
-                Health
-                <SortIcon column="health_score" />
-              </div>
-            </th>
+            {showHealthScore && (
+              <th
+                className={`text-left ${headerClass}`}
+                onClick={() => onSortChange('health_score')}
+              >
+                <div className="flex items-center">
+                  Health
+                  <SortIcon column="health_score" />
+                </div>
+              </th>
+            )}
             <th className="text-left px-4 py-3 font-medium text-sm">Tags</th>
             <th
               className={`text-right ${headerClass}`}
@@ -176,9 +180,11 @@ export function CustomerTable({
                   )}
                 </div>
               </td>
-              <td className="px-4 py-3">
-                <HealthScoreBadge score={customer.health_score ?? 0} />
-              </td>
+              {showHealthScore && (
+                <td className="px-4 py-3">
+                  <HealthScoreBadge score={customer.health_score ?? 0} />
+                </td>
+              )}
               <td className="px-4 py-3">
                 <CustomerTagBadges tags={customer.tags || []} />
               </td>
