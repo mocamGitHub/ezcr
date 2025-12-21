@@ -1,87 +1,96 @@
-# Session Handoff - Seed Data for Contacts & Tools
+# Session Handoff - QBO Import & CRM Customer Detail Improvements
 
-**Date**: 2025-12-18
+**Date**: 2025-12-20
 **Time**: Evening Session
-**Previous Commit**: `eab5f2e` - feat: Add Communications admin dashboard
-**Current Commit**: `d6d7930` - feat: Add comprehensive seed scripts for dev/staging environments
-**Current Status**: ✅ Admin Contacts & Tools fully seeded and ready for testing
+**Previous Commit**: `c1d89b0` - feat: Add QBO sync tool for QuickBooks Online integration
+**Current Commit**: `874f5c7` - feat: QBO import tool & CRM customer detail improvements
+**Current Status**: QBO data imported, CRM customer pages enhanced
 **Branch**: main
-**Dev Server**: Running at http://localhost:3001 ✅
+**Dev Server**: Running at http://localhost:3000
 
 ---
 
 ## What Was Accomplished This Session
 
-### Seed Data Created
-1. ✅ Ran `seed-sample-contacts.ts` - 12 business contacts seeded
-2. ✅ Ran `seed-sample-tools.ts` - 13 tools/subscriptions seeded
-3. ✅ Verified Admin Contacts & Tools feature is fully implemented
-4. ✅ Dev server running and ready for testing
+### QBO Import Tool
+- Created `tools/qbo-import/` with scripts for importing QBO invoices to orders
+- Built `backfill-order-items.ts` to populate order_items for imported orders
+- Created placeholder product/variant for QBO imported line items
+- **Successfully backfilled 207 orders with 759 order items** (21 skipped as shipping-only)
 
-### Business Contacts Seeded (12 total)
-| Type | Companies |
-|------|-----------|
-| Freight | TForce Freight, Old Dominion Freight Line |
-| Vendor | Steel Supply Co., Powder Coating Plus |
-| Service Provider | QuickBooks Solutions, WebDev Agency |
-| Financial | First National Bank, ABC Insurance Group |
-| Partner | Motorcycle Dealers Association, RevZilla |
-| Integration | Stripe, Mailgun |
+### CRM Customer Detail Page Improvements
+- Made Orders the first/default tab (was Activity)
+- Added custom breadcrumb showing customer name instead of email
+- Fixed `getCustomerOrders` to properly fetch orders
+- Fixed order total display (uses `grand_total` instead of `total_amount`)
+- Fixed delivery status display (shows "Delivered" for delivered, "In Transit" for shipped)
+- Removed redundant "Orders (n)" heading since count is in tab
 
-### Tools/Subscriptions Seeded (13 total)
-| Category | Tool | Cost |
-|----------|------|------|
-| Payment | Stripe | Usage-based |
-| Email | Mailgun | $35/mo |
-| Analytics | Google Analytics 4 | Free |
-| Analytics | Hotjar | $39/mo |
-| Shipping | ShipStation | $99/mo |
-| Infrastructure | Vercel | $20/mo |
-| Infrastructure | Supabase | $25/mo |
-| Marketing | Google Ads | Usage-based |
-| Marketing | Canva Pro | $120/yr |
-| Development | GitHub | $4/mo |
-| Development | Claude Code | $20/mo |
-| Accounting | QuickBooks Online | $80/mo |
-| Security | 1Password Business | $96/yr |
+### Admin Dashboard UI
+- Added distinct colors to sidebar section headings:
+  - Main: amber
+  - Operations: blue
+  - Customers: emerald
+  - Admin: purple
+
+### Database Changes
+- Added migration `00028_orders_qbo_link.sql`:
+  - `qbo_invoice_id` - Links orders to QBO invoices
+  - `qbo_sync_status` - Tracks sync state (not_synced, synced, imported, sync_error)
+  - `qbo_synced_at` - Timestamp of last sync
+
+### Files Modified This Session (25+ files)
+1. `src/components/crm/CustomerDetailView.tsx` - Orders first, custom breadcrumb
+2. `src/components/crm/CustomerOrders.tsx` - Fixed total & delivery display
+3. `src/components/crm/CustomerProfileCard.tsx` - Toast for Copy Email
+4. `src/actions/crm.ts` - Fixed getCustomerOrders query
+5. `src/config/admin-nav.ts` - Added section colors
+6. `src/components/admin/AdminSidebar.tsx` - Use section colors
+7. `src/app/globals.css` - CSS to hide admin breadcrumb on custom pages
+8. `supabase/migrations/00028_orders_qbo_link.sql` - QBO link fields
+9. `tools/qbo-import/src/index.ts` - Main import script
+10. `tools/qbo-import/src/backfill-order-items.ts` - Order items backfill
+11. `tools/qbo-import/src/transform.ts` - QBO to orders transformation
+12. `tools/qbo-import/src/create-placeholder.ts` - Helper to create placeholder product
 
 ---
 
 ## Current State
 
-### What's Working ✅
-- ✅ Admin Contacts page at `/admin/contacts`
-- ✅ Admin Tools page at `/admin/tools`
-- ✅ Database tables `tenant_contacts` and `tenant_tools` populated
-- ✅ Full CRUD operations (create, read, update, delete)
-- ✅ Search and filtering by type/category/status
-- ✅ Navigation links in admin sidebar
-- ✅ Dev server running on port 3001
+### What's Working
+- QBO invoices imported as orders with `qbo_sync_status = 'imported'`
+- Order items populated for 207 QBO-imported orders
+- CRM customer detail pages show orders with proper formatting
+- Sidebar section headings have distinct colors
+- Custom breadcrumb shows customer name
 
 ### What's NOT Working / Pending
-- ⏳ User must log in to access admin pages (expected behavior)
-- ⏳ Staging deployment pending (local dev only this session)
+- CSS `:has()` selector for hiding admin breadcrumb may not work in older browsers
+- 21 orders skipped during backfill (shipping-only invoices with no product lines)
 
 ---
 
 ## Next Immediate Actions
 
-### 1. Test Admin Pages in Browser
+### 1. Test Customer Detail Page
 ```bash
-# Access after logging in:
-http://localhost:3001/admin/contacts
-http://localhost:3001/admin/tools
+# Open in browser:
+http://localhost:3000/admin/crm/adam@perrego.net
 ```
 
-### 2. Deploy to Staging (Optional)
+### 2. Verify Order Items
 ```bash
-git push  # Already pushed - Coolify auto-deploys
+# Check order_items were created:
+cd tools/qbo-import
+DATABASE_URL="..." npx tsx -e "
+const pg = require('pg');
+const pool = new pg.Pool({connectionString: process.env.DATABASE_URL});
+pool.query('SELECT COUNT(*) FROM order_items').then(r => console.log(r.rows));
+"
 ```
 
-### 3. Run Full Seed Suite (Optional)
-```bash
-npx tsx scripts/seed-all.ts
-```
+### 3. Close SSH Tunnel
+The SSH tunnel to production database (port 54322) may still be running.
 
 ---
 
@@ -93,7 +102,7 @@ Run the `/resume` command or:
 # Check current state
 git log --oneline -5
 git status
-npm run dev  # If server not running (will use next available port)
+npm run dev  # If server not running
 
 # Read handoff document
 cat SESSION_HANDOFF.md
@@ -103,36 +112,33 @@ cat SESSION_HANDOFF.md
 
 ## Technical Context
 
-### Seed Scripts Available
+### QBO Import Tools
 | Script | Description |
 |--------|-------------|
-| `seed-sample-contacts.ts` | 12 business contacts |
-| `seed-sample-tools.ts` | 13 tools/subscriptions |
-| `seed-orders.ts` | Sample orders with various statuses |
-| `seed-crm.ts` | CRM data (notes, tasks, activities) |
-| `seed-fomo-banners.ts` | FOMO urgency banners |
-| `seed-all.ts` | Master script runs all seeds |
+| `index.ts` | Main import script (QBO invoices → orders) |
+| `backfill-order-items.ts` | Adds order_items to existing imported orders |
+| `create-placeholder.ts` | Creates placeholder product/variant |
+| `transform.ts` | QBO data transformation utilities |
 
-### Admin Pages Structure
+### Placeholder Product IDs
 ```
-/admin/contacts     - Business contacts (tenant_contacts table)
-/admin/tools        - Software subscriptions (tenant_tools table)
-/admin/comms        - Communications dashboard
-/admin/orders       - Order management
+Product: 00000000-0000-0000-0001-000000000001
+Variant: 00000000-0000-0000-0001-000000000002
 ```
 
-### Environment Variables Required
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://supabase.nexcyte.com
-SUPABASE_SERVICE_KEY=your-service-key
-EZCR_TENANT_ID=174bed32-89ff-4920-94d7-4527a3aba352
+### SSH Tunnel for Production DB
+```bash
+ssh -L 54322:localhost:5432 root@5.161.84.153
+# Then use DATABASE_URL="postgresql://postgres:PASSWORD@localhost:54322/postgres"
 ```
 
 ---
 
 ## Known Issues / Blockers
 
-None - all features working as expected.
+1. **Older Browser Support**: CSS `:has()` selector used for hiding admin breadcrumb may not work in browsers before Chrome 105, Firefox 121, Safari 15.4
+
+2. **Shipping-Only Orders**: 21 QBO invoices were skipped because they contained only shipping line items with no products
 
 ---
 
@@ -140,15 +146,15 @@ None - all features working as expected.
 
 | Commit | Description |
 |--------|-------------|
-| `d6d7930` | feat: Add comprehensive seed scripts for dev/staging environments |
-| `5b65bd5` | fix: Add parentheses to nullish coalescing operator in mailgun webhook |
-| `e1b00aa` | feat: UI improvements for admin dashboard |
-| `eab5f2e` | feat: Add Communications admin dashboard |
+| `874f5c7` | feat: QBO import tool & CRM customer detail improvements |
+| `c1d89b0` | feat: Add QBO sync tool for QuickBooks Online integration |
+| `a3399e4` | feat: Add sortable table headers and optimistic updates |
+| `d26d81b` | docs: Update session handoff for contacts & tools seed data |
 
 ---
 
-**Session Status**: ✅ Complete - All seed data loaded
-**Next Session**: Test admin pages in browser, optionally deploy to staging
-**Handoff Complete**: 2025-12-18
+**Session Status**: Complete
+**Next Session**: Test CRM customer pages, potentially add product matching for QBO line items
+**Handoff Complete**: 2025-12-20
 
-🎉 Admin Contacts & Tools seeded with realistic sample data!
+🎉 207 orders backfilled with 759 order items from QBO!
