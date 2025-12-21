@@ -51,7 +51,7 @@ function ActivityItem({ activity, isLast }: { activity: CRMActivity; isLast: boo
           </div>
 
           {/* Metadata */}
-          {activity.metadata && Object.keys(activity.metadata).length > 0 && (
+          {(activity.activity_data || activity.metadata) && Object.keys(activity.activity_data || activity.metadata || {}).length > 0 && (
             <div className="mt-3 pt-3 border-t">
               <ActivityMetadata activity={activity} />
             </div>
@@ -63,7 +63,7 @@ function ActivityItem({ activity, isLast }: { activity: CRMActivity; isLast: boo
 }
 
 function ActivityMetadata({ activity }: { activity: CRMActivity }) {
-  const metadata = activity.metadata as any
+  const metadata = (activity.activity_data || activity.metadata || {}) as any
 
   switch (activity.activity_type) {
     case 'order_placed':
@@ -73,10 +73,10 @@ function ActivityMetadata({ activity }: { activity: CRMActivity }) {
             <span className="text-muted-foreground">Order Number:</span>
             <span className="font-medium">{metadata.order_number}</span>
           </div>
-          {metadata.total_amount && (
+          {(metadata.total_amount || metadata.amount) && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">Total:</span>
-              <span className="font-medium">{formatCurrency(metadata.total_amount)}</span>
+              <span className="font-medium">{formatCurrency(metadata.total_amount || metadata.amount)}</span>
             </div>
           )}
           {metadata.status && (
@@ -193,8 +193,12 @@ function ActivityMetadata({ activity }: { activity: CRMActivity }) {
 function getActivityIcon(activityType: string): string {
   const icons: Record<string, string> = {
     order_placed: '🛒',
+    order_pending: '⏳',
+    order_confirmed: '✓',
+    order_processing: '⚙️',
     order_shipped: '📦',
     order_delivered: '✅',
+    order_cancelled: '❌',
     appointment_scheduled: '📅',
     appointment_modified: '🔄',
     appointment_cancelled: '❌',
@@ -223,17 +227,37 @@ function getActivityColor(activityType: string): string {
 }
 
 function getActivityDescription(activity: CRMActivity): string {
-  const metadata = activity.metadata as any
+  const metadata = (activity.activity_data || activity.metadata || {}) as any
 
   switch (activity.activity_type) {
     case 'order_placed':
-      return metadata.order_number 
+      return metadata.order_number
         ? `Order ${metadata.order_number} placed`
         : 'Order placed'
+    case 'order_pending':
+      return metadata.order_number
+        ? `Order ${metadata.order_number} set to pending`
+        : 'Order set to pending'
+    case 'order_confirmed':
+      return metadata.order_number
+        ? `Order ${metadata.order_number} confirmed`
+        : 'Order confirmed'
+    case 'order_processing':
+      return metadata.order_number
+        ? `Order ${metadata.order_number} processing`
+        : 'Order processing'
     case 'order_shipped':
-      return 'Order shipped'
+      return metadata.order_number
+        ? `Order ${metadata.order_number} shipped`
+        : 'Order shipped'
     case 'order_delivered':
-      return 'Order delivered'
+      return metadata.order_number
+        ? `Order ${metadata.order_number} delivered`
+        : 'Order delivered'
+    case 'order_cancelled':
+      return metadata.order_number
+        ? `Order ${metadata.order_number} cancelled`
+        : 'Order cancelled'
     case 'appointment_scheduled':
       return 'Appointment scheduled'
     case 'appointment_modified':
@@ -273,19 +297,15 @@ function getActivityDescription(activity: CRMActivity): string {
 
 function formatTimestamp(date: Date): string {
   const now = new Date()
-  const diffMs = now.getTime() - date.getTime()
-  const diffMins = Math.floor(diffMs / 60000)
-  const diffHours = Math.floor(diffMs / 3600000)
-  const diffDays = Math.floor(diffMs / 86400000)
+  const isCurrentYear = date.getFullYear() === now.getFullYear()
 
-  if (diffMins < 1) return 'Just now'
-  if (diffMins < 60) return `${diffMins}m ago`
-  if (diffHours < 24) return `${diffHours}h ago`
-  if (diffDays < 7) return `${diffDays}d ago`
-  
   return date.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
-    year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
+    year: isCurrentYear ? undefined : 'numeric',
+  }) + ' at ' + date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
   })
 }

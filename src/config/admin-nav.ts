@@ -12,6 +12,8 @@ import {
   Building2,
   Wrench,
   Receipt,
+  Settings,
+  User,
   type LucideIcon,
 } from 'lucide-react'
 import { type UserRole, hasPermission } from '@/lib/permissions'
@@ -156,8 +158,14 @@ export const adminUserNavItems: AdminNavItem[] = [
   {
     title: 'Profile',
     href: '/admin/profile',
-    icon: UserCog,
-    description: 'Your account settings',
+    icon: User,
+    description: 'Your profile information',
+  },
+  {
+    title: 'Settings',
+    href: '/admin/settings',
+    icon: Settings,
+    description: 'Account preferences',
   },
 ]
 

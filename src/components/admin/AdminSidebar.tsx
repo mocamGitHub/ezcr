@@ -345,14 +345,18 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
           </nav>
         </TooltipProvider>
 
-        {/* User info (when expanded) */}
+        {/* User info (when expanded) - clickable to profile */}
         {(!collapsed || isMobile) && profile && (
-          <div className="mt-4 px-3 py-2 text-xs text-muted-foreground">
+          <Link
+            href="/admin/profile"
+            onClick={() => setMobileOpen(false)}
+            className="mt-4 px-3 py-2 text-xs text-muted-foreground block rounded-lg hover:bg-accent transition-colors"
+          >
             <div className="font-medium text-foreground truncate">
               {profile.first_name || profile.email}
             </div>
             <div className="truncate">{profile.role}</div>
-          </div>
+          </Link>
         )}
       </div>
     </div>

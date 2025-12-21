@@ -1,322 +1,215 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { User, Mail, Shield, Calendar, Key, Save, ArrowLeft, Eye, EyeOff } from 'lucide-react'
-import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import Link from 'next/link'
+import { toast } from 'sonner'
+import { User, Mail, Phone, Building, Save, Camera } from 'lucide-react'
 
 export default function ProfilePage() {
-  const router = useRouter()
-  const { user, profile, refreshProfile } = useAuth()
-  const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [user, setUser] = useState<any>(null)
+  const [profile, setProfile] = useState({
+    first_name: '',
+    last_name: '',
+    phone: '',
+    role: '',
+  })
 
-  // Profile form state
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
-
-  // Password form state
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [showNewPassword, setShowNewPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [passwordLoading, setPasswordLoading] = useState(false)
-  const [passwordMessage, setPasswordMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
-
-  // Initialize form with profile data
   useEffect(() => {
-    if (profile) {
-      setFirstName(profile.first_name || '')
-      setLastName(profile.last_name || '')
-    }
-  }, [profile])
+    loadUserData()
+  }, [])
 
-  const handleUpdateProfile = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setMessage(null)
-
+  const loadUserData = async () => {
     try {
       const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
 
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({
-          first_name: firstName.trim(),
-          last_name: lastName.trim(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', user?.id)
+      if (user) {
+        const { data: profileData } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single()
 
-      if (error) {
-        setMessage({ type: 'error', text: error.message })
-        return
+        if (profileData) {
+          setProfile({
+            first_name: profileData.first_name || '',
+            last_name: profileData.last_name || '',
+            phone: profileData.phone || '',
+            role: profileData.role || 'viewer',
+          })
+        }
       }
-
-      await refreshProfile()
-      setMessage({ type: 'success', text: 'Profile updated successfully!' })
     } catch (err) {
-      setMessage({ type: 'error', text: 'An unexpected error occurred' })
-      console.error('Profile update error:', err)
+      console.error('Error loading user data:', err)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setPasswordLoading(true)
-    setPasswordMessage(null)
-
-    // Validation
-    if (newPassword.length < 6) {
-      setPasswordMessage({ type: 'error', text: 'New password must be at least 6 characters' })
-      setPasswordLoading(false)
-      return
-    }
-
-    if (newPassword !== confirmPassword) {
-      setPasswordMessage({ type: 'error', text: 'New passwords do not match' })
-      setPasswordLoading(false)
-      return
-    }
-
+  const handleSaveProfile = async () => {
+    if (!user) return
     try {
+      setSaving(true)
       const supabase = createClient()
-
-      // Update password directly - user is already authenticated
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword,
-      })
-
-      if (updateError) {
-        setPasswordMessage({ type: 'error', text: updateError.message })
-        return
-      }
-
-      setPasswordMessage({ type: 'success', text: 'Password changed successfully!' })
-      setNewPassword('')
-      setConfirmPassword('')
+      const { error } = await supabase
+        .from('user_profiles')
+        .upsert({
+          id: user.id,
+          first_name: profile.first_name,
+          last_name: profile.last_name,
+          phone: profile.phone,
+          updated_at: new Date().toISOString(),
+        })
+      if (error) throw error
+      toast.success('Profile updated successfully')
     } catch (err) {
-      setPasswordMessage({ type: 'error', text: 'An unexpected error occurred' })
-      console.error('Password change error:', err)
+      console.error('Error saving profile:', err)
+      toast.error('Failed to save profile')
     } finally {
-      setPasswordLoading(false)
+      setSaving(false)
     }
   }
 
-  if (!user) {
+  const getInitials = () => {
+    if (profile.first_name && profile.last_name) {
+      return (profile.first_name[0] + profile.last_name[0]).toUpperCase()
+    }
+    if (profile.first_name) return profile.first_name[0].toUpperCase()
+    if (user?.email) return user.email[0].toUpperCase()
+    return 'U'
+  }
+
+  const getRoleLabel = (role: string) => {
+    const labels: Record<string, string> = {
+      owner: 'Owner',
+      admin: 'Administrator', 
+      manager: 'Manager',
+      customer_service: 'Customer Service',
+      viewer: 'Viewer',
+    }
+    return labels[role] || role
+  }
+
+  if (loading) {
     return (
-      <div className="container mx-auto py-8 px-4">
-        <div className="text-center">
-          <p className="text-muted-foreground">Please sign in to view your profile.</p>
-          <Link href="/login">
-            <Button className="mt-4">Sign In</Button>
-          </Link>
-        </div>
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     )
   }
 
   return (
-    <div className="container mx-auto py-8 px-4 max-w-3xl">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-8">
-        <Link href="/admin/dashboard">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-3xl font-bold">My Profile</h1>
-          <p className="text-muted-foreground">Manage your account settings</p>
-        </div>
+    <div className="space-y-8 max-w-3xl">
+      <div>
+        <h1 className="text-2xl font-bold">Profile</h1>
+        <p className="text-muted-foreground">View and edit your profile information</p>
       </div>
 
-      {/* Account Info Card */}
-      <div className="bg-card border rounded-lg p-6 mb-6">
-        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <User className="h-5 w-5" />
-          Account Information
-        </h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-          <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-            <Mail className="h-4 w-4 text-muted-foreground" />
-            <div>
-              <p className="text-muted-foreground text-xs">Email</p>
-              <p className="font-medium">{user.email}</p>
+      <div className="border rounded-lg p-6 bg-card">
+        <div className="flex items-center gap-6">
+          <div className="relative">
+            <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center text-3xl font-bold text-primary">
+              {getInitials()}
             </div>
           </div>
-
-          <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-            <Shield className="h-4 w-4 text-muted-foreground" />
-            <div>
-              <p className="text-muted-foreground text-xs">Role</p>
-              <p className="font-medium capitalize">{profile?.role?.replace('_', ' ') || 'User'}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            <div>
-              <p className="text-muted-foreground text-xs">Account Created</p>
-              <p className="font-medium">
-                {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-            <User className="h-4 w-4 text-muted-foreground" />
-            <div>
-              <p className="text-muted-foreground text-xs">Status</p>
-              <p className="font-medium">
-                {profile?.is_active ? (
-                  <span className="text-green-600">Active</span>
-                ) : (
-                  <span className="text-red-600">Inactive</span>
-                )}
-              </p>
+          <div className="flex-1">
+            <h2 className="text-xl font-semibold">
+              {profile.first_name || profile.last_name
+                ? (profile.first_name + ' ' + profile.last_name).trim()
+                : 'No name set'}
+            </h2>
+            <p className="text-muted-foreground">{user?.email}</p>
+            <div className="mt-2">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                {getRoleLabel(profile.role)}
+              </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Update Profile Form */}
-      <div className="bg-card border rounded-lg p-6 mb-6">
-        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <User className="h-5 w-5" />
-          Update Profile
-        </h2>
+      <div className="border rounded-lg p-6 bg-card">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 bg-primary/10 rounded-lg">
+            <User className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold">Personal Information</h2>
+            <p className="text-sm text-muted-foreground">Update your personal details</p>
+          </div>
+        </div>
 
-        <form onSubmit={handleUpdateProfile} className="space-y-4">
-          {message && (
-            <div
-              className={`p-3 rounded-md text-sm ${
-                message.type === 'success'
-                  ? 'bg-green-50 dark:bg-green-950 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-800'
-                  : 'bg-destructive/10 text-destructive border border-destructive/20'
-              }`}
-            >
-              {message.text}
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="firstName">First Name</Label>
-              <Input
-                id="firstName"
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">First Name</label>
+              <input
                 type="text"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                placeholder="Enter your first name"
-                disabled={loading}
+                value={profile.first_name}
+                onChange={(e) => setProfile({ ...profile, first_name: e.target.value })}
+                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 bg-background"
+                placeholder="John"
               />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="lastName">Last Name</Label>
-              <Input
-                id="lastName"
+            <div>
+              <label className="block text-sm font-medium mb-1">Last Name</label>
+              <input
                 type="text"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                placeholder="Enter your last name"
-                disabled={loading}
+                value={profile.last_name}
+                onChange={(e) => setProfile({ ...profile, last_name: e.target.value })}
+                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 bg-background"
+                placeholder="Doe"
               />
             </div>
           </div>
 
-          <Button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700">
-            <Save className="h-4 w-4 mr-2" />
-            {loading ? 'Saving...' : 'Save Changes'}
-          </Button>
-        </form>
-      </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Email</label>
+            <input
+              type="email"
+              value={user?.email || ''}
+              disabled
+              className="w-full px-3 py-2 border rounded-md bg-muted text-muted-foreground"
+            />
+            <p className="text-xs text-muted-foreground mt-1">Contact admin to change email</p>
+          </div>
 
-      {/* Change Password Form */}
-      <div className="bg-card border rounded-lg p-6">
-        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <Key className="h-5 w-5" />
-          Change Password
-        </h2>
+          <div>
+            <label className="block text-sm font-medium mb-1">Phone</label>
+            <input
+              type="tel"
+              value={profile.phone}
+              onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+              className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 bg-background"
+              placeholder="(555) 123-4567"
+            />
+          </div>
 
-        <form onSubmit={handleChangePassword} className="space-y-4">
-          {passwordMessage && (
-            <div
-              className={`p-3 rounded-md text-sm ${
-                passwordMessage.type === 'success'
-                  ? 'bg-green-50 dark:bg-green-950 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-800'
-                  : 'bg-destructive/10 text-destructive border border-destructive/20'
-              }`}
+          <div>
+            <label className="block text-sm font-medium mb-1">Role</label>
+            <input
+              type="text"
+              value={getRoleLabel(profile.role)}
+              disabled
+              className="w-full px-3 py-2 border rounded-md bg-muted text-muted-foreground"
+            />
+            <p className="text-xs text-muted-foreground mt-1">Contact admin to change role</p>
+          </div>
+
+          <div className="pt-4">
+            <button
+              onClick={handleSaveProfile}
+              disabled={saving}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2"
             >
-              {passwordMessage.text}
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <Label htmlFor="newPassword">New Password</Label>
-            <div className="relative">
-              <Input
-                id="newPassword"
-                type={showNewPassword ? 'text' : 'password'}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Enter your new password"
-                disabled={passwordLoading}
-                required
-                minLength={6}
-              />
-              <button
-                type="button"
-                onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-            <p className="text-xs text-muted-foreground">Must be at least 6 characters</p>
+              <Save className="h-4 w-4" />
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm New Password</Label>
-            <div className="relative">
-              <Input
-                id="confirmPassword"
-                type={showConfirmPassword ? 'text' : 'password'}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm your new password"
-                disabled={passwordLoading}
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-          </div>
-
-          <Button
-            type="submit"
-            disabled={passwordLoading}
-            variant="outline"
-            className="border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950"
-          >
-            <Key className="h-4 w-4 mr-2" />
-            {passwordLoading ? 'Changing...' : 'Change Password'}
-          </Button>
-        </form>
+        </div>
       </div>
     </div>
   )

@@ -8,9 +8,9 @@ import type { CustomerProfile, CRMActivity, CustomerNote, CustomerTask } from '@
 import { getCustomerActivities, getCustomerNotes, getCustomerTasks, getCustomerOrders } from '@/actions/crm'
 import { CustomerProfileCard } from './CustomerProfileCard'
 import { ActivityTimeline } from './ActivityTimeline'
-import { CustomerNotes } from './CustomerNotes'
 import { CustomerTasks } from './CustomerTasks'
 import { CustomerOrders } from './CustomerOrders'
+import { CustomerNotes } from './CustomerNotes'
 
 interface CustomerDetailViewProps {
   customer: CustomerProfile
@@ -18,13 +18,13 @@ interface CustomerDetailViewProps {
 
 export function CustomerDetailView({ customer }: CustomerDetailViewProps) {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<'orders' | 'timeline' | 'notes' | 'tasks'>('orders')
-  
+  const [activeTab, setActiveTab] = useState<'orders' | 'timeline' | 'tasks' | 'notes'>('orders')
+
   const [activities, setActivities] = useState<CRMActivity[]>([])
   const [notes, setNotes] = useState<CustomerNote[]>([])
   const [tasks, setTasks] = useState<CustomerTask[]>([])
   const [orders, setOrders] = useState<any[]>([])
-  
+
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -68,11 +68,31 @@ export function CustomerDetailView({ customer }: CustomerDetailViewProps) {
     setActivities(activitiesData)
   }
 
+  const handleOrdersUpdate = async () => {
+    const ordersData = await getCustomerOrders(customer.customer_email)
+    setOrders(ordersData)
+    // Reload activities to show order status change
+    const activitiesData = await getCustomerActivities(customer.customer_email)
+    setActivities(activitiesData)
+  }
+
+  // Extract billing address and phone from the most recent order
+  const customerAddress = orders.length > 0 && orders[0].billing_address
+    ? orders[0].billing_address
+    : null
+
+  // Try to get phone from order (customer_phone field) or billing/shipping address
+  const customerPhone = orders.length > 0
+    ? orders[0].customer_phone ||
+      orders[0].billing_address?.phone ||
+      orders[0].shipping_address?.phone
+    : null
+
   const tabs = [
     { id: 'orders' as const, label: 'Orders', count: orders.length },
-    { id: 'timeline' as const, label: 'Activity', count: activities.length },
     { id: 'notes' as const, label: 'Notes', count: notes.length },
     { id: 'tasks' as const, label: 'Tasks', count: tasks.filter(t => t.status !== 'completed').length },
+    { id: 'timeline' as const, label: 'Activity', count: activities.length },
   ]
 
   const customerName = customer.name || 'Unknown Customer'
@@ -113,7 +133,16 @@ export function CustomerDetailView({ customer }: CustomerDetailViewProps) {
       </nav>
 
       {/* Customer Profile Card */}
-      <CustomerProfileCard customer={customer} onUpdate={loadData} />
+      <CustomerProfileCard
+        customer={customer}
+        onUpdate={loadData}
+        address={customerAddress}
+        phone={customerPhone}
+        notesCount={notes.length}
+        tasksCount={tasks.filter(t => t.status !== 'completed').length}
+        onNotesClick={() => setActiveTab('notes')}
+        onTasksClick={() => setActiveTab('tasks')}
+      />
 
       {/* Tabs */}
       <div className="border-b">
@@ -148,10 +177,7 @@ export function CustomerDetailView({ customer }: CustomerDetailViewProps) {
         ) : (
           <>
             {activeTab === 'orders' && (
-              <CustomerOrders orders={orders} />
-            )}
-            {activeTab === 'timeline' && (
-              <ActivityTimeline activities={activities} />
+              <CustomerOrders orders={orders} onOrderUpdate={handleOrdersUpdate} />
             )}
             {activeTab === 'notes' && (
               <CustomerNotes
@@ -166,6 +192,9 @@ export function CustomerDetailView({ customer }: CustomerDetailViewProps) {
                 customerEmail={customer.customer_email}
                 onUpdate={handleTasksUpdate}
               />
+            )}
+            {activeTab === 'timeline' && (
+              <ActivityTimeline activities={activities} />
             )}
           </>
         )}

@@ -1,6 +1,6 @@
 'use server'
 
-import { createServiceClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { getTenantId as getEnvironmentTenantId } from '@/lib/tenant'
 import type {
   CustomerProfile,
@@ -168,9 +168,8 @@ export async function getCustomerOrders(email: string) {
   try {
     const supabase = createServiceClient()
 
-    // Fetch orders directly without joins (FK relationship issues with order_items)
-    // Product info is stored directly on order for QBO imports
-    const { data, error } = await supabase
+    // Fetch orders
+    const { data: orders, error } = await supabase
       .from('orders')
       .select('*')
       .eq('customer_email', email)
@@ -178,7 +177,28 @@ export async function getCustomerOrders(email: string) {
 
     if (error) throw error
 
-    return data
+    // Fetch order_items separately for each order
+    if (orders && orders.length > 0) {
+      const orderIds = orders.map(o => o.id)
+      const { data: items } = await supabase
+        .from('order_items')
+        .select('*')
+        .in('order_id', orderIds)
+
+      // Attach items to orders
+      const itemsByOrderId = new Map<string, any[]>()
+      for (const item of items || []) {
+        const existing = itemsByOrderId.get(item.order_id) || []
+        existing.push(item)
+        itemsByOrderId.set(item.order_id, existing)
+      }
+
+      for (const order of orders) {
+        order.order_items = itemsByOrderId.get(order.id) || []
+      }
+    }
+
+    return orders || []
   } catch (error) {
     console.error('Error fetching customer orders:', error)
     return []
@@ -195,13 +215,7 @@ export async function getCustomerNotes(email: string): Promise<CustomerNote[]> {
 
     const { data, error } = await supabase
       .from('customer_notes')
-      .select(`
-        *,
-        author:author_id (
-          email,
-          user_profiles!inner (first_name, last_name)
-        )
-      `)
+      .select('*')
       .eq('tenant_id', tenantId)
       .eq('customer_email', email)
       .order('is_pinned', { ascending: false })
@@ -221,18 +235,21 @@ export async function getCustomerNotes(email: string): Promise<CustomerNote[]> {
  */
 export async function addCustomerNote(email: string, note: string, isPinned: boolean = false) {
   try {
-    const supabase = createServiceClient()
     const tenantId = await getTenantId()
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Not authenticated')
+    // Use session-aware client to get the current user
+    const sessionClient = await createClient()
+    const { data: { user } } = await sessionClient.auth.getUser()
+
+    // Use service client to insert (bypasses RLS)
+    const supabase = createServiceClient()
 
     const { data, error } = await supabase
       .from('customer_notes')
       .insert({
         tenant_id: tenantId,
         customer_email: email,
-        author_id: user.id,
+        author_id: user?.id || null,
         note,
         is_pinned: isPinned,
       })
@@ -305,13 +322,7 @@ export async function getCustomerTasks(email: string): Promise<CustomerTask[]> {
 
     const { data, error } = await supabase
       .from('customer_tasks')
-      .select(`
-        *,
-        assignee:assigned_to (
-          email,
-          user_profiles!inner (first_name, last_name)
-        )
-      `)
+      .select('*')
       .eq('tenant_id', tenantId)
       .eq('customer_email', email)
       .order('status', { ascending: true })
@@ -338,19 +349,22 @@ export async function createCustomerTask(
   assignedTo?: string
 ) {
   try {
-    const supabase = createServiceClient()
     const tenantId = await getTenantId()
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Not authenticated')
+    // Use session-aware client to get the current user
+    const sessionClient = await createClient()
+    const { data: { user } } = await sessionClient.auth.getUser()
+
+    // Use service client to insert (bypasses RLS)
+    const supabase = createServiceClient()
 
     const { data, error } = await supabase
       .from('customer_tasks')
       .insert({
         tenant_id: tenantId,
         customer_email: email,
-        created_by: user.id,
-        assigned_to: assignedTo || user.id,
+        created_by: user?.id || null,
+        assigned_to: assignedTo || user?.id || null,
         title,
         description,
         due_date: dueDate,
@@ -708,5 +722,46 @@ export async function getCRMDashboardStats() {
       customersWithTasks: 0,
       avgLTV: 0,
     }
+  }
+}
+
+/**
+ * Update order status
+ */
+export async function updateOrderStatus(orderId: string, status: string) {
+  try {
+    const supabase = createServiceClient()
+
+    // Update the order status
+    const { data, error } = await supabase
+      .from('orders')
+      .update({
+        status,
+        // Set delivery timestamp if status is delivered
+        ...(status === 'delivered' ? { delivered_at: new Date().toISOString() } : {}),
+        // Set shipped timestamp if status is shipped
+        ...(status === 'shipped' ? { shipped_at: new Date().toISOString() } : {}),
+      })
+      .eq('id', orderId)
+      .select('id, customer_email, order_number, status')
+      .single()
+
+    if (error) throw error
+
+    // Log activity
+    if (data?.customer_email) {
+      await logActivity(
+        data.customer_email,
+        `order_${status}`,
+        { order_id: orderId, order_number: data.order_number, new_status: status },
+        'order',
+        orderId
+      )
+    }
+
+    return data
+  } catch (error) {
+    console.error('Error updating order status:', error)
+    throw error
   }
 }

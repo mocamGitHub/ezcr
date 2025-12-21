@@ -7,13 +7,46 @@ import { CustomerTagBadges } from './CustomerTagBadges'
 import { formatCurrency } from '@/lib/utils'
 import { getCustomerTags, addTagToCustomer, removeTagFromCustomer, calculateHealthScore } from '@/actions/crm'
 import { toast } from 'sonner'
+import { MapPin, StickyNote, CheckSquare } from 'lucide-react'
+
+interface CustomerAddress {
+  line1?: string
+  line2?: string
+  street_address?: string  // Alternative field name
+  city?: string
+  state?: string
+  postal_code?: string
+  postalCode?: string  // CamelCase variant
+  zip_code?: string  // Alternative field name
+  country?: string
+  phone?: string  // Phone may be in address
+}
 
 interface CustomerProfileCardProps {
   customer: CustomerProfile
   onUpdate: () => void
+  showHealthScore?: boolean
+  address?: CustomerAddress | null
+  phone?: string | null
+  notesCount?: number
+  tasksCount?: number
+  onNotesClick?: () => void
+  onTasksClick?: () => void
 }
 
-export function CustomerProfileCard({ customer, onUpdate }: CustomerProfileCardProps) {
+export function CustomerProfileCard({
+  customer,
+  onUpdate,
+  showHealthScore = true,
+  address,
+  phone,
+  notesCount = 0,
+  tasksCount = 0,
+  onNotesClick,
+  onTasksClick
+}: CustomerProfileCardProps) {
+  // Use phone from prop (order) or customer profile
+  const displayPhone = phone || customer.phone
   const [availableTags, setAvailableTags] = useState<CustomerTag[]>([])
   const [showTagMenu, setShowTagMenu] = useState(false)
   const [refreshingScore, setRefreshingScore] = useState(false)
@@ -62,6 +95,23 @@ export function CustomerProfileCard({ customer, onUpdate }: CustomerProfileCardP
     }
   }
 
+  // Format address for display (handles multiple field name formats)
+  const formatAddress = (addr: CustomerAddress | null | undefined) => {
+    if (!addr) return null
+    const streetLine = addr.line1 || addr.street_address
+    const postalCode = addr.postal_code || addr.postalCode || addr.zip_code
+    const cityStateZip = [addr.city, addr.state, postalCode].filter(Boolean).join(', ')
+    const parts = [
+      streetLine,
+      addr.line2,
+      cityStateZip
+    ].filter(Boolean)
+    // Only return if we have meaningful address data (not just a name)
+    return parts.length > 0 && (addr.city || addr.state || postalCode) ? parts : null
+  }
+
+  const formattedAddress = formatAddress(address)
+
   const customerTags = customer.tags || []
   const assignedTagIds = customerTags.map(t => t.id)
   const unassignedTags = availableTags.filter(t => !assignedTagIds.includes(t.id))
@@ -79,19 +129,19 @@ export function CustomerProfileCard({ customer, onUpdate }: CustomerProfileCardP
 
             {/* Details */}
             <div className="flex-1">
-              <h1 className="text-2xl font-bold mb-1">{customer.name || 'Unknown'}</h1>
-              <div className="space-y-1 text-sm text-muted-foreground">
+              <h1 className="text-2xl font-bold mb-2">{customer.name || 'Unknown'}</h1>
+              <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <span>📧</span>
-                  <a href={`mailto:${customer.customer_email}`} className="hover:underline">
+                  <span className="text-lg">📧</span>
+                  <a href={`mailto:${customer.customer_email}`} className="text-base font-medium text-primary hover:underline">
                     {customer.customer_email}
                   </a>
                 </div>
-                {customer.phone && (
+                {displayPhone && (
                   <div className="flex items-center gap-2">
-                    <span>📞</span>
-                    <a href={`tel:${customer.phone}`} className="hover:underline">
-                      {customer.phone}
+                    <span className="text-lg">📞</span>
+                    <a href={`tel:${displayPhone}`} className="text-base font-medium text-foreground hover:underline">
+                      {displayPhone}
                     </a>
                   </div>
                 )}
@@ -157,50 +207,62 @@ export function CustomerProfileCard({ customer, onUpdate }: CustomerProfileCardP
 
         {/* Right: Stats */}
         <div className="flex gap-4">
-          {/* Health Score */}
-          <div className="flex flex-col items-center">
-            <div className="text-xs text-muted-foreground mb-1">Health Score</div>
-            {customer.health_score !== undefined ? (
-              <HealthScoreBadge score={customer.health_score} />
-            ) : (
-              <div className="text-xs text-muted-foreground">Not calculated</div>
-            )}
-            <button
-              onClick={handleRefreshHealthScore}
-              disabled={refreshingScore}
-              className="mt-2 text-xs text-primary hover:underline disabled:opacity-50"
-            >
-              {refreshingScore ? 'Refreshing...' : 'Refresh'}
-            </button>
-          </div>
+          {/* Health Score - conditionally shown */}
+          {showHealthScore && (
+            <div className="flex flex-col items-center">
+              <div className="text-xs text-muted-foreground mb-1">Health Score</div>
+              {customer.health_score !== undefined ? (
+                <HealthScoreBadge score={customer.health_score} />
+              ) : (
+                <div className="text-xs text-muted-foreground">Not calculated</div>
+              )}
+              <button
+                onClick={handleRefreshHealthScore}
+                disabled={refreshingScore}
+                className="mt-2 text-xs text-primary hover:underline disabled:opacity-50"
+              >
+                {refreshingScore ? 'Refreshing...' : 'Refresh'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Quick Stats Grid */}
-      <div className="grid grid-cols-4 gap-4 mt-6 pt-6 border-t">
-        <div>
-          <div className="text-2xl font-bold">{customer.order_count}</div>
-          <div className="text-xs text-muted-foreground">Total Orders</div>
+      {/* Address Section */}
+      {formattedAddress && (
+        <div className="mt-4 pt-4 border-t">
+          <div className="flex items-start gap-2 text-sm text-muted-foreground">
+            <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
+            <div>
+              {formattedAddress.map((line, i) => (
+                <div key={i}>{line}</div>
+              ))}
+            </div>
+          </div>
         </div>
-        <div>
-          <div className="text-2xl font-bold">{formatCurrency(customer.lifetime_value)}</div>
+      )}
+
+      {/* Quick Stats Grid */}
+      <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t">
+        <div className="text-center">
+          <div className="text-lg font-semibold text-muted-foreground">{formatCurrency(customer.lifetime_value)}</div>
           <div className="text-xs text-muted-foreground">Lifetime Value</div>
         </div>
-        <div>
-          <div className="text-2xl font-bold">
-            {customer.last_order_date
-              ? new Date(customer.last_order_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-              : 'Never'}
-          </div>
-          <div className="text-xs text-muted-foreground">Last Order</div>
-        </div>
-        <div>
-          <div className="text-2xl font-bold">
+        <div className="text-center">
+          <div className="text-lg font-semibold text-muted-foreground">
             {customer.first_order_date
               ? new Date(customer.first_order_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
               : 'Unknown'}
           </div>
           <div className="text-xs text-muted-foreground">First Order</div>
+        </div>
+        <div className="text-center">
+          <div className="text-lg font-semibold text-muted-foreground">
+            {customer.last_order_date
+              ? new Date(customer.last_order_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+              : 'Never'}
+          </div>
+          <div className="text-xs text-muted-foreground">Last Order</div>
         </div>
       </div>
 
@@ -212,9 +274,9 @@ export function CustomerProfileCard({ customer, onUpdate }: CustomerProfileCardP
         >
           📧 Send Email
         </a>
-        {customer.phone && (
+        {displayPhone && (
           <a
-            href={`tel:${customer.phone}`}
+            href={`tel:${displayPhone}`}
             className="px-4 py-2 text-sm font-medium border rounded-md hover:bg-muted transition-colors"
           >
             📞 Call
@@ -230,6 +292,30 @@ export function CustomerProfileCard({ customer, onUpdate }: CustomerProfileCardP
           📋 Copy Email
         </button>
       </div>
+
+      {/* Notes & Tasks Indicators */}
+      {(notesCount > 0 || tasksCount > 0) && (
+        <div className="mt-6 pt-6 border-t flex gap-4">
+          {notesCount > 0 && (
+            <button
+              onClick={onNotesClick}
+              className="flex items-center gap-2 px-3 py-2 text-sm border rounded-md hover:bg-muted transition-colors"
+            >
+              <StickyNote className="h-4 w-4 text-yellow-600" />
+              <span>{notesCount} {notesCount === 1 ? 'Note' : 'Notes'}</span>
+            </button>
+          )}
+          {tasksCount > 0 && (
+            <button
+              onClick={onTasksClick}
+              className="flex items-center gap-2 px-3 py-2 text-sm border rounded-md hover:bg-muted transition-colors"
+            >
+              <CheckSquare className="h-4 w-4 text-blue-600" />
+              <span>{tasksCount} Open {tasksCount === 1 ? 'Task' : 'Tasks'}</span>
+            </button>
+          )}
+        </div>
+      )}
     </div>
   )
 }
