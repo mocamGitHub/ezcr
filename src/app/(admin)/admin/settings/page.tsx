@@ -3,17 +3,14 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import { User, Bell, Palette, Shield, Save, BarChart3 } from 'lucide-react'
+import { Bell, Save, BarChart3 } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function SettingsPage() {
+  const { refreshProfile } = useAuth()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [user, setUser] = useState<any>(null)
-  const [profile, setProfile] = useState({
-    first_name: '',
-    last_name: '',
-    phone: '',
-  })
   const [preferences, setPreferences] = useState({
     email_notifications: true,
     order_alerts: true,
@@ -34,59 +31,23 @@ export default function SettingsPage() {
       setUser(user)
 
       if (user) {
-        // Load profile
+        // Load CRM preferences from metadata
         const { data: profileData } = await supabase
           .from('user_profiles')
-          .select('*')
+          .select('metadata')
           .eq('id', user.id)
           .single()
 
-        if (profileData) {
-          setProfile({
-            first_name: profileData.first_name || '',
-            last_name: profileData.last_name || '',
-            phone: profileData.phone || '',
+        if (profileData?.metadata?.crm_preferences) {
+          setCrmPreferences({
+            show_health_score: profileData.metadata.crm_preferences.show_health_score ?? true,
           })
-          // Load CRM preferences from metadata
-          if (profileData.metadata?.crm_preferences) {
-            setCrmPreferences({
-              show_health_score: profileData.metadata.crm_preferences.show_health_score ?? true,
-            })
-          }
         }
       }
     } catch (err) {
       console.error('Error loading user data:', err)
     } finally {
       setLoading(false)
-    }
-  }
-
-  const handleSaveProfile = async () => {
-    if (!user) return
-
-    try {
-      setSaving(true)
-      const supabase = createClient()
-
-      const { error } = await supabase
-        .from('user_profiles')
-        .upsert({
-          id: user.id,
-          first_name: profile.first_name,
-          last_name: profile.last_name,
-          phone: profile.phone,
-          updated_at: new Date().toISOString(),
-        })
-
-      if (error) throw error
-
-      toast.success('Profile updated successfully')
-    } catch (err) {
-      console.error('Error saving profile:', err)
-      toast.error('Failed to save profile')
-    } finally {
-      setSaving(false)
     }
   }
 
@@ -119,6 +80,9 @@ export default function SettingsPage() {
 
       if (error) throw error
 
+      // Refresh the AuthContext so CRM pages get the new preference
+      await refreshProfile()
+
       toast.success('CRM preferences saved')
     } catch (err) {
       console.error('Error saving CRM preferences:', err)
@@ -140,78 +104,7 @@ export default function SettingsPage() {
     <div className="space-y-8 max-w-3xl">
       <div>
         <h1 className="text-2xl font-bold">Settings</h1>
-        <p className="text-muted-foreground">Manage your account and preferences</p>
-      </div>
-
-      {/* Profile Section */}
-      <div className="border rounded-lg p-6 bg-card">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 bg-primary/10 rounded-lg">
-            <User className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold">Profile</h2>
-            <p className="text-sm text-muted-foreground">Your personal information</p>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Email</label>
-            <input
-              type="email"
-              value={user?.email || ''}
-              disabled
-              className="w-full px-3 py-2 border rounded-md bg-muted text-muted-foreground"
-            />
-            <p className="text-xs text-muted-foreground mt-1">Contact admin to change email</p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">First Name</label>
-              <input
-                type="text"
-                value={profile.first_name}
-                onChange={(e) => setProfile({ ...profile, first_name: e.target.value })}
-                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20"
-                placeholder="John"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Last Name</label>
-              <input
-                type="text"
-                value={profile.last_name}
-                onChange={(e) => setProfile({ ...profile, last_name: e.target.value })}
-                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20"
-                placeholder="Doe"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Phone</label>
-            <input
-              type="tel"
-              value={profile.phone}
-              onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-              className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20"
-              placeholder="(555) 123-4567"
-            />
-          </div>
-
-          <div className="pt-4">
-            <button
-              onClick={handleSaveProfile}
-              disabled={saving}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2"
-            >
-              <Save className="h-4 w-4" />
-              {saving ? 'Saving...' : 'Save Profile'}
-            </button>
-          </div>
-        </div>
+        <p className="text-muted-foreground">Manage your preferences</p>
       </div>
 
       {/* CRM Preferences Section */}
@@ -311,39 +204,6 @@ export default function SettingsPage() {
         <p className="text-sm text-muted-foreground mt-4">
           Note: Notification preferences are coming soon.
         </p>
-      </div>
-
-      {/* Security Section */}
-      <div className="border rounded-lg p-6 bg-card">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
-            <Shield className="h-5 w-5 text-red-600 dark:text-red-400" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold">Security</h2>
-            <p className="text-sm text-muted-foreground">Manage your account security</p>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div className="flex items-center justify-between py-3 border-b">
-            <div>
-              <div className="font-medium">Password</div>
-              <div className="text-sm text-muted-foreground">Last changed: Unknown</div>
-            </div>
-            <button className="px-3 py-1.5 text-sm border rounded-md hover:bg-muted transition-colors">
-              Change Password
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between py-3">
-            <div>
-              <div className="font-medium">Two-Factor Authentication</div>
-              <div className="text-sm text-muted-foreground">Add an extra layer of security</div>
-            </div>
-            <span className="text-sm text-muted-foreground">Coming soon</span>
-          </div>
-        </div>
       </div>
     </div>
   )

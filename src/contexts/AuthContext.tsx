@@ -47,9 +47,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchProfile = async (userId: string) => {
     try {
-      // Ensure we have a valid session before querying
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
+      // Ensure we have a valid authenticated user before querying
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
         setProfile(null)
         return
       }
@@ -83,11 +83,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }: { data: { session: Session | null } }) => {
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        fetchProfile(session.user.id)
+    // Get initial authenticated user
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user ?? null)
+      if (user) {
+        fetchProfile(user.id)
       }
       setLoading(false)
     })

@@ -46,14 +46,14 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Refresh session if needed
+  // Get authenticated user (validates with Supabase Auth server)
   const {
-    data: { session },
-  } = await supabase.auth.getSession()
+    data: { user },
+  } = await supabase.auth.getUser()
 
   // Protected admin routes
   if (pathname.startsWith('/admin')) {
-    if (!session) {
+    if (!user) {
       // Redirect to login if not authenticated
       const url = request.nextUrl.clone()
       url.pathname = '/login'
@@ -82,7 +82,7 @@ export async function middleware(request: NextRequest) {
     const { data: profile } = await serviceClient
       .from('user_profiles')
       .select('role, is_active')
-      .eq('id', session.user.id)
+      .eq('id', user.id)
       .single()
 
     if (!profile || !profile.is_active) {
@@ -104,7 +104,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Auth routes - redirect to admin dashboard if already logged in
-  if ((pathname === '/login' || pathname === '/signup') && session) {
+  if ((pathname === '/login' || pathname === '/signup') && user) {
     return NextResponse.redirect(new URL('/admin/dashboard', request.url))
   }
 

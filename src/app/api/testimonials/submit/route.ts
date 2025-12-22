@@ -35,19 +35,19 @@ export async function POST(request: NextRequest) {
 
     // -------------------- Authentication --------------------
     const {
-      data: { session },
+      data: { user },
       error: authError,
-    } = await supabase.auth.getSession();
+    } = await supabase.auth.getUser();
 
-    if (authError || !session) {
+    if (authError || !user) {
       return NextResponse.json(
         { error: 'Unauthorized. Please log in to submit a testimonial.' },
         { status: 401 }
       );
     }
 
-    const userId = session.user.id;
-    const userEmail = session.user.email || '';
+    const userId = user.id;
+    const userEmail = user.email || '';
 
     // -------------------- Get User Profile --------------------
     const { data: profile, error: profileError } = await supabase

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import { User, Mail, Phone, Building, Save, Camera } from 'lucide-react'
+import { User, Save, Shield } from 'lucide-react'
 
 export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
@@ -208,6 +208,39 @@ export default function ProfilePage() {
               <Save className="h-4 w-4" />
               {saving ? 'Saving...' : 'Save Changes'}
             </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Security Section */}
+      <div className="border rounded-lg p-6 bg-card">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+            <Shield className="h-5 w-5 text-red-600 dark:text-red-400" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold">Security</h2>
+            <p className="text-sm text-muted-foreground">Manage your account security</p>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between py-3 border-b">
+            <div>
+              <div className="font-medium">Password</div>
+              <div className="text-sm text-muted-foreground">Last changed: Unknown</div>
+            </div>
+            <button className="px-3 py-1.5 text-sm border rounded-md hover:bg-muted transition-colors">
+              Change Password
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between py-3">
+            <div>
+              <div className="font-medium">Two-Factor Authentication</div>
+              <div className="text-sm text-muted-foreground">Add an extra layer of security</div>
+            </div>
+            <span className="text-sm text-muted-foreground">Coming soon</span>
           </div>
         </div>
       </div>

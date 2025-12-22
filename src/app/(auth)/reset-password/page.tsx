@@ -21,9 +21,9 @@ export default function ResetPasswordPage() {
     // Check if user came from password reset link
     const checkSession = async () => {
       const supabase = createClient()
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { user } } = await supabase.auth.getUser()
 
-      if (session) {
+      if (user) {
         setValidSession(true)
       } else {
         setError('Invalid or expired reset link. Please request a new one.')
