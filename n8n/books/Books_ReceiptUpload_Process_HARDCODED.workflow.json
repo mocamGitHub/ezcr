@@ -19,7 +19,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Signature verification disabled - webhook URL is secret\nconst tenant_id = $json.tenant_id;\nconst doc_id = $json.doc_id;\nif (!tenant_id || !doc_id) throw new Error('tenant_id and doc_id required. Keys: ' + Object.keys($json).join(',') + ' JSON: ' + JSON.stringify($json).substring(0,500));\n\nreturn [{ json: { tenant_id, doc_id } }];"
+        "jsCode": "// Access body from webhook structure\nconst tenant_id = $json.body.tenant_id;\nconst doc_id = $json.body.doc_id;\nif (!tenant_id || !doc_id) throw new Error('tenant_id and doc_id required');\n\nreturn [{ json: { tenant_id, doc_id } }];"
       },
       "id": "VerifySig",
       "name": "Verify Signature",
@@ -33,17 +33,17 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "={{$env.SUPABASE_URL + '/rest/v1/books_settings?tenant_id=eq.' + $json.tenant_id + '&select=*'}}",
+        "url": "={{'https://supabase.nexcyte.com/rest/v1/books_settings?tenant_id=eq.' + $json.tenant_id + '&select=*'}}",
         "sendHeaders": true,
         "headerParametersUi": {
           "parameter": [
             {
               "name": "apikey",
-              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+              "value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc1OTEwNTM4MCwiZXhwIjo0OTE0Nzc4OTgwLCJyb2xlIjoic2VydmljZV9yb2xlIn0.eJi_5yIeVN64jC-Vg_vdZLGUthLcWqY7dtMoRiE56YY"
             },
             {
               "name": "Authorization",
-              "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
+              "value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc1OTEwNTM4MCwiZXhwIjo0OTE0Nzc4OTgwLCJyb2xlIjoic2VydmljZV9yb2xlIn0.eJi_5yIeVN64jC-Vg_vdZLGUthLcWqY7dtMoRiE56YY"
             },
             {
               "name": "Accept",
@@ -65,17 +65,17 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "={{$env.SUPABASE_URL + '/rest/v1/books_documents?id=eq.' + $json.doc_id + '&tenant_id=eq.' + $json.tenant_id + '&select=*'}}",
+        "url": "={{'https://supabase.nexcyte.com/rest/v1/books_documents?id=eq.' + $json.doc_id + '&tenant_id=eq.' + $json.tenant_id + '&select=*'}}",
         "sendHeaders": true,
         "headerParametersUi": {
           "parameter": [
             {
               "name": "apikey",
-              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+              "value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc1OTEwNTM4MCwiZXhwIjo0OTE0Nzc4OTgwLCJyb2xlIjoic2VydmljZV9yb2xlIn0.eJi_5yIeVN64jC-Vg_vdZLGUthLcWqY7dtMoRiE56YY"
             },
             {
               "name": "Authorization",
-              "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
+              "value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc1OTEwNTM4MCwiZXhwIjo0OTE0Nzc4OTgwLCJyb2xlIjoic2VydmljZV9yb2xlIn0.eJi_5yIeVN64jC-Vg_vdZLGUthLcWqY7dtMoRiE56YY"
             },
             {
               "name": "Accept",
@@ -110,17 +110,17 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env.SUPABASE_URL + '/storage/v1/object/sign/' + $json.document.storage_bucket + '/' + $json.document.storage_path}}",
+        "url": "={{'https://supabase.nexcyte.com/storage/v1/object/sign/' + $json.document.storage_bucket + '/' + $json.document.storage_path}}",
         "sendHeaders": true,
         "headerParametersUi": {
           "parameter": [
             {
               "name": "apikey",
-              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+              "value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc1OTEwNTM4MCwiZXhwIjo0OTE0Nzc4OTgwLCJyb2xlIjoic2VydmljZV9yb2xlIn0.eJi_5yIeVN64jC-Vg_vdZLGUthLcWqY7dtMoRiE56YY"
             },
             {
               "name": "Authorization",
-              "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
+              "value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc1OTEwNTM4MCwiZXhwIjo0OTE0Nzc4OTgwLCJyb2xlIjoic2VydmljZV9yb2xlIn0.eJi_5yIeVN64jC-Vg_vdZLGUthLcWqY7dtMoRiE56YY"
             },
             {
               "name": "Content-Type",
@@ -143,7 +143,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const r = $json; // sign response\nconst signed = r.signedURL || r.signedUrl || r.signed_url;\nif (!signed) throw new Error('No signed URL returned');\n\nconst abs = signed.startsWith('http') ? signed : ($env.SUPABASE_URL + signed);\n\nreturn [{\n  json: {\n    tenant_id: $items('Unwrap Settings+Doc')[0].json.tenant_id,\n    doc_id: $items('Unwrap Settings+Doc')[0].json.doc_id,\n    settings: $items('Unwrap Settings+Doc')[0].json.settings,\n    document: $items('Unwrap Settings+Doc')[0].json.document,\n    signed_url: abs\n  }\n}];"
+        "jsCode": "const r = $json; // sign response\nconst signed = r.signedURL || r.signedUrl || r.signed_url;\nif (!signed) throw new Error('No signed URL returned');\n\nconst abs = signed.startsWith('http') ? signed : ('https://supabase.nexcyte.com' + signed);\n\nreturn [{\n  json: {\n    tenant_id: $items('Unwrap Settings+Doc')[0].json.tenant_id,\n    doc_id: $items('Unwrap Settings+Doc')[0].json.doc_id,\n    settings: $items('Unwrap Settings+Doc')[0].json.settings,\n    document: $items('Unwrap Settings+Doc')[0].json.document,\n    signed_url: abs\n  }\n}];"
       },
       "id": "BuildSigned",
       "name": "Build Signed URL",
@@ -174,7 +174,7 @@
       "parameters": {
         "authentication": "oAuth2",
         "method": "POST",
-        "url": "={{'https://documentai.googleapis.com/v1/projects/' + $env.GCP_PROJECT_ID + '/locations/' + $env.DOC_AI_LOCATION + '/processors/' + $env.DOC_AI_EXPENSE_PROCESSOR_ID + ':process'}}",
+        "url": "https://documentai.googleapis.com/v1/projects/nexcyte-books/locations/us/processors/ad0d92a24dd84ad20:process",
         "sendBody": true,
         "jsonBody": "={\"rawDocument\":{\"content\":\"{{$binary.data.data}}\",\"mimeType\":\"{{$json.document.content_type || 'application/pdf'}}\"}}",
         "options": {}
@@ -210,17 +210,17 @@
     {
       "parameters": {
         "method": "PATCH",
-        "url": "={{$env.SUPABASE_URL + '/rest/v1/books_documents?id=eq.' + $json.doc_id + '&tenant_id=eq.' + $json.tenant_id}}",
+        "url": "={{'https://supabase.nexcyte.com/rest/v1/books_documents?id=eq.' + $json.doc_id + '&tenant_id=eq.' + $json.tenant_id}}",
         "sendHeaders": true,
         "headerParametersUi": {
           "parameter": [
             {
               "name": "apikey",
-              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+              "value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc1OTEwNTM4MCwiZXhwIjo0OTE0Nzc4OTgwLCJyb2xlIjoic2VydmljZV9yb2xlIn0.eJi_5yIeVN64jC-Vg_vdZLGUthLcWqY7dtMoRiE56YY"
             },
             {
               "name": "Authorization",
-              "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
+              "value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc1OTEwNTM4MCwiZXhwIjo0OTE0Nzc4OTgwLCJyb2xlIjoic2VydmljZV9yb2xlIn0.eJi_5yIeVN64jC-Vg_vdZLGUthLcWqY7dtMoRiE56YY"
             },
             {
               "name": "Content-Type",
@@ -251,17 +251,17 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "={{(() => { const q=$json.candidate_query; const base=$env.SUPABASE_URL + '/rest/v1/books_bank_transactions?tenant_id=eq.' + $json.tenant_id + '&select=*'; let u=base; if (q.date_from) u += '&posted_at=gte.'+q.date_from; if (q.date_to) u += '&posted_at=lte.'+q.date_to; if (q.amount_min != null) u += '&amount=gte.'+q.amount_min; if (q.amount_max != null) u += '&amount=lte.'+q.amount_max; return u; })()}}",
+        "url": "={{(() => { const q=$json.candidate_query; const base='https://supabase.nexcyte.com/rest/v1/books_bank_transactions?tenant_id=eq.' + $json.tenant_id + '&select=*'; let u=base; if (q.date_from) u += '&posted_at=gte.'+q.date_from; if (q.date_to) u += '&posted_at=lte.'+q.date_to; if (q.amount_min != null) u += '&amount=gte.'+q.amount_min; if (q.amount_max != null) u += '&amount=lte.'+q.amount_max; return u; })()}}",
         "sendHeaders": true,
         "headerParametersUi": {
           "parameter": [
             {
               "name": "apikey",
-              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+              "value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc1OTEwNTM4MCwiZXhwIjo0OTE0Nzc4OTgwLCJyb2xlIjoic2VydmljZV9yb2xlIn0.eJi_5yIeVN64jC-Vg_vdZLGUthLcWqY7dtMoRiE56YY"
             },
             {
               "name": "Authorization",
-              "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
+              "value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc1OTEwNTM4MCwiZXhwIjo0OTE0Nzc4OTgwLCJyb2xlIjoic2VydmljZV9yb2xlIn0.eJi_5yIeVN64jC-Vg_vdZLGUthLcWqY7dtMoRiE56YY"
             },
             {
               "name": "Accept",
@@ -310,17 +310,17 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env.SUPABASE_URL + '/rest/v1/rpc/books_apply_match_decision'}}",
+        "url": "https://supabase.nexcyte.com/rest/v1/rpc/books_apply_match_decision",
         "sendHeaders": true,
         "headerParametersUi": {
           "parameter": [
             {
               "name": "apikey",
-              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+              "value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc1OTEwNTM4MCwiZXhwIjo0OTE0Nzc4OTgwLCJyb2xlIjoic2VydmljZV9yb2xlIn0.eJi_5yIeVN64jC-Vg_vdZLGUthLcWqY7dtMoRiE56YY"
             },
             {
               "name": "Authorization",
-              "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
+              "value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc1OTEwNTM4MCwiZXhwIjo0OTE0Nzc4OTgwLCJyb2xlIjoic2VydmljZV9yb2xlIn0.eJi_5yIeVN64jC-Vg_vdZLGUthLcWqY7dtMoRiE56YY"
             },
             {
               "name": "Content-Type",
@@ -363,17 +363,17 @@
     {
       "parameters": {
         "method": "PATCH",
-        "url": "={{$env.SUPABASE_URL + '/rest/v1/books_documents?id=eq.' + $items('Normalize Extraction')[0].json.doc_id + '&tenant_id=eq.' + $items('Normalize Extraction')[0].json.tenant_id}}",
+        "url": "={{'https://supabase.nexcyte.com/rest/v1/books_documents?id=eq.' + $items('Normalize Extraction')[0].json.doc_id + '&tenant_id=eq.' + $items('Normalize Extraction')[0].json.tenant_id}}",
         "sendHeaders": true,
         "headerParametersUi": {
           "parameter": [
             {
               "name": "apikey",
-              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+              "value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc1OTEwNTM4MCwiZXhwIjo0OTE0Nzc4OTgwLCJyb2xlIjoic2VydmljZV9yb2xlIn0.eJi_5yIeVN64jC-Vg_vdZLGUthLcWqY7dtMoRiE56YY"
             },
             {
               "name": "Authorization",
-              "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
+              "value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc1OTEwNTM4MCwiZXhwIjo0OTE0Nzc4OTgwLCJyb2xlIjoic2VydmljZV9yb2xlIn0.eJi_5yIeVN64jC-Vg_vdZLGUthLcWqY7dtMoRiE56YY"
             },
             {
               "name": "Content-Type",
@@ -578,10 +578,7 @@
       ]
     }
   },
-  "active": false,
   "settings": {
     "executionOrder": "v1"
-  },
-  "versionId": "1",
-  "id": "Books_ReceiptUpload_Process"
+  }
 }
