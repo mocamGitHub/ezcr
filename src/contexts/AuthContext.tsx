@@ -95,11 +95,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        fetchProfile(session.user.id)
+    } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
+      // For sign out events, clear user immediately
+      if (event === 'SIGNED_OUT' || !session) {
+        setUser(null)
+        setProfile(null)
+        return
+      }
+
+      // For other events, verify user with getUser() to avoid security warning
+      // The session.user from onAuthStateChange comes from cookies and may not be authentic
+      const { data: { user: verifiedUser } } = await supabase.auth.getUser()
+
+      if (verifiedUser) {
+        setUser(verifiedUser)
+        fetchProfile(verifiedUser.id)
       } else {
+        setUser(null)
         setProfile(null)
       }
     })
