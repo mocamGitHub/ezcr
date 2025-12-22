@@ -1,30 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { createPortal } from 'react-dom'
+import { useState } from 'react'
 import { formatCurrency } from '@/lib/utils'
-import { ChevronUp, ChevronDown, X, Package, Truck, Calendar, CreditCard } from 'lucide-react'
+import { ChevronUp, ChevronDown } from 'lucide-react'
 import { updateOrderStatus } from '@/actions/crm'
 import { toast } from 'sonner'
-
-interface Order {
-  id: string
-  order_number: string
-  created_at: string
-  status: string
-  grand_total?: number
-  total_amount?: number
-  tracking_number?: string
-  expected_delivery_date?: string
-  delivered_at?: string
-  shipped_at?: string
-  appointment_date?: string
-  billing_address?: any
-  shipping_address?: any
-  order_items?: any[]
-  notes?: string
-  payment_status?: string
-}
+import { OrderDetailSlideOut, type Order } from '@/components/orders'
 
 interface CustomerOrdersProps {
   orders: Order[]
@@ -47,23 +28,8 @@ export function CustomerOrders({ orders, onOrderUpdate }: CustomerOrdersProps) {
   const [sortField, setSortField] = useState<SortField>('created_at')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [detailsOpen, setDetailsOpen] = useState(false)
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null)
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  // Close on escape key
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && selectedOrder) {
-        setSelectedOrder(null)
-      }
-    }
-    window.addEventListener('keydown', handleEscape)
-    return () => window.removeEventListener('keydown', handleEscape)
-  }, [selectedOrder])
 
   if (orders.length === 0) {
     return (
@@ -132,6 +98,11 @@ export function CustomerOrders({ orders, onOrderUpdate }: CustomerOrdersProps) {
     }
   }
 
+  const handleViewOrder = (order: Order) => {
+    setSelectedOrder(order)
+    setDetailsOpen(true)
+  }
+
   const SortableHeader = ({ field, children, className = '' }: { field: SortField; children: React.ReactNode; className?: string }) => (
     <th
       className={`px-4 py-3 font-medium text-sm cursor-pointer hover:bg-muted/50 transition-colors select-none ${className}`}
@@ -190,7 +161,7 @@ export function CustomerOrders({ orders, onOrderUpdate }: CustomerOrdersProps) {
                 <tr
                   key={order.id}
                   className="border-t hover:bg-muted/30 transition-colors cursor-pointer"
-                  onClick={() => setSelectedOrder(order)}
+                  onClick={() => handleViewOrder(order)}
                 >
                   <td className="px-4 py-3">
                     <div className="font-medium">{order.order_number}</div>
@@ -236,129 +207,15 @@ export function CustomerOrders({ orders, onOrderUpdate }: CustomerOrdersProps) {
         </div>
       </div>
 
-      {/* Order Detail Slide-out - rendered via portal to avoid z-index issues */}
-      {mounted && selectedOrder && createPortal(
-        <div className="fixed inset-0 z-[100] flex justify-end">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setSelectedOrder(null)}
-          />
-
-          {/* Panel */}
-          <div className="relative w-full max-w-lg bg-background shadow-xl animate-in slide-in-from-right duration-300">
-            <div className="h-full overflow-y-auto">
-              {/* Header */}
-              <div className="sticky top-0 bg-background border-b px-6 py-4 flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-semibold">Order {selectedOrder.order_number}</h2>
-                  <p className="text-sm text-muted-foreground">
-                    {new Date(selectedOrder.created_at).toLocaleDateString('en-US', {
-                      weekday: 'long',
-                      month: 'long',
-                      day: 'numeric',
-                      year: 'numeric'
-                    })}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setSelectedOrder(null)}
-                  className="p-2 rounded-md hover:bg-muted transition-colors"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              {/* Content */}
-              <div className="p-6 space-y-6">
-                {/* Status & Total */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Package className="h-5 w-5 text-muted-foreground" />
-                    <span className={`px-3 py-1 text-sm font-medium rounded-full ${
-                      ORDER_STATUSES.find(s => s.value === selectedOrder.status)?.className || 'bg-gray-100 text-gray-700'
-                    }`}>
-                      {ORDER_STATUSES.find(s => s.value === selectedOrder.status)?.label || selectedOrder.status}
-                    </span>
-                  </div>
-                  <div className="text-xl font-bold">
-                    {formatCurrency(selectedOrder.grand_total ?? selectedOrder.total_amount ?? 0)}
-                  </div>
-                </div>
-
-                {/* Payment Status */}
-                {selectedOrder.payment_status && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <CreditCard className="h-4 w-4 text-muted-foreground" />
-                    <span className="capitalize">{selectedOrder.payment_status}</span>
-                  </div>
-                )}
-
-                {/* Tracking */}
-                {selectedOrder.tracking_number && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Truck className="h-4 w-4 text-muted-foreground" />
-                    <span>Tracking: {selectedOrder.tracking_number}</span>
-                  </div>
-                )}
-
-                {/* Delivery Date */}
-                <div className="flex items-center gap-2 text-sm">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span>Delivery: {formatDeliveryDate(selectedOrder)}</span>
-                </div>
-
-                {/* Shipping Address */}
-                {selectedOrder.shipping_address && (
-                  <div className="border rounded-lg p-4">
-                    <h3 className="text-sm font-medium mb-2">Shipping Address</h3>
-                    <div className="text-sm text-muted-foreground">
-                      {selectedOrder.shipping_address.line1 && <div>{selectedOrder.shipping_address.line1}</div>}
-                      {selectedOrder.shipping_address.line2 && <div>{selectedOrder.shipping_address.line2}</div>}
-                      <div>
-                        {[
-                          selectedOrder.shipping_address.city,
-                          selectedOrder.shipping_address.state,
-                          selectedOrder.shipping_address.postal_code
-                        ].filter(Boolean).join(', ')}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Order Items */}
-                {selectedOrder.order_items && selectedOrder.order_items.length > 0 && (
-                  <div className="border rounded-lg p-4">
-                    <h3 className="text-sm font-medium mb-3">Items</h3>
-                    <div className="space-y-3">
-                      {selectedOrder.order_items.map((item: any, idx: number) => (
-                        <div key={idx} className="flex justify-between text-sm">
-                          <div>
-                            <div className="font-medium">{item.product_name || 'Item'}</div>
-                            <div className="text-muted-foreground">Qty: {item.quantity}</div>
-                          </div>
-                          <div className="font-medium">
-                            {formatCurrency(item.total_price || item.unit_price * item.quantity)}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Notes */}
-                {selectedOrder.notes && (
-                  <div className="border rounded-lg p-4">
-                    <h3 className="text-sm font-medium mb-2">Notes</h3>
-                    <p className="text-sm text-muted-foreground">{selectedOrder.notes}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      {/* Order Details Slide-out */}
+      <OrderDetailSlideOut
+        open={detailsOpen}
+        onOpenChange={setDetailsOpen}
+        order={selectedOrder}
+        onStatusChange={handleStatusChange}
+        isUpdating={updatingStatus === selectedOrder?.id}
+        orderStatuses={ORDER_STATUSES}
+      />
     </>
   )
 }

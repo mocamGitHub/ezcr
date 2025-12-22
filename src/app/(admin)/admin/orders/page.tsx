@@ -22,57 +22,12 @@ import {
   type SortDirection,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
 import { Checkbox } from '@/components/ui/checkbox'
-import { RefreshCw, Search, Eye, Package, DollarSign, Clock, CheckSquare, Truck, XCircle, Download, Phone, Mail, MapPin, Calendar } from 'lucide-react'
-import { formatDistanceToNow, format } from 'date-fns'
+import { RefreshCw, Search, Eye, Package, DollarSign, Clock, CheckSquare, Truck, XCircle, Download } from 'lucide-react'
+import { formatDistanceToNow } from 'date-fns'
 import { toast } from 'sonner'
 import { exportToCSV, orderColumns, getExportFilename } from '@/lib/utils/export'
-
-interface Order {
-  id: string
-  order_number: string
-  customer_name: string
-  customer_email: string
-  customer_phone?: string | null
-  status: string
-  payment_status: string
-  total_amount: number
-  created_at: string
-  updated_at?: string
-  shipping_address: any
-  billing_address?: any
-  order_items?: OrderItem[]
-  // QBO link fields
-  qbo_invoice_id?: string | null
-  qbo_sync_status?: string | null
-  qbo_synced_at?: string | null
-  // Product info (for QBO imports without order_items)
-  product_name?: string | null
-  product_sku?: string | null
-  product_price?: number | null
-  quantity?: number | null
-  grand_total?: number | null
-  subtotal?: number | null
-  shipping_total?: number | null
-  tax_total?: number | null
-  discount_total?: number | null
-  delivery_method?: string | null
-}
-
-interface OrderItem {
-  id: string
-  product_name: string
-  product_sku?: string
-  quantity: number
-  unit_price: number
-  total_price: number
-}
+import { OrderDetailSlideOut, type Order, type OrderItem } from '@/components/orders'
 
 function formatPrice(amount: number | null | undefined): string {
   return new Intl.NumberFormat('en-US', {
@@ -168,6 +123,13 @@ export default function AdminOrdersPage() {
       const { data, error } = await query
 
       if (error) throw error
+      // Debug: log first order with phone
+      const orderWithPhone = data?.find(o => o.customer_phone)
+      if (orderWithPhone) {
+        console.log('Order with phone:', orderWithPhone.customer_email, orderWithPhone.customer_phone)
+      } else {
+        console.log('No orders with customer_phone found. Sample order keys:', data?.[0] ? Object.keys(data[0]) : 'no data')
+      }
       setOrders(data || [])
     } catch (err) {
       console.error('Error fetching orders:', err)
@@ -277,26 +239,56 @@ export default function AdminOrdersPage() {
     setSelectedOrder(order)
     setDetailsOpen(true)
 
+    const supabase = createClient()
+    let updatedOrder = { ...order }
+    let needsUpdate = false
+
     // Fetch order_items if not already loaded
     if (!order.order_items || order.order_items.length === 0) {
       try {
-        const supabase = createClient()
         const { data: items, error } = await supabase
           .from('order_items')
           .select('id, product_name, product_sku, quantity, unit_price, total_price')
           .eq('order_id', order.id)
 
         if (!error && items && items.length > 0) {
-          const updatedOrder = { ...order, order_items: items }
-          setSelectedOrder(updatedOrder)
-          // Also update the order in the list
-          setOrders(prev => prev.map(o =>
-            o.id === order.id ? updatedOrder : o
-          ))
+          updatedOrder = { ...updatedOrder, order_items: items }
+          needsUpdate = true
         }
       } catch (err) {
         console.error('Error fetching order items:', err)
       }
+    }
+
+    // Fetch configuration by matching email
+    if (!order.configuration && order.customer_email) {
+      try {
+        const { data: config, error } = await supabase
+          .from('product_configurations')
+          .select('configuration')
+          .like('session_id', 'legacy-import-%')
+          .limit(100)
+
+        if (!error && config) {
+          // Find matching configuration by email
+          const matchingConfig = config.find((c: any) =>
+            c.configuration?.contact?.email?.toLowerCase() === order.customer_email?.toLowerCase()
+          )
+          if (matchingConfig) {
+            updatedOrder = { ...updatedOrder, configuration: matchingConfig.configuration }
+            needsUpdate = true
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching configuration:', err)
+      }
+    }
+
+    if (needsUpdate) {
+      setSelectedOrder(updatedOrder)
+      setOrders(prev => prev.map(o =>
+        o.id === order.id ? updatedOrder : o
+      ))
     }
   }
 
@@ -354,17 +346,6 @@ export default function AdminOrdersPage() {
       : sortedOrders
     exportToCSV(dataToExport, orderColumns, getExportFilename('orders'))
     toast.success(`Exported ${dataToExport.length} orders to CSV`)
-  }
-
-  const formatAddress = (address: any) => {
-    if (!address) return null
-    const parts = [
-      address.line1,
-      address.line2,
-      [address.city, address.state, address.postalCode].filter(Boolean).join(', '),
-      address.country !== 'US' ? address.country : null
-    ].filter(Boolean)
-    return parts.length > 0 ? parts : null
   }
 
   return (
@@ -673,218 +654,15 @@ export default function AdminOrdersPage() {
         </Table>
       </div>
 
-      {/* Order Details Sheet */}
-      <Sheet open={detailsOpen} onOpenChange={setDetailsOpen}>
-        <SheetContent className="sm:max-w-2xl overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle className="flex items-center gap-2">
-              Order {selectedOrder?.order_number}
-              {selectedOrder?.qbo_sync_status === 'imported' && (
-                <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800">
-                  QBO Import
-                </Badge>
-              )}
-            </SheetTitle>
-          </SheetHeader>
-          {selectedOrder && (
-            <div className="space-y-6 mt-6">
-              {/* QBO Import Info */}
-              {selectedOrder.qbo_sync_status === 'imported' && selectedOrder.qbo_invoice_id && (
-                <div className="bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800 rounded-lg p-3">
-                  <div className="text-sm text-emerald-700 dark:text-emerald-400">
-                    Imported from QuickBooks Invoice #{selectedOrder.qbo_invoice_id}
-                    {selectedOrder.qbo_synced_at && (
-                      <span className="ml-2 text-emerald-600 dark:text-emerald-500">
-                        on {format(new Date(selectedOrder.qbo_synced_at), 'MMM d, yyyy')}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Status Section */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <div className="text-sm text-muted-foreground mb-1">Order Status</div>
-                  <Select
-                    value={selectedOrder.status}
-                    onValueChange={(value) => updateOrderStatus(selectedOrder.id, value)}
-                    disabled={updatingOrderId === selectedOrder.id}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ORDER_STATUSES.map((status) => (
-                        <SelectItem key={status.value} value={status.value}>
-                          {status.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground mb-1">Payment Status</div>
-                  <Badge className={`${getPaymentStatusColor(selectedOrder.payment_status)} text-sm`}>
-                    {selectedOrder.payment_status}
-                  </Badge>
-                </div>
-              </div>
-
-              {/* Dates */}
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Calendar className="h-4 w-4" />
-                  <span>Created: {format(new Date(selectedOrder.created_at), 'MMM d, yyyy h:mm a')}</span>
-                </div>
-                {selectedOrder.updated_at && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Calendar className="h-4 w-4" />
-                    <span>Updated: {format(new Date(selectedOrder.updated_at), 'MMM d, yyyy h:mm a')}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Customer Info */}
-              <div className="border rounded-lg p-4 space-y-3">
-                <h3 className="font-semibold">Customer Information</h3>
-                <div className="space-y-2">
-                  <p className="font-medium text-lg">{selectedOrder.customer_name}</p>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Mail className="h-4 w-4" />
-                    <a href={`mailto:${selectedOrder.customer_email}`} className="hover:underline">
-                      {selectedOrder.customer_email}
-                    </a>
-                  </div>
-                  {selectedOrder.customer_phone && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Phone className="h-4 w-4" />
-                      <a href={`tel:${selectedOrder.customer_phone}`} className="hover:underline">
-                        {selectedOrder.customer_phone}
-                      </a>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Addresses */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Shipping Address */}
-                {selectedOrder.shipping_address && formatAddress(selectedOrder.shipping_address) && (
-                  <div className="border rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <h3 className="font-semibold">Shipping Address</h3>
-                    </div>
-                    <div className="text-sm space-y-1">
-                      {formatAddress(selectedOrder.shipping_address)?.map((line, i) => (
-                        <p key={i}>{line}</p>
-                      ))}
-                    </div>
-                    {selectedOrder.delivery_method && (
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Method: {selectedOrder.delivery_method}
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {/* Billing Address */}
-                {selectedOrder.billing_address && formatAddress(selectedOrder.billing_address) && (
-                  <div className="border rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <h3 className="font-semibold">Billing Address</h3>
-                    </div>
-                    <div className="text-sm space-y-1">
-                      {formatAddress(selectedOrder.billing_address)?.map((line, i) => (
-                        <p key={i}>{line}</p>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Items */}
-              <div className="border rounded-lg p-4">
-                <h3 className="font-semibold mb-3">Order Items</h3>
-                <div className="divide-y">
-                  {selectedOrder.order_items && selectedOrder.order_items.length > 0 ? (
-                    selectedOrder.order_items.map((item) => (
-                      <div key={item.id} className="py-3 first:pt-0 last:pb-0">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1 pr-4">
-                            <p className="font-medium">{item.product_name}</p>
-                            {item.product_sku && (
-                              <p className="text-xs text-muted-foreground">SKU: {item.product_sku}</p>
-                            )}
-                            <p className="text-sm text-muted-foreground">
-                              {item.quantity} x {formatPrice(item.unit_price)}
-                            </p>
-                          </div>
-                          <p className="font-medium">{formatPrice(item.total_price)}</p>
-                        </div>
-                      </div>
-                    ))
-                  ) : selectedOrder.product_name ? (
-                    <div className="py-3 first:pt-0 last:pb-0">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1 pr-4">
-                          <p className="font-medium">{selectedOrder.product_name}</p>
-                          {selectedOrder.product_sku && (
-                            <p className="text-xs text-muted-foreground">SKU: {selectedOrder.product_sku}</p>
-                          )}
-                          <p className="text-sm text-muted-foreground">
-                            {selectedOrder.quantity || 1} x {formatPrice(selectedOrder.product_price)}
-                          </p>
-                        </div>
-                        <p className="font-medium">
-                          {formatPrice((selectedOrder.quantity || 1) * (selectedOrder.product_price || 0))}
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground py-3">No items found</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Order Summary */}
-              <div className="border rounded-lg p-4 space-y-2">
-                <h3 className="font-semibold mb-3">Order Summary</h3>
-                {selectedOrder.subtotal !== undefined && selectedOrder.subtotal !== null && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Subtotal</span>
-                    <span>{formatPrice(selectedOrder.subtotal)}</span>
-                  </div>
-                )}
-                {selectedOrder.shipping_total !== undefined && selectedOrder.shipping_total !== null && selectedOrder.shipping_total > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Shipping</span>
-                    <span>{formatPrice(selectedOrder.shipping_total)}</span>
-                  </div>
-                )}
-                {selectedOrder.tax_total !== undefined && selectedOrder.tax_total !== null && selectedOrder.tax_total > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Tax</span>
-                    <span>{formatPrice(selectedOrder.tax_total)}</span>
-                  </div>
-                )}
-                {selectedOrder.discount_total !== undefined && selectedOrder.discount_total !== null && selectedOrder.discount_total > 0 && (
-                  <div className="flex justify-between text-sm text-green-600">
-                    <span>Discount</span>
-                    <span>-{formatPrice(selectedOrder.discount_total)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-lg font-bold pt-2 border-t">
-                  <span>Total</span>
-                  <span>{formatPrice(selectedOrder.grand_total ?? selectedOrder.total_amount)}</span>
-                </div>
-              </div>
-            </div>
-          )}
-        </SheetContent>
-      </Sheet>
+      {/* Order Details Slide-out */}
+      <OrderDetailSlideOut
+        open={detailsOpen}
+        onOpenChange={setDetailsOpen}
+        order={selectedOrder}
+        onStatusChange={updateOrderStatus}
+        isUpdating={updatingOrderId === selectedOrder?.id}
+        orderStatuses={ORDER_STATUSES}
+      />
     </div>
   )
 }
