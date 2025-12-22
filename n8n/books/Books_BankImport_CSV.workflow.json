@@ -1,0 +1,126 @@
+{
+  "name": "Books_BankImport_CSV",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "books/bank/import",
+        "httpMethod": "POST",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "Webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\n\nconst secret = $env.N8N_WEBHOOK_SECRET;\nconst sig = ($headers['x-nexcyte-signature'] || $headers['X-Nexcyte-Signature'] || '').toString();\n\nconst tenant_id = $json.tenant_id;\nconst import_id = $json.import_id;\nif (!tenant_id || !import_id) throw new Error('tenant_id and import_id required');\n\nconst base = `${tenant_id}|${import_id}`;\nconst expected = crypto.createHmac('sha256', secret).update(base).digest('hex');\n\nif (!sig || sig !== expected) throw new Error('Invalid signature');\n\nif (!$json.file_base64) throw new Error('file_base64 required');\n\nreturn [{ json: { tenant_id, import_id, filename: $json.filename, content_type: $json.content_type, file_base64: $json.file_base64 } }];"
+      },
+      "id": "VerifySig",
+      "name": "Verify Signature",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        420,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse CSV and emit items ready for PostgREST upsert into books_bank_transactions.\n// Expected CSV columns (flexible): posted_at/date, amount, merchant/description, currency, external_id\nconst crypto = require('crypto');\n\nconst tenant_id = $json.tenant_id;\nconst csv = Buffer.from($json.file_base64, 'base64').toString('utf8');\n\nconst normText = (s) => (s || '').toString().trim().toLowerCase().replace(/[^a-z0-9\\s]+/g,' ').replace(/\\s+/g,' ').trim() || null;\n\nconst lines = csv.split(/\\r?\\n/).filter(l => l.trim().length);\nif (lines.length < 2) throw new Error('CSV must have header + at least 1 row');\n\nconst header = lines[0].split(',').map(h => h.trim().replace(/^\"|\"$/g,'').toLowerCase());\nconst idx = (nameVariants) => {\n  const vars = Array.isArray(nameVariants) ? nameVariants : [nameVariants];\n  for (const v of vars) {\n    const i = header.indexOf(v);\n    if (i >= 0) return i;\n  }\n  return -1;\n};\n\nconst iDate = idx(['posted_at','date','transaction_date']);\nconst iAmt  = idx(['amount','amt','transaction_amount']);\nconst iMer  = idx(['merchant','description','payee','name']);\nconst iCur  = idx(['currency','ccy']);\nconst iExt  = idx(['external_id','id','reference','fitid']);\n\nif (iDate < 0 || iAmt < 0) throw new Error('CSV must include date and amount columns');\n\nfunction parseDate(s) {\n  // Expect YYYY-MM-DD or MM/DD/YYYY - best effort\n  const t = (s||'').replace(/^\"|\"$/g,'').trim();\n  if (!t) return null;\n  if (/^\\d{4}-\\d{2}-\\d{2}$/.test(t)) return t;\n  const m = t.match(/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})$/);\n  if (m) {\n    const mm = String(m[1]).padStart(2,'0');\n    const dd = String(m[2]).padStart(2,'0');\n    return `${m[3]}-${mm}-${dd}`;\n  }\n  return null;\n}\n\nfunction parseAmount(s) {\n  const t = (s||'').replace(/^\"|\"$/g,'').trim().replace(/[^0-9.\\-]/g,'');\n  const n = Number(t);\n  return Number.isFinite(n) ? n : null;\n}\n\nfunction txnHash(tenantId, postedAt, amount, currency, merchantNorm, externalId) {\n  const base = [tenantId, postedAt, String(amount), currency || '', merchantNorm || '', externalId || ''].join('|');\n  return crypto.createHash('sha256').update(base).digest('hex');\n}\n\nconst out = [];\n\nfor (let r=1;r<lines.length;r++) {\n  const row = lines[r].split(',').map(c => c.trim().replace(/^\"|\"$/g,''));\n  const posted_at = parseDate(row[iDate]);\n  const amount = parseAmount(row[iAmt]);\n  if (!posted_at || amount == null) continue;\n\n  const merchant = (iMer>=0 ? row[iMer] : null) || null;\n  const merchant_norm = normText(merchant);\n  const currency = (iCur>=0 ? row[iCur] : 'USD') || 'USD';\n  const external_id = (iExt>=0 ? row[iExt] : null) || null;\n\n  const txn_hash = txnHash(tenant_id, posted_at, amount, currency, merchant_norm, external_id);\n\n  out.push({\n    json: {\n      tenant_id,\n      source: 'csv',\n      posted_at,\n      amount,\n      currency,\n      merchant,\n      merchant_norm,\n      description: merchant,\n      external_id,\n      txn_hash,\n      cleared: false\n    }\n  });\n}\n\nif (!out.length) throw new Error('No valid rows parsed from CSV');\nreturn out;"
+      },
+      "id": "ParseCSV",
+      "name": "Parse CSV + Build Upserts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SUPABASE_URL + '/rest/v1/books_bank_transactions?on_conflict=tenant_id,txn_hash'}}",
+        "sendHeaders": true,
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates,return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "jsonBody": "={{JSON.stringify($json)}}",
+        "options": {}
+      },
+      "id": "UpsertTxn",
+      "name": "Upsert Transaction",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        860,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Verify Signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Signature": {
+      "main": [
+        [
+          {
+            "node": "Parse CSV + Build Upserts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse CSV + Build Upserts": {
+      "main": [
+        [
+          {
+            "node": "Upsert Transaction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "id": "Books_BankImport_CSV"
+}

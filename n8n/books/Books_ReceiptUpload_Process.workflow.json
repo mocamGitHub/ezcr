@@ -1,0 +1,587 @@
+{
+  "name": "Books_ReceiptUpload_Process",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "books/receipt/process",
+        "httpMethod": "POST",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "Webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\n\nconst secret = $env.N8N_WEBHOOK_SECRET;\nconst sig = ($headers['x-nexcyte-signature'] || $headers['X-Nexcyte-Signature'] || '').toString();\n\nconst tenant_id = $json.tenant_id;\nconst doc_id = $json.doc_id;\nif (!tenant_id || !doc_id) throw new Error('tenant_id and doc_id required');\n\nconst base = `${tenant_id}|${doc_id}`;\nconst expected = crypto.createHmac('sha256', secret).update(base).digest('hex');\n\nif (!sig || sig !== expected) {\n  throw new Error('Invalid signature');\n}\n\nreturn [{ json: { tenant_id, doc_id } }];"
+      },
+      "id": "VerifySig",
+      "name": "Verify Signature",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        420,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.SUPABASE_URL + '/rest/v1/books_settings?tenant_id=eq.' + $json.tenant_id + '&select=*'}}",
+        "sendHeaders": true,
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "FetchSettings",
+      "name": "Fetch Settings",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        640,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.SUPABASE_URL + '/rest/v1/books_documents?id=eq.' + $json.doc_id + '&tenant_id=eq.' + $json.tenant_id + '&select=*'}}",
+        "sendHeaders": true,
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "FetchDoc",
+      "name": "Fetch Document",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        640,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalize inputs, flatten settings/doc arrays (PostgREST returns arrays)\nconst tenant_id = $json.tenant_id;\nconst doc_id = $json.doc_id;\n\nconst settings = Array.isArray($items('Fetch Settings')[0]?.json) ? $items('Fetch Settings')[0].json[0] : $items('Fetch Settings')[0]?.json?.[0];\nconst docArr = Array.isArray($items('Fetch Document')[0]?.json) ? $items('Fetch Document')[0].json : $items('Fetch Document')[0]?.json;\nconst doc = docArr?.[0];\nif (!doc) throw new Error('Document not found');\n\nreturn [{\n  json: {\n    tenant_id,\n    doc_id,\n    settings: settings || { enabled: true, auto_link_threshold: 0.9, amount_tolerance: 1.0, date_window_days: 7 },\n    document: doc\n  }\n}];"
+      },
+      "id": "Unwrap",
+      "name": "Unwrap Settings+Doc",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        860,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SUPABASE_URL + '/storage/v1/object/sign/' + $json.document.storage_bucket + '/' + $json.document.storage_path}}",
+        "sendHeaders": true,
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "jsonBody": "={\"expiresIn\":600}",
+        "options": {}
+      },
+      "id": "SignURL",
+      "name": "Sign Storage URL",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1080,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = $json; // sign response\nconst signed = r.signedURL || r.signedUrl || r.signed_url;\nif (!signed) throw new Error('No signed URL returned');\n\nconst abs = signed.startsWith('http') ? signed : ($env.SUPABASE_URL + signed);\n\nreturn [{\n  json: {\n    tenant_id: $items('Unwrap Settings+Doc')[0].json.tenant_id,\n    doc_id: $items('Unwrap Settings+Doc')[0].json.doc_id,\n    settings: $items('Unwrap Settings+Doc')[0].json.settings,\n    document: $items('Unwrap Settings+Doc')[0].json.document,\n    signed_url: abs\n  }\n}];"
+      },
+      "id": "BuildSigned",
+      "name": "Build Signed URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1290,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$json.signed_url}}",
+        "responseFormat": "file",
+        "options": {}
+      },
+      "id": "Download",
+      "name": "Download File",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1500,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "method": "POST",
+        "url": "={{'https://documentai.googleapis.com/v1/projects/' + $env.GCP_PROJECT_ID + '/locations/' + $env.DOC_AI_LOCATION + '/processors/' + $env.DOC_AI_EXPENSE_PROCESSOR_ID + ':process'}}",
+        "sendBody": true,
+        "jsonBody": "={\"rawDocument\":{\"content\":\"{{$binary.data.data}}\",\"mimeType\":\"{{$json.document.content_type || 'application/pdf'}}\"}}",
+        "options": {}
+      },
+      "id": "DocAI",
+      "name": "Document AI Expense Parser",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1710,
+        220
+      ],
+      "credentials": {
+        "oAuth2Api": {
+          "id": "REPLACE_WITH_YOUR_GOOGLE_OAUTH_CRED_ID",
+          "name": "Google OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalize Document AI response into extracted_fields.v1 + indexed columns.\n// This is intentionally conservative and can be iterated later without breaking the stable JSON shape contract.\nconst nowIso = new Date().toISOString();\n\nconst tenant_id = $items('Build Signed URL')[0].json.tenant_id;\nconst doc_id = $items('Build Signed URL')[0].json.doc_id;\nconst settings = $items('Build Signed URL')[0].json.settings;\nconst doc = $items('Build Signed URL')[0].json.document;\n\nconst resp = $json; // Document AI response\n\n// Helpers\nconst normText = (s) => (s || '').toString().trim().toLowerCase().replace(/[^a-z0-9\\s]+/g,' ').replace(/\\s+/g,' ').trim() || null;\n\n// Attempt to pull fields from common Expense parser structures:\n// DocumentAI responses differ by processor version; we keep it best-effort.\nconst document = resp.document || resp; \nconst entities = document.entities || [];\n\nconst getEntity = (types) => {\n  const tset = new Set(Array.isArray(types) ? types : [types]);\n  const e = entities.find(x => tset.has(x.type));\n  return e || null;\n};\n\nconst vendorE = getEntity(['supplier_name','vendor_name','merchant_name','supplier','vendor']);\nconst totalE = getEntity(['total_amount','total','amount_due','invoice_total']);\nconst dateE  = getEntity(['invoice_date','receipt_date','date']);\n\nconst vendor = vendorE?.mentionText || vendorE?.normalizedValue?.text || null;\n\nconst total = (() => {\n  const nv = totalE?.normalizedValue;\n  if (nv?.moneyValue) return Number(nv.moneyValue.amount) || null;\n  const mt = totalE?.mentionText;\n  if (!mt) return null;\n  const m = mt.replace(/[^0-9.\\-]/g,'');\n  const n = Number(m);\n  return Number.isFinite(n) ? n : null;\n})();\n\nconst currency = (() => {\n  const nv = totalE?.normalizedValue;\n  if (nv?.moneyValue?.currencyCode) return nv.moneyValue.currencyCode;\n  return doc.currency || 'USD';\n})();\n\nconst docDate = (() => {\n  const nv = dateE?.normalizedValue;\n  if (nv?.dateValue) {\n    const { year, month, day } = nv.dateValue;\n    if (year && month && day) return `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;\n  }\n  const mt = dateE?.mentionText;\n  if (!mt) return null;\n  // leave as null if not parseable; UI/manual review can handle.\n  return null;\n})();\n\n// Field confidences: take entity confidence when present.\nconst vendorConf = vendorE?.confidence ?? null;\nconst totalConf  = totalE?.confidence ?? null;\nconst dateConf   = dateE?.confidence ?? null;\n\n// overall confidence heuristic (min of present confidences or null)\nconst confs = [vendorConf, totalConf, dateConf].filter(x => typeof x === 'number');\nconst overall = confs.length ? Math.max(0, Math.min(...confs)) : null;\n\nconst flags = [];\nif (!vendor) flags.push('missing_vendor');\nif (total == null) flags.push('missing_total_amount');\nif (!docDate) flags.push('missing_document_date');\nif (overall != null && overall < 0.60) flags.push('low_confidence');\n\nconst extracted_fields = {\n  schema_version: \"books.extracted_fields.v1\",\n  source: {\n    engine: \"google_document_ai\",\n    processor: \"expense_parser\",\n    processed_at: nowIso\n  },\n  document: {\n    vendor,\n    date: docDate,\n    total,\n    currency,\n    payment: null\n  },\n  line_items: [],\n  confidence: {\n    overall,\n    fields: {\n      vendor: vendorConf,\n      date: dateConf,\n      total: totalConf\n    }\n  },\n  notes: {\n    flags\n  }\n};\n\n// Candidate selection parameters\n// date window uses receipt date if parseable; else fall back to posted_at window of last N days not possible here.\nconst date_window_days = settings.date_window_days ?? 7;\nconst amount_tolerance = settings.amount_tolerance ?? 1.0;\nlet dateFrom = null, dateTo = null;\nif (docDate) {\n  const d = new Date(docDate + 'T00:00:00Z');\n  const from = new Date(d); from.setUTCDate(from.getUTCDate() - date_window_days);\n  const to = new Date(d); to.setUTCDate(to.getUTCDate() + date_window_days);\n  dateFrom = from.toISOString().slice(0,10);\n  dateTo = to.toISOString().slice(0,10);\n}\n\nreturn [{\n  json: {\n    tenant_id,\n    doc_id,\n    settings,\n    doc,\n    extracted_json: resp,\n    extracted_fields,\n    indexed: {\n      vendor_guess: vendor,\n      vendor_norm: normText(vendor),\n      total_amount: total,\n      currency,\n      document_date: docDate,\n      confidence_overall: overall,\n      flags\n    },\n    candidate_query: {\n      date_from: dateFrom,\n      date_to: dateTo,\n      amount_min: (total != null) ? (total - amount_tolerance) : null,\n      amount_max: (total != null) ? (total + amount_tolerance) : null\n    }\n  }\n}];"
+      },
+      "id": "Normalize",
+      "name": "Normalize Extraction",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1930,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{$env.SUPABASE_URL + '/rest/v1/books_documents?id=eq.' + $json.doc_id + '&tenant_id=eq.' + $json.tenant_id}}",
+        "sendHeaders": true,
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParametersUi": {
+          "parameter": []
+        },
+        "jsonBody": "={{JSON.stringify({ sync_status: 'processing', extracted_json: $json.extracted_json, extracted_fields: $json.extracted_fields, vendor_guess: $json.indexed.vendor_guess, vendor_norm: $json.indexed.vendor_norm, total_amount: $json.indexed.total_amount, currency: $json.indexed.currency, document_date: $json.indexed.document_date, confidence_overall: $json.indexed.confidence_overall, flags: $json.indexed.flags })}}",
+        "options": {}
+      },
+      "id": "UpdateDoc",
+      "name": "Update Document",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        2140,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{(() => { const q=$json.candidate_query; const base=$env.SUPABASE_URL + '/rest/v1/books_bank_transactions?tenant_id=eq.' + $json.tenant_id + '&select=*'; let u=base; if (q.date_from) u += '&posted_at=gte.'+q.date_from; if (q.date_to) u += '&posted_at=lte.'+q.date_to; if (q.amount_min != null) u += '&amount=gte.'+q.amount_min; if (q.amount_max != null) u += '&amount=lte.'+q.amount_max; return u; })()}}",
+        "sendHeaders": true,
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "FetchCandidates",
+      "name": "Fetch Candidate Transactions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        2350,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Score candidates and emit up to 3 suggestions as separate items for RPC calls.\nconst tenant_id = $items('Normalize Extraction')[0].json.tenant_id;\nconst doc_id = $items('Normalize Extraction')[0].json.doc_id;\nconst settings = $items('Normalize Extraction')[0].json.settings;\nconst idx = $items('Normalize Extraction')[0].json.indexed;\n\nconst txns = Array.isArray($json) ? $json : ($json || []);\nconst vendor_norm = idx.vendor_norm;\nconst total_amount = idx.total_amount;\nconst doc_date = idx.document_date;\n\nconst auto_link_threshold = settings.auto_link_threshold ?? 0.9;\n\nconst normText = (s) => (s || '').toString().trim().toLowerCase().replace(/[^a-z0-9\\s]+/g,' ').replace(/\\s+/g,' ').trim() || null;\n\nconst daysBetween = (a, b) => {\n  if (!a || !b) return null;\n  const da = new Date(a + 'T00:00:00Z');\n  const db = new Date(b + 'T00:00:00Z');\n  return Math.abs(Math.round((da - db) / (1000*60*60*24)));\n};\n\nconst scoreOne = (t) => {\n  let score = 0;\n  const signals = [];\n\n  // amount signal\n  if (typeof total_amount === 'number') {\n    const diff = Math.abs(Number(t.amount) - total_amount);\n    const amtScore = Math.max(0, 1 - Math.min(diff / Math.max(1, total_amount * 0.05), 1)); // within ~5% gets high\n    score += amtScore * 0.55;\n    signals.push({ type:'amount', score: amtScore, detail:`diff=${diff.toFixed(2)}` });\n  }\n\n  // date signal\n  const dDays = daysBetween(doc_date, t.posted_at);\n  if (dDays != null) {\n    const dateScore = Math.max(0, 1 - Math.min(dDays / 7, 1)); // within 7 days\n    score += dateScore * 0.25;\n    signals.push({ type:'date', score: dateScore, detail:`days=${dDays}` });\n  }\n\n  // merchant signal (token overlap)\n  const mNorm = normText(t.merchant_norm || t.merchant || t.description);\n  if (vendor_norm && mNorm) {\n    const a = new Set(vendor_norm.split(' ').filter(Boolean));\n    const b = new Set(mNorm.split(' ').filter(Boolean));\n    const inter = [...a].filter(x => b.has(x)).length;\n    const union = new Set([...a, ...b]).size || 1;\n    const merchScore = Math.min(1, inter / union);\n    score += merchScore * 0.20;\n    signals.push({ type:'merchant', score: merchScore, detail:`overlap=${inter}/${union}` });\n  }\n\n  score = Math.max(0, Math.min(1, score));\n\n  const reasons = {\n    schema_version: \"books.match_reasons.v1\",\n    summary: [\n      signals.find(s=>s.type==='amount') ? 'Amount close' : 'Amount unknown',\n      signals.find(s=>s.type==='date') ? 'Date close' : 'Date unknown',\n      signals.find(s=>s.type==='merchant') ? 'Merchant similar' : 'Merchant unknown'\n    ],\n    signals,\n    conflicts: { has_conflict: false },\n    explain: `Score=${score.toFixed(3)} from amount/date/merchant signals.`\n  };\n\n  return { score, reasons };\n};\n\nconst scored = txns.map(t => {\n  const { score, reasons } = scoreOne(t);\n  return { txn: t, score, reasons };\n}).sort((a,b) => (b.score - a.score));\n\nconst top = scored.slice(0,3);\n\n// Build items for RPC calls:\n// first item tries auto-link, others are suggested only.\nconst out = [];\nfor (let i=0;i<top.length;i++) {\n  const it = top[i];\n  out.push({\n    json: {\n      tenant_id,\n      document_id: doc_id,\n      bank_transaction_id: it.txn.id,\n      score: it.score,\n      reasons: it.reasons,\n      try_auto_link: (i===0 && it.score >= auto_link_threshold)\n    }\n  });\n}\n\nreturn out;"
+      },
+      "id": "Score",
+      "name": "Score Candidates",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2560,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "Split",
+      "name": "Split Suggestions",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        2770,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SUPABASE_URL + '/rest/v1/rpc/books_apply_match_decision'}}",
+        "sendHeaders": true,
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "jsonBody": "={{JSON.stringify({ p_tenant_id: $json.tenant_id, p_document_id: $json.document_id, p_bank_transaction_id: $json.bank_transaction_id, p_score: $json.score, p_reasons: $json.reasons, p_try_auto_link: $json.try_auto_link })}}",
+        "options": {}
+      },
+      "id": "ApplyRPC",
+      "name": "RPC Apply Match Decision",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        2980,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": []
+        }
+      },
+      "id": "Loop",
+      "name": "Loop Next",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        3190,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{$env.SUPABASE_URL + '/rest/v1/books_documents?id=eq.' + $items('Normalize Extraction')[0].json.doc_id + '&tenant_id=eq.' + $items('Normalize Extraction')[0].json.tenant_id}}",
+        "sendHeaders": true,
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "jsonBody": "={\"sync_status\":\"succeeded\"}",
+        "options": {}
+      },
+      "id": "MarkSucceeded",
+      "name": "Mark Document Succeeded",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        3400,
+        220
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Verify Signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Signature": {
+      "main": [
+        [
+          {
+            "node": "Fetch Settings",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Settings": {
+      "main": [
+        [
+          {
+            "node": "Unwrap Settings+Doc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Document": {
+      "main": [
+        [
+          {
+            "node": "Unwrap Settings+Doc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Unwrap Settings+Doc": {
+      "main": [
+        [
+          {
+            "node": "Sign Storage URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sign Storage URL": {
+      "main": [
+        [
+          {
+            "node": "Build Signed URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Signed URL": {
+      "main": [
+        [
+          {
+            "node": "Download File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download File": {
+      "main": [
+        [
+          {
+            "node": "Document AI Expense Parser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Document AI Expense Parser": {
+      "main": [
+        [
+          {
+            "node": "Normalize Extraction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Extraction": {
+      "main": [
+        [
+          {
+            "node": "Update Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Document": {
+      "main": [
+        [
+          {
+            "node": "Fetch Candidate Transactions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Candidate Transactions": {
+      "main": [
+        [
+          {
+            "node": "Score Candidates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Score Candidates": {
+      "main": [
+        [
+          {
+            "node": "Split Suggestions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Suggestions": {
+      "main": [
+        [
+          {
+            "node": "RPC Apply Match Decision",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark Document Succeeded",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RPC Apply Match Decision": {
+      "main": [
+        [
+          {
+            "node": "Split Suggestions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "id": "Books_ReceiptUpload_Process"
+}
