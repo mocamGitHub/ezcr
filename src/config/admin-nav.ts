@@ -12,6 +12,7 @@ import {
   Building2,
   Wrench,
   Receipt,
+  BookOpen,
   Settings,
   User,
   type LucideIcon,
@@ -67,6 +68,12 @@ export const adminNavSections: AdminNavSection[] = [
         href: '/admin/qbo',
         icon: Receipt,
         description: 'QuickBooks Online invoices',
+      },
+      {
+        title: 'Books',
+        href: '/admin/books',
+        icon: BookOpen,
+        description: 'Receipt & transaction matching',
       },
       {
         title: 'Inventory',
