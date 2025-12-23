@@ -19,7 +19,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const TFORCE_CONFIG = {
   tokenUrl: process.env.TFORCE_TOKEN_ENDPOINT || 'https://login.microsoftonline.com/ca4f5969-c10f-40d4-8127-e74b691f95de/oauth2/v2.0/token',
-  tokenScope: process.env.TFORCE_SCOPE || 'https://tffproduction.onmicrosoft.com/f06cb173-a8e6-44ad-89a1-06c1070a1f62/.default',
+  tokenScope: process.env.TFORCE_SCOPE || 'https://tffproduction.onmicrosoft.com/04cc9749-dbe5-4914-b262-d866b907756b/.default',
   trackingUrl: 'https://api.tforcefreight.com/track',
   apiVersion: 'v1',
 };
