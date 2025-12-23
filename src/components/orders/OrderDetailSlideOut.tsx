@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Sheet,
   SheetContent,
@@ -275,24 +275,31 @@ export function OrderDetailSlideOut({
   const [isSearchingBol, setIsSearchingBol] = useState(false)
   const [trackingError, setTrackingError] = useState<string | null>(null)
   const [localOrder, setLocalOrder] = useState<Order | null>(null)
+  const previousOrderIdRef = useRef<string | null>(null)
 
   // Use localOrder if set (after tracking sync), otherwise use prop
   const displayOrder = localOrder || order
 
-  // Reset state when order changes
-  if (order && localOrder && order.id !== localOrder.id) {
-    setLocalOrder(null)
-    setProNumberInput('')
-    setBolNumberInput('')
-    setTrackingError(null)
-  }
+  // Reset all tracking state when order changes
+  useEffect(() => {
+    const currentOrderId = order?.id || null
+
+    if (previousOrderIdRef.current !== currentOrderId) {
+      // Order changed - reset all tracking-related state
+      setProNumberInput(order?.pro_number || '')
+      setBolNumberInput('')
+      setTrackingError(null)
+      setLocalOrder(null)
+      setIsSavingPro(false)
+      setIsSavingBol(false)
+      setIsSyncingTracking(false)
+      setIsSearchingBol(false)
+
+      previousOrderIdRef.current = currentOrderId
+    }
+  }, [order?.id, order?.pro_number])
 
   if (!displayOrder) return null
-
-  // Initialize pro number input when order opens
-  if (proNumberInput === '' && displayOrder.pro_number) {
-    setProNumberInput(displayOrder.pro_number)
-  }
 
   const handleSaveProNumber = async () => {
     if (!onProNumberSave || !displayOrder) return
