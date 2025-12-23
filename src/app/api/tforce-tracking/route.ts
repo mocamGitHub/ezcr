@@ -372,22 +372,60 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify(searchRequest),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`TForce API error (${response.status}): ${errorText}`);
-    }
-
     const data = await response.json();
 
-    // Check response status
-    if (data.summary?.responseStatus?.code !== 'OK') {
+    // Handle rate limiting
+    if (response.status === 429) {
+      return NextResponse.json({
+        success: false,
+        error: {
+          type: 'RATE_LIMITED',
+          message: 'TForce API rate limit exceeded. Please try again in a minute.',
+        },
+      }, { status: 429 });
+    }
+
+    // Check response status - handle both HTTP errors and TForce error codes
+    const responseCode = data.summary?.responseStatus?.code;
+    if (responseCode === 'RNF' || response.status === 404) {
+      // Reference Not Found - provide a friendly message
+      const refType = code === 'BL' ? 'Bill of Lading' : 'Purchase Order';
+      return NextResponse.json({
+        success: false,
+        error: {
+          type: 'NOT_FOUND',
+          message: `No shipment found for ${refType} #${number}. This BOL may be too old (TForce typically keeps records for 90-180 days) or the number may be incorrect.`,
+        },
+      }, { status: 404 });
+    }
+
+    if (responseCode !== 'OK') {
+      // Other TForce errors
+      let friendlyMessage = data.summary?.responseStatus?.message || 'Unable to find shipment';
+
+      // Make common error messages more user-friendly
+      if (friendlyMessage.toLowerCase().includes('reference number not found')) {
+        const refType = code === 'BL' ? 'Bill of Lading' : 'Purchase Order';
+        friendlyMessage = `No shipment found for ${refType} #${number}. Please verify the number is correct.`;
+      }
+
       return NextResponse.json({
         success: false,
         error: {
           type: 'TFORCE_ERROR',
-          message: data.summary?.responseStatus?.message || 'No matching shipments found',
+          message: friendlyMessage,
         },
       }, { status: 400 });
+    }
+
+    if (!response.ok) {
+      return NextResponse.json({
+        success: false,
+        error: {
+          type: 'API_ERROR',
+          message: 'Unable to connect to TForce. Please try again later.',
+        },
+      }, { status: response.status });
     }
 
     const details = data.detail || [];

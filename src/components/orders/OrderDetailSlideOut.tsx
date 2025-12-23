@@ -693,9 +693,9 @@ export function OrderDetailSlideOut({
 
               {/* Error Message */}
               {trackingError && (
-                <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
-                  <AlertCircle className="h-4 w-4" />
-                  {trackingError}
+                <div className="flex items-start gap-2 p-3 text-sm bg-red-50 dark:bg-red-950/30 rounded-lg border border-red-200 dark:border-red-800">
+                  <AlertCircle className="h-4 w-4 mt-0.5 text-red-600 dark:text-red-400 flex-shrink-0" />
+                  <span className="text-red-700 dark:text-red-300">{trackingError}</span>
                 </div>
               )}
 
