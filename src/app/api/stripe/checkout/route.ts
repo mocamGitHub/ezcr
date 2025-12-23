@@ -14,6 +14,11 @@ export async function POST(request: NextRequest) {
       customerPhone,
       shippingAddress,
       billingAddress,
+      // Shipping quote data
+      shippingQuoteId,
+      destinationTerminal,
+      estimatedTransitDays,
+      configurationId,
     } = body
 
     // Get tenant ID from environment-aware configuration
@@ -176,6 +181,12 @@ export async function POST(request: NextRequest) {
         total_amount: total / 100,
         shipping_address: shippingAddress,
         billing_address: billingAddress,
+        // Shipping quote data
+        shipping_quote_id: shippingQuoteId || null,
+        destination_terminal: destinationTerminal || null,
+        estimated_transit_days: estimatedTransitDays || null,
+        carrier: destinationTerminal ? 'tforce' : null,
+        configuration_id: configurationId || null,
       })
       .select()
       .single()

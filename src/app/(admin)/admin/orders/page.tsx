@@ -260,23 +260,55 @@ export default function AdminOrdersPage() {
       }
     }
 
-    // Fetch configuration by matching email
+    // Fetch phone from contacts if missing on order
+    if (!order.customer_phone && order.customer_email) {
+      try {
+        const { data: contacts, error } = await supabase
+          .from('contacts')
+          .select('phone')
+          .ilike('email', order.customer_email)
+          .limit(1)
+
+        if (!error && contacts && contacts.length > 0 && contacts[0].phone) {
+          updatedOrder = { ...updatedOrder, customer_phone: contacts[0].phone }
+          needsUpdate = true
+        }
+      } catch (err) {
+        console.error('Error fetching contact phone:', err)
+      }
+    }
+
+    // Fetch configuration - first try by configuration_id FK, then by email match
     if (!order.configuration && order.customer_email) {
       try {
-        const { data: config, error } = await supabase
-          .from('product_configurations')
-          .select('configuration')
-          .like('session_id', 'legacy-import-%')
-          .limit(100)
+        // If order has configuration_id, use it directly
+        if (order.configuration_id) {
+          const { data: config, error } = await supabase
+            .from('product_configurations')
+            .select('configuration')
+            .eq('id', order.configuration_id)
+            .single()
 
-        if (!error && config) {
-          // Find matching configuration by email
-          const matchingConfig = config.find((c: any) =>
-            c.configuration?.contact?.email?.toLowerCase() === order.customer_email?.toLowerCase()
-          )
-          if (matchingConfig) {
-            updatedOrder = { ...updatedOrder, configuration: matchingConfig.configuration }
+          if (!error && config?.configuration) {
+            updatedOrder = { ...updatedOrder, configuration: config.configuration }
             needsUpdate = true
+          }
+        } else {
+          // Fall back to email matching for legacy orders
+          const { data: configs, error } = await supabase
+            .from('product_configurations')
+            .select('configuration')
+            .limit(100)
+
+          if (!error && configs) {
+            // Find matching configuration by email
+            const matchingConfig = configs.find((c: any) =>
+              c.configuration?.contact?.email?.toLowerCase() === order.customer_email?.toLowerCase()
+            )
+            if (matchingConfig) {
+              updatedOrder = { ...updatedOrder, configuration: matchingConfig.configuration }
+              needsUpdate = true
+            }
           }
         }
       } catch (err) {
@@ -346,6 +378,225 @@ export default function AdminOrdersPage() {
       : sortedOrders
     exportToCSV(dataToExport, orderColumns, getExportFilename('orders'))
     toast.success(`Exported ${dataToExport.length} orders to CSV`)
+  }
+
+  // Save PRO number to database
+  const saveProNumber = async (orderId: string, proNumber: string): Promise<boolean> => {
+    try {
+      const supabase = createClient()
+      const { error } = await supabase
+        .from('orders')
+        .update({
+          pro_number: proNumber,
+          carrier: 'tforce',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', orderId)
+
+      if (error) throw error
+
+      // Update local state
+      setOrders(prev => prev.map(o =>
+        o.id === orderId ? { ...o, pro_number: proNumber, carrier: 'tforce' } : o
+      ))
+
+      if (selectedOrder?.id === orderId) {
+        setSelectedOrder(prev => prev ? { ...prev, pro_number: proNumber, carrier: 'tforce' } : null)
+      }
+
+      toast.success('PRO number saved')
+      return true
+    } catch (err) {
+      console.error('Error saving PRO number:', err)
+      toast.error('Failed to save PRO number')
+      return false
+    }
+  }
+
+  // Save BOL number to database
+  const saveBolNumber = async (orderId: string, bolNumber: string): Promise<boolean> => {
+    try {
+      const supabase = createClient()
+      const { error } = await supabase
+        .from('orders')
+        .update({
+          bol_number: bolNumber,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', orderId)
+
+      if (error) throw error
+
+      // Update local state
+      setOrders(prev => prev.map(o =>
+        o.id === orderId ? { ...o, bol_number: bolNumber } : o
+      ))
+
+      if (selectedOrder?.id === orderId) {
+        setSelectedOrder(prev => prev ? { ...prev, bol_number: bolNumber } : null)
+      }
+
+      toast.success('BOL number saved')
+      return true
+    } catch (err) {
+      console.error('Error saving BOL number:', err)
+      toast.error('Failed to save BOL number')
+      return false
+    }
+  }
+
+  // Sync tracking from TForce API
+  const syncTracking = async (orderId: string): Promise<Order | null> => {
+    try {
+      const response = await fetch(`/api/tforce-tracking?orderId=${orderId}`)
+      const data = await response.json()
+
+      if (!data.success) {
+        throw new Error(data.error?.message || 'Failed to sync tracking')
+      }
+
+      // Fetch updated order from database
+      const supabase = createClient()
+      const { data: updatedOrder, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('id', orderId)
+        .single()
+
+      if (error) throw error
+
+      // Map TForce tracking data to our order format
+      const trackingDetail = data.tracking
+      const enhancedOrder: Order = {
+        ...updatedOrder,
+        tracking_events: trackingDetail.events || [],
+        tracking_synced_at: new Date().toISOString(),
+        delivery_signature: trackingDetail.delivery?.signedBy || updatedOrder.delivery_signature,
+      }
+
+      // Update the tracking_synced_at in database
+      await supabase
+        .from('orders')
+        .update({
+          tracking_events: trackingDetail.events || [],
+          tracking_synced_at: new Date().toISOString(),
+          delivery_signature: trackingDetail.delivery?.signedBy || null,
+        })
+        .eq('id', orderId)
+
+      // Update local state
+      setOrders(prev => prev.map(o =>
+        o.id === orderId ? enhancedOrder : o
+      ))
+
+      toast.success('Tracking synced successfully')
+      return enhancedOrder
+    } catch (err: any) {
+      console.error('Error syncing tracking:', err)
+      toast.error(err.message || 'Failed to sync tracking')
+      throw err
+    }
+  }
+
+  // Search for PRO number by BOL number
+  const searchByBol = async (orderId: string, bolNumber: string): Promise<Order | null> => {
+    try {
+      // Get the order's creation date to set the date range
+      const order = orders.find(o => o.id === orderId)
+      if (!order) throw new Error('Order not found')
+
+      // Calculate date range: from order creation to now
+      const orderDate = new Date(order.created_at)
+      const now = new Date()
+      const pickupStartDate = orderDate.toISOString().split('T')[0]
+      const pickupEndDate = now.toISOString().split('T')[0]
+
+      const response = await fetch('/api/tforce-tracking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          number: bolNumber,
+          code: 'BL', // Bill of Lading
+          pickupStartDate,
+          pickupEndDate,
+          orderId,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!data.success) {
+        throw new Error(data.error?.message || 'No shipment found for this BOL')
+      }
+
+      if (!data.results || data.results.length === 0) {
+        throw new Error('No shipment found for this BOL number')
+      }
+
+      // Get the first result's PRO number
+      const proNumber = data.results[0].pro
+      if (!proNumber) {
+        throw new Error('PRO number not found in response')
+      }
+
+      // Save the BOL number, PRO number, and carrier to the order
+      const supabase = createClient()
+      await supabase
+        .from('orders')
+        .update({
+          bol_number: bolNumber, // Save the BOL number too
+          pro_number: proNumber,
+          carrier: 'tforce',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', orderId)
+
+      // Now sync the full tracking data
+      const trackingResponse = await fetch(`/api/tforce-tracking?orderId=${orderId}`)
+      const trackingData = await trackingResponse.json()
+
+      // Fetch the updated order
+      const { data: updatedOrder, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('id', orderId)
+        .single()
+
+      if (error) throw error
+
+      // Enhance with tracking events if available
+      const enhancedOrder: Order = {
+        ...updatedOrder,
+        bol_number: bolNumber,
+        pro_number: proNumber,
+        carrier: 'tforce',
+        tracking_events: trackingData.tracking?.events || [],
+        tracking_synced_at: new Date().toISOString(),
+        delivery_signature: trackingData.tracking?.delivery?.signedBy || null,
+      }
+
+      // Save tracking events to database
+      await supabase
+        .from('orders')
+        .update({
+          tracking_events: trackingData.tracking?.events || [],
+          tracking_synced_at: new Date().toISOString(),
+          delivery_signature: trackingData.tracking?.delivery?.signedBy || null,
+        })
+        .eq('id', orderId)
+
+      // Update local state
+      setOrders(prev => prev.map(o =>
+        o.id === orderId ? enhancedOrder : o
+      ))
+
+      toast.success(`Found PRO #${proNumber} and synced tracking`)
+      return enhancedOrder
+    } catch (err: any) {
+      console.error('Error searching by BOL:', err)
+      toast.error(err.message || 'Failed to find shipment by BOL')
+      throw err
+    }
   }
 
   return (
@@ -660,6 +911,10 @@ export default function AdminOrdersPage() {
         onOpenChange={setDetailsOpen}
         order={selectedOrder}
         onStatusChange={updateOrderStatus}
+        onProNumberSave={saveProNumber}
+        onBolNumberSave={saveBolNumber}
+        onTrackingSync={syncTracking}
+        onSearchByBol={searchByBol}
         isUpdating={updatingOrderId === selectedOrder?.id}
         orderStatuses={ORDER_STATUSES}
       />

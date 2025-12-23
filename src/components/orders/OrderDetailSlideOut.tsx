@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import {
   Sheet,
   SheetContent,
@@ -14,7 +15,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Phone, Mail, MapPin, Calendar, Truck, Car, Bike } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Phone, Mail, MapPin, Calendar, Truck, Car, Bike, RefreshCw, Save, CheckCircle, AlertCircle, Clock, Package, Search } from 'lucide-react'
 import { format } from 'date-fns'
 
 // Order and OrderItem interfaces
@@ -72,6 +75,7 @@ export interface Order {
   billing_address?: any
   order_items?: OrderItem[]
   configuration?: ConfigurationData | null
+  configuration_id?: string | null
   // QBO link fields
   qbo_invoice_id?: string | null
   qbo_sync_status?: string | null
@@ -110,6 +114,7 @@ export interface Order {
   shipped_at?: string | null
   delivered_at?: string | null
   expected_delivery_date?: string | null
+  estimated_delivery_date?: string | null
   actual_delivery_date?: string | null
   appointment_date?: string | null
   // Pickup details
@@ -129,6 +134,20 @@ export interface Order {
   options?: any
   shipping_quote_id?: string | null
   payment_method?: string | null
+  // TForce tracking fields
+  pro_number?: string | null
+  delivery_signature?: string | null
+  tracking_events?: TrackingEvent[] | null
+  tracking_synced_at?: string | null
+}
+
+// TForce tracking event
+interface TrackingEvent {
+  date: string
+  description: string
+  displayDescription?: string
+  serviceCenter?: string
+  code?: string
 }
 
 interface OrderDetailSlideOutProps {
@@ -136,6 +155,10 @@ interface OrderDetailSlideOutProps {
   onOpenChange: (open: boolean) => void
   order: Order | null
   onStatusChange?: (orderId: string, newStatus: string) => void
+  onProNumberSave?: (orderId: string, proNumber: string) => Promise<boolean>
+  onBolNumberSave?: (orderId: string, bolNumber: string) => Promise<boolean>
+  onTrackingSync?: (orderId: string) => Promise<Order | null>
+  onSearchByBol?: (orderId: string, bolNumber: string) => Promise<Order | null>
   isUpdating?: boolean
   orderStatuses?: { value: string; label: string }[]
   showStatusSelector?: boolean
@@ -190,21 +213,42 @@ function getPaymentStatusColor(status: string): string {
   }
 }
 
-function formatAddress(address: any): string[] | null {
+function formatAddress(address: any, customerName?: string): string[] | null {
   if (!address) return null
 
   // Handle both naming conventions:
   // Original: line1, line2, city, state, postalCode
   // Shipping: street_address, apartment, city, state, zip_code
+  // QBO import: line1=name, line2=address, city/state/zip often empty
   const line1 = address.line1 || address.street_address
-  const line2 = address.line2 || address.apartment
+  let line2 = address.line2 || address.apartment
   const zip = address.postalCode || address.postal_code || address.zip_code || address.zip
+
+  // Detect QBO import pattern where line1 is the customer name
+  // If line1 matches customer name and there's no explicit name field, skip line1
+  const isQboPattern = !address.name &&
+    line1 &&
+    customerName &&
+    line1.toLowerCase().trim() === customerName.toLowerCase().trim()
+
+  // Build city/state/zip string
+  let cityStateZip = [address.city, address.state, zip].filter(Boolean).join(', ')
+
+  // Check if line2 contains embedded city/state/zip (QBO pattern like "Whitehouse, TX  75791")
+  if (!cityStateZip && line2) {
+    const embeddedMatch = line2.match(/^(.+),\s*([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/i)
+    if (embeddedMatch) {
+      // line2 is actually city, state zip - not a street address
+      cityStateZip = `${embeddedMatch[1].trim()}, ${embeddedMatch[2]} ${embeddedMatch[3]}`
+      line2 = null
+    }
+  }
 
   const parts = [
     address.name,
-    line1,
+    isQboPattern ? null : line1,
     line2,
-    [address.city, address.state, zip].filter(Boolean).join(', '),
+    cityStateZip,
     address.country && address.country !== 'US' && address.country !== 'USA' ? address.country : null
   ].filter(Boolean)
   return parts.length > 0 ? parts : null
@@ -215,40 +259,171 @@ export function OrderDetailSlideOut({
   onOpenChange,
   order,
   onStatusChange,
+  onProNumberSave,
+  onBolNumberSave,
+  onTrackingSync,
+  onSearchByBol,
   isUpdating = false,
   orderStatuses = DEFAULT_ORDER_STATUSES,
   showStatusSelector = true,
 }: OrderDetailSlideOutProps) {
-  if (!order) return null
+  const [proNumberInput, setProNumberInput] = useState('')
+  const [bolNumberInput, setBolNumberInput] = useState('')
+  const [isSavingPro, setIsSavingPro] = useState(false)
+  const [isSavingBol, setIsSavingBol] = useState(false)
+  const [isSyncingTracking, setIsSyncingTracking] = useState(false)
+  const [isSearchingBol, setIsSearchingBol] = useState(false)
+  const [trackingError, setTrackingError] = useState<string | null>(null)
+  const [localOrder, setLocalOrder] = useState<Order | null>(null)
+
+  // Use localOrder if set (after tracking sync), otherwise use prop
+  const displayOrder = localOrder || order
+
+  // Reset state when order changes
+  if (order && localOrder && order.id !== localOrder.id) {
+    setLocalOrder(null)
+    setProNumberInput('')
+    setBolNumberInput('')
+    setTrackingError(null)
+  }
+
+  if (!displayOrder) return null
+
+  // Initialize pro number input when order opens
+  if (proNumberInput === '' && displayOrder.pro_number) {
+    setProNumberInput(displayOrder.pro_number)
+  }
+
+  const handleSaveProNumber = async () => {
+    if (!onProNumberSave || !displayOrder) return
+    setIsSavingPro(true)
+    setTrackingError(null)
+    try {
+      const success = await onProNumberSave(displayOrder.id, proNumberInput)
+      if (!success) {
+        setTrackingError('Failed to save PRO number')
+      }
+    } catch (err: any) {
+      setTrackingError(err.message || 'Failed to save PRO number')
+    } finally {
+      setIsSavingPro(false)
+    }
+  }
+
+  const handleSaveBolNumber = async () => {
+    if (!onBolNumberSave || !displayOrder) return
+    setIsSavingBol(true)
+    setTrackingError(null)
+    try {
+      const success = await onBolNumberSave(displayOrder.id, bolNumberInput)
+      if (success) {
+        // Update local order with the new BOL number
+        setLocalOrder({ ...displayOrder, bol_number: bolNumberInput })
+      } else {
+        setTrackingError('Failed to save BOL number')
+      }
+    } catch (err: any) {
+      setTrackingError(err.message || 'Failed to save BOL number')
+    } finally {
+      setIsSavingBol(false)
+    }
+  }
+
+  const handleSyncTracking = async () => {
+    if (!onTrackingSync || !displayOrder) return
+    setIsSyncingTracking(true)
+    setTrackingError(null)
+    try {
+      const updatedOrder = await onTrackingSync(displayOrder.id)
+      if (updatedOrder) {
+        setLocalOrder(updatedOrder)
+        // Update PRO input if it was found
+        if (updatedOrder.pro_number) {
+          setProNumberInput(updatedOrder.pro_number)
+        }
+      }
+    } catch (err: any) {
+      setTrackingError(err.message || 'Failed to sync tracking')
+    } finally {
+      setIsSyncingTracking(false)
+    }
+  }
+
+  const handleSearchByBol = async () => {
+    // Use the stored BOL number or the manually entered one
+    const bolToSearch = displayOrder?.bol_number || bolNumberInput
+    if (!onSearchByBol || !displayOrder || !bolToSearch) return
+    setIsSearchingBol(true)
+    setTrackingError(null)
+    try {
+      const updatedOrder = await onSearchByBol(displayOrder.id, bolToSearch)
+      if (updatedOrder) {
+        setLocalOrder(updatedOrder)
+        // Update PRO input if it was found
+        if (updatedOrder.pro_number) {
+          setProNumberInput(updatedOrder.pro_number)
+        }
+        // Clear BOL input since it's now saved to the order
+        setBolNumberInput('')
+      }
+    } catch (err: any) {
+      setTrackingError(err.message || 'Failed to find shipment by BOL')
+    } finally {
+      setIsSearchingBol(false)
+    }
+  }
+
+  // Use displayOrder for the rest of the component
+  const order_ = displayOrder
 
   // Calculate subtotal from order_items if available, otherwise use stored value
-  const calculatedSubtotal = order.order_items && order.order_items.length > 0
-    ? order.order_items.reduce((sum, item) => sum + (item.total_price || 0), 0)
-    : order.product_name && order.product_price
-      ? (order.quantity || 1) * order.product_price
+  const calculatedSubtotal = order_.order_items && order_.order_items.length > 0
+    ? order_.order_items.reduce((sum, item) => sum + (item.total_price || 0), 0)
+    : order_.product_name && order_.product_price
+      ? (order_.quantity || 1) * order_.product_price
       : null
 
   // Get shipping/tax/discount amounts (handle all naming conventions)
   // Use calculated subtotal if available, otherwise fall back to stored subtotal
-  const subtotal = calculatedSubtotal ?? order.subtotal ?? null
-  const shippingAmount = order.shipping_total ?? order.shipping_amount ?? order.shipping_cost ?? null
-  const taxAmount = order.tax_total ?? order.tax_amount ?? null
-  const discountAmount = order.discount_total ?? order.discount_amount ?? order.promo_discount ?? null
-  const grandTotal = order.grand_total ?? order.total_amount
+  const subtotal = calculatedSubtotal ?? order_.subtotal ?? null
+  const shippingAmount = order_.shipping_total ?? order_.shipping_amount ?? order_.shipping_cost ?? null
+  const taxAmount = order_.tax_total ?? order_.tax_amount ?? null
+  const discountAmount = order_.discount_total ?? order_.discount_amount ?? order_.promo_discount ?? null
+  const grandTotal = order_.grand_total ?? order_.total_amount
 
   // Combine notes from different fields
-  const allNotes = [order.notes, order.customer_notes, order.internal_notes].filter(Boolean)
+  const allNotes = [order_.notes, order_.customer_notes, order_.internal_notes].filter(Boolean)
 
   // Check if this is a pickup order
-  const isPickupOrder = order.delivery_method === 'pickup'
+  const isPickupOrder = order_.delivery_method === 'pickup'
+
+  // Parse tracking status for display
+  const getTrackingStatusBadge = () => {
+    if (!order_.tracking_events?.length) return null
+    const latestEvent = order_.tracking_events[0]
+    const code = latestEvent.code || ''
+
+    switch (code) {
+      case '011':
+        return <Badge className="bg-green-100 text-green-800">Delivered</Badge>
+      case '006':
+        return <Badge className="bg-purple-100 text-purple-800">Out for Delivery</Badge>
+      case '005':
+        return <Badge className="bg-blue-100 text-blue-800">In Transit</Badge>
+      case '013':
+        return <Badge className="bg-red-100 text-red-800">Exception</Badge>
+      default:
+        return <Badge className="bg-gray-100 text-gray-800">{latestEvent.description}</Badge>
+    }
+  }
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="sm:max-w-2xl overflow-y-auto">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
-            Order {order.order_number}
-            {order.qbo_sync_status === 'imported' && (
+            Order {order_.order_number}
+            {order_.qbo_sync_status === 'imported' && (
               <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800">
                 QBO Import
               </Badge>
@@ -258,13 +433,13 @@ export function OrderDetailSlideOut({
 
         <div className="space-y-6 mt-6">
           {/* QBO Import Info */}
-          {order.qbo_sync_status === 'imported' && order.qbo_invoice_id && (
+          {order_.qbo_sync_status === 'imported' && order_.qbo_invoice_id && (
             <div className="bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800 rounded-lg p-3">
               <div className="text-sm text-emerald-700 dark:text-emerald-400">
-                Imported from QuickBooks Invoice #{order.qbo_invoice_id}
-                {order.qbo_synced_at && (
+                Imported from QuickBooks Invoice #{order_.qbo_invoice_id}
+                {order_.qbo_synced_at && (
                   <span className="ml-2 text-emerald-600 dark:text-emerald-500">
-                    on {format(new Date(order.qbo_synced_at), 'MMM d, yyyy')}
+                    on {format(new Date(order_.qbo_synced_at), 'MMM d, yyyy')}
                   </span>
                 )}
               </div>
@@ -277,13 +452,13 @@ export function OrderDetailSlideOut({
               <div className="text-sm text-muted-foreground mb-1">Order Status</div>
               {showStatusSelector && onStatusChange ? (
                 <Select
-                  value={order.status}
-                  onValueChange={(value) => onStatusChange(order.id, value)}
+                  value={order_.status}
+                  onValueChange={(value) => onStatusChange(order_.id, value)}
                   disabled={isUpdating}
                 >
                   <SelectTrigger className="w-[140px] h-9">
-                    <Badge className={`${getStatusColor(order.status)} pointer-events-none capitalize`}>
-                      {order.status}
+                    <Badge className={`${getStatusColor(order_.status)} pointer-events-none capitalize`}>
+                      {order_.status}
                     </Badge>
                   </SelectTrigger>
                   <SelectContent>
@@ -297,17 +472,17 @@ export function OrderDetailSlideOut({
                   </SelectContent>
                 </Select>
               ) : (
-                <Badge className={`${getStatusColor(order.status)} capitalize`}>{order.status}</Badge>
+                <Badge className={`${getStatusColor(order_.status)} capitalize`}>{order_.status}</Badge>
               )}
             </div>
             <div>
               <div className="text-sm text-muted-foreground mb-1">Payment Status</div>
               <div className="flex items-center gap-2">
-                <Badge className={`${getPaymentStatusColor(order.payment_status)} text-sm`}>
-                  {order.payment_status}
+                <Badge className={`${getPaymentStatusColor(order_.payment_status)} text-sm`}>
+                  {order_.payment_status}
                 </Badge>
-                {order.payment_method && (
-                  <span className="text-xs text-muted-foreground capitalize">({order.payment_method})</span>
+                {order_.payment_method && (
+                  <span className="text-xs text-muted-foreground capitalize">({order_.payment_method})</span>
                 )}
               </div>
             </div>
@@ -317,20 +492,20 @@ export function OrderDetailSlideOut({
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Calendar className="h-4 w-4" />
-              <span>Created: {format(new Date(order.created_at), 'MMM d, yyyy h:mm a')}</span>
+              <span>Created: {format(new Date(order_.created_at), 'MMM d, yyyy h:mm a')}</span>
             </div>
-            {order.updated_at && (
+            {order_.updated_at && (
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Calendar className="h-4 w-4" />
-                <span>Updated: {format(new Date(order.updated_at), 'MMM d, yyyy h:mm a')}</span>
+                <span>Updated: {format(new Date(order_.updated_at), 'MMM d, yyyy h:mm a')}</span>
               </div>
             )}
           </div>
 
           {/* Shipping/Pickup Timeline */}
-          {(!isPickupOrder && (order.status === 'shipped' || order.status === 'delivered' ||
-            order.shipped_at || order.delivered_at || order.expected_delivery_date || order.appointment_date ||
-            order.tracking_number || order.bol_number)) && (
+          {(!isPickupOrder && (order_.status === 'shipped' || order_.status === 'delivered' ||
+            order_.shipped_at || order_.delivered_at || order_.expected_delivery_date || order_.estimated_delivery_date || order_.appointment_date ||
+            order_.tracking_number || order_.bol_number || order_.pro_number)) && (
             <div className="border rounded-lg p-4 space-y-2">
               <h3 className="font-semibold flex items-center gap-2">
                 <Truck className="h-4 w-4" />
@@ -338,49 +513,49 @@ export function OrderDetailSlideOut({
               </h3>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 {/* Status-based dates when explicit dates are missing */}
-                {order.shipped_at ? (
+                {order_.shipped_at ? (
                   <div className="text-muted-foreground">
-                    <span className="font-medium">Shipped:</span> {format(new Date(order.shipped_at), 'MMM d, yyyy')}
+                    <span className="font-medium">Shipped:</span> {format(new Date(order_.shipped_at), 'MMM d, yyyy')}
                   </div>
-                ) : order.status === 'shipped' || order.status === 'delivered' ? (
+                ) : order_.status === 'shipped' || order_.status === 'delivered' ? (
                   <div className="text-muted-foreground">
                     <span className="font-medium">Shipped:</span> <span className="italic">Date not recorded</span>
                   </div>
                 ) : null}
-                {(order.delivered_at || order.actual_delivery_date) ? (
+                {(order_.delivered_at || order_.actual_delivery_date) ? (
                   <div className="text-muted-foreground">
-                    <span className="font-medium">Delivered:</span> {format(new Date(order.delivered_at || order.actual_delivery_date!), 'MMM d, yyyy')}
+                    <span className="font-medium">Delivered:</span> {format(new Date(order_.delivered_at || order_.actual_delivery_date!), 'MMM d, yyyy')}
                   </div>
-                ) : order.status === 'delivered' ? (
+                ) : order_.status === 'delivered' ? (
                   <div className="text-muted-foreground">
                     <span className="font-medium">Delivered:</span> <span className="italic">Date not recorded</span>
                   </div>
                 ) : null}
-                {order.expected_delivery_date && order.status !== 'delivered' && !order.delivered_at && !order.actual_delivery_date && (
+                {(order_.expected_delivery_date || order_.estimated_delivery_date) && order_.status !== 'delivered' && !order_.delivered_at && !order_.actual_delivery_date && (
                   <div className="text-muted-foreground">
-                    <span className="font-medium">Expected:</span> {format(new Date(order.expected_delivery_date), 'MMM d, yyyy')}
+                    <span className="font-medium">Expected:</span> {format(new Date((order_.expected_delivery_date || order_.estimated_delivery_date)!), 'MMM d, yyyy')}
                   </div>
                 )}
-                {order.appointment_date && (
+                {order_.appointment_date && (
                   <div className="text-muted-foreground">
-                    <span className="font-medium">Appointment:</span> {format(new Date(order.appointment_date), 'MMM d, yyyy')}
+                    <span className="font-medium">Appointment:</span> {format(new Date(order_.appointment_date), 'MMM d, yyyy')}
                   </div>
                 )}
-                {order.estimated_transit_days && (
+                {order_.estimated_transit_days && (
                   <div className="text-muted-foreground">
-                    <span className="font-medium">Transit Time:</span> {order.estimated_transit_days} days
+                    <span className="font-medium">Transit Time:</span> {order_.estimated_transit_days} days
                   </div>
                 )}
                 {/* Tracking info */}
-                {order.tracking_number && (
+                {order_.tracking_number && (
                   <div className="text-muted-foreground col-span-2">
-                    <span className="font-medium">Tracking #:</span> {order.tracking_number}
-                    {order.carrier && <span className="ml-1">({order.carrier})</span>}
+                    <span className="font-medium">Tracking #:</span> {order_.tracking_number}
+                    {order_.carrier && <span className="ml-1">({order_.carrier})</span>}
                   </div>
                 )}
-                {order.bol_number && (
+                {order_.bol_number && (
                   <div className="text-muted-foreground col-span-2">
-                    <span className="font-medium">BOL #:</span> {order.bol_number}
+                    <span className="font-medium">BOL #:</span> {order_.bol_number}
                   </div>
                 )}
               </div>
@@ -388,51 +563,213 @@ export function OrderDetailSlideOut({
           )}
 
           {/* Pickup Timeline */}
-          {isPickupOrder && (order.pickup_ready_at || order.picked_up_at) && (
+          {isPickupOrder && (order_.pickup_ready_at || order_.picked_up_at) && (
             <div className="border rounded-lg p-4 space-y-2">
               <h3 className="font-semibold flex items-center gap-2">
                 <Truck className="h-4 w-4" />
                 Pickup Status
               </h3>
               <div className="grid grid-cols-2 gap-2 text-sm">
-                {order.pickup_ready_at && (
+                {order_.pickup_ready_at && (
                   <div className="text-muted-foreground">
-                    <span className="font-medium">Ready for Pickup:</span> {format(new Date(order.pickup_ready_at), 'MMM d, yyyy')}
+                    <span className="font-medium">Ready for Pickup:</span> {format(new Date(order_.pickup_ready_at), 'MMM d, yyyy')}
                   </div>
                 )}
-                {order.picked_up_at && (
+                {order_.picked_up_at && (
                   <div className="text-muted-foreground">
-                    <span className="font-medium">Picked Up:</span> {format(new Date(order.picked_up_at), 'MMM d, yyyy')}
+                    <span className="font-medium">Picked Up:</span> {format(new Date(order_.picked_up_at), 'MMM d, yyyy')}
                   </div>
                 )}
               </div>
             </div>
           )}
 
+          {/* TForce Tracking Section */}
+          {(onProNumberSave || onTrackingSync) && (
+            <div className="border rounded-lg p-4 space-y-4 bg-blue-50/50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold flex items-center gap-2 text-blue-700 dark:text-blue-300">
+                  <Package className="h-4 w-4" />
+                  TForce Freight Tracking
+                </h3>
+                {getTrackingStatusBadge()}
+              </div>
+
+              {/* Find by BOL - show when BOL exists but no PRO */}
+              {onSearchByBol && order_.bol_number && !order_.pro_number && (
+                <div className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-950/50 rounded-lg border border-amber-200 dark:border-amber-800">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                      BOL #{order_.bol_number} found
+                    </p>
+                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                      Click to find the PRO number from TForce
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={handleSearchByBol}
+                    disabled={isSearchingBol}
+                    className="bg-amber-600 hover:bg-amber-700"
+                  >
+                    {isSearchingBol ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                    <span className="ml-1">Find PRO</span>
+                  </Button>
+                </div>
+              )}
+
+              {/* BOL Number Input - show when no BOL and no PRO exists (for historical orders) */}
+              {onSearchByBol && !order_.bol_number && !order_.pro_number && (
+                <div className="space-y-2 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Enter BOL Number for Historical Order
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Enter the Bill of Lading number to find tracking info from TForce
+                  </p>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Enter BOL number"
+                      value={bolNumberInput}
+                      onChange={(e) => setBolNumberInput(e.target.value.toUpperCase())}
+                      className="flex-1"
+                    />
+                    {onBolNumberSave && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleSaveBolNumber}
+                        disabled={isSavingBol || !bolNumberInput.trim()}
+                        title="Save BOL number only"
+                      >
+                        {isSavingBol ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      onClick={handleSearchByBol}
+                      disabled={isSearchingBol || !bolNumberInput.trim()}
+                      className="bg-amber-600 hover:bg-amber-700"
+                      title="Find PRO and sync tracking"
+                    >
+                      {isSearchingBol ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                      <span className="ml-1">Find PRO</span>
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* PRO Number Input */}
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Enter PRO number (9 digits)"
+                  value={proNumberInput}
+                  onChange={(e) => setProNumberInput(e.target.value.replace(/\D/g, '').slice(0, 9))}
+                  className="flex-1"
+                  maxLength={9}
+                />
+                {onProNumberSave && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleSaveProNumber}
+                    disabled={isSavingPro || proNumberInput.length !== 9 || proNumberInput === order_.pro_number}
+                  >
+                    {isSavingPro ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    <span className="ml-1">Save</span>
+                  </Button>
+                )}
+                {onTrackingSync && order_.pro_number && (
+                  <Button
+                    size="sm"
+                    onClick={handleSyncTracking}
+                    disabled={isSyncingTracking}
+                  >
+                    {isSyncingTracking ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                    <span className="ml-1">Sync</span>
+                  </Button>
+                )}
+              </div>
+
+              {/* Error Message */}
+              {trackingError && (
+                <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
+                  <AlertCircle className="h-4 w-4" />
+                  {trackingError}
+                </div>
+              )}
+
+              {/* Tracking Info */}
+              {order_.pro_number && (
+                <div className="text-sm space-y-2">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <span className="font-medium">PRO #:</span> {order_.pro_number}
+                    {order_.tracking_synced_at && (
+                      <span className="text-xs">
+                        (synced {format(new Date(order_.tracking_synced_at), 'MMM d, h:mm a')})
+                      </span>
+                    )}
+                  </div>
+                  {order_.delivery_signature && (
+                    <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                      <CheckCircle className="h-4 w-4" />
+                      <span>Signed by: {order_.delivery_signature}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Tracking Events */}
+              {order_.tracking_events && order_.tracking_events.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-muted-foreground">Tracking History</h4>
+                  <div className="space-y-1 max-h-48 overflow-y-auto">
+                    {order_.tracking_events.map((event, idx) => (
+                      <div key={idx} className="flex items-start gap-2 text-sm py-1 border-b last:border-0">
+                        <Clock className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
+                        <div className="flex-1">
+                          <div className="flex justify-between items-start">
+                            <span>{event.displayDescription || event.description}</span>
+                            <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
+                              {format(new Date(event.date), 'MMM d, h:mm a')}
+                            </span>
+                          </div>
+                          {event.serviceCenter && (
+                            <div className="text-xs text-muted-foreground">{event.serviceCenter}</div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Customer Info */}
           <div className="border rounded-lg p-4 space-y-2">
-            <p className="font-medium text-lg">{order.customer_name}</p>
+            <p className="font-medium text-lg">{order_.customer_name}</p>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Mail className="h-4 w-4" />
-              <a href={`mailto:${order.customer_email}`} className="text-primary underline hover:no-underline">
-                {order.customer_email}
+              <a href={`mailto:${order_.customer_email}`} className="text-primary underline hover:no-underline">
+                {order_.customer_email}
               </a>
             </div>
-            {(order.customer_phone || order.shipping_address?.phone) && (
+            {(order_.customer_phone || order_.shipping_address?.phone) && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Phone className="h-4 w-4" />
-                <a href={`tel:${order.customer_phone || order.shipping_address?.phone}`} className="text-primary underline hover:no-underline">
-                  {order.customer_phone || order.shipping_address?.phone}
+                <a href={`tel:${order_.customer_phone || order_.shipping_address?.phone}`} className="text-primary underline hover:no-underline">
+                  {order_.customer_phone || order_.shipping_address?.phone}
                 </a>
               </div>
             )}
           </div>
 
           {/* Vehicle & Motorcycle Measurements */}
-          {order.configuration && (order.configuration.vehicleInfo || order.configuration.motorcycleInfo || order.configuration.measurements) && (
+          {order_.configuration && (order_.configuration.vehicleInfo || order_.configuration.motorcycleInfo || order_.configuration.measurements) && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Vehicle Info */}
-              {order.configuration.vehicleInfo && (order.configuration.vehicleInfo.make || order.configuration.vehicleInfo.model) && (
+              {order_.configuration.vehicleInfo && (order_.configuration.vehicleInfo.make || order_.configuration.vehicleInfo.model) && (
                 <div className="border rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Car className="h-4 w-4 text-muted-foreground" />
@@ -441,21 +778,21 @@ export function OrderDetailSlideOut({
                   <div className="text-sm space-y-1">
                     <p className="font-medium">
                       {[
-                        order.configuration.vehicleInfo.year,
-                        order.configuration.vehicleInfo.make,
-                        order.configuration.vehicleInfo.model
+                        order_.configuration.vehicleInfo.year,
+                        order_.configuration.vehicleInfo.make,
+                        order_.configuration.vehicleInfo.model
                       ].filter(Boolean).join(' ')}
                     </p>
-                    {order.configuration.measurements && (
+                    {order_.configuration.measurements && (
                       <div className="text-muted-foreground space-y-0.5">
-                        {order.configuration.measurements.bedLengthClosed && (
-                          <p>Bed Length (Closed): {order.configuration.measurements.bedLengthClosed}"</p>
+                        {order_.configuration.measurements.bedLengthClosed && (
+                          <p>Bed Length (Closed): {order_.configuration.measurements.bedLengthClosed}&quot;</p>
                         )}
-                        {order.configuration.measurements.bedLengthOpen && (
-                          <p>Bed Length (Open): {order.configuration.measurements.bedLengthOpen}"</p>
+                        {order_.configuration.measurements.bedLengthOpen && (
+                          <p>Bed Length (Open): {order_.configuration.measurements.bedLengthOpen}&quot;</p>
                         )}
-                        {order.configuration.measurements.loadHeight && (
-                          <p>Load Height: {order.configuration.measurements.loadHeight}"</p>
+                        {order_.configuration.measurements.loadHeight && (
+                          <p>Load Height: {order_.configuration.measurements.loadHeight}&quot;</p>
                         )}
                       </div>
                     )}
@@ -464,7 +801,7 @@ export function OrderDetailSlideOut({
               )}
 
               {/* Motorcycle Info */}
-              {order.configuration.motorcycleInfo && (order.configuration.motorcycleInfo.make || order.configuration.motorcycleInfo.model) && (
+              {order_.configuration.motorcycleInfo && (order_.configuration.motorcycleInfo.make || order_.configuration.motorcycleInfo.model) && (
                 <div className="border rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Bike className="h-4 w-4 text-muted-foreground" />
@@ -473,21 +810,21 @@ export function OrderDetailSlideOut({
                   <div className="text-sm space-y-1">
                     <p className="font-medium">
                       {[
-                        order.configuration.motorcycleInfo.year,
-                        order.configuration.motorcycleInfo.make,
-                        order.configuration.motorcycleInfo.model
+                        order_.configuration.motorcycleInfo.year,
+                        order_.configuration.motorcycleInfo.make,
+                        order_.configuration.motorcycleInfo.model
                       ].filter(Boolean).join(' ')}
                     </p>
-                    {order.configuration.motorcycle && (
+                    {order_.configuration.motorcycle && (
                       <div className="text-muted-foreground space-y-0.5">
-                        {order.configuration.motorcycle.wheelbase > 0 && (
-                          <p>Wheelbase: {order.configuration.motorcycle.wheelbase}"</p>
+                        {order_.configuration.motorcycle.wheelbase > 0 && (
+                          <p>Wheelbase: {order_.configuration.motorcycle.wheelbase}&quot;</p>
                         )}
-                        {order.configuration.motorcycle.length > 0 && (
-                          <p>Total Length: {order.configuration.motorcycle.length}"</p>
+                        {order_.configuration.motorcycle.length > 0 && (
+                          <p>Total Length: {order_.configuration.motorcycle.length}&quot;</p>
                         )}
-                        {order.configuration.motorcycle.weight > 0 && (
-                          <p>Weight: {order.configuration.motorcycle.weight} lbs</p>
+                        {order_.configuration.motorcycle.weight > 0 && (
+                          <p>Weight: {order_.configuration.motorcycle.weight} lbs</p>
                         )}
                       </div>
                     )}
@@ -500,37 +837,37 @@ export function OrderDetailSlideOut({
           {/* Addresses */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Shipping Address */}
-            {order.shipping_address && formatAddress(order.shipping_address) && (
+            {order_.shipping_address && formatAddress(order_.shipping_address, order_.customer_name) && (
               <div className="border rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <MapPin className="h-4 w-4 text-muted-foreground" />
                   <h3 className="font-semibold">Shipping Address</h3>
                 </div>
                 <div className="text-sm space-y-1">
-                  {formatAddress(order.shipping_address)?.map((line, i) => (
+                  {formatAddress(order_.shipping_address, order_.customer_name)?.map((line, i) => (
                     <p key={i}>{line}</p>
                   ))}
                 </div>
                 <div className="text-xs text-muted-foreground mt-2 space-y-1">
-                  {(order.delivery_method || order.shipping_method) && (
-                    <p>Method: {order.delivery_method || order.shipping_method}</p>
+                  {(order_.delivery_method || order_.shipping_method) && (
+                    <p>Method: {order_.delivery_method || order_.shipping_method}</p>
                   )}
-                  {order.shipping_address?.is_residential !== undefined && (
-                    <p>{order.shipping_address.is_residential ? 'Residential' : 'Commercial'} Address</p>
+                  {order_.shipping_address?.is_residential !== undefined && (
+                    <p>{order_.shipping_address.is_residential ? 'Residential' : 'Commercial'} Address</p>
                   )}
                 </div>
               </div>
             )}
 
             {/* Billing Address */}
-            {order.billing_address && formatAddress(order.billing_address) && (
+            {order_.billing_address && formatAddress(order_.billing_address, order_.customer_name) && (
               <div className="border rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <MapPin className="h-4 w-4 text-muted-foreground" />
                   <h3 className="font-semibold">Billing Address</h3>
                 </div>
                 <div className="text-sm space-y-1">
-                  {formatAddress(order.billing_address)?.map((line, i) => (
+                  {formatAddress(order_.billing_address, order_.customer_name)?.map((line, i) => (
                     <p key={i}>{line}</p>
                   ))}
                 </div>
@@ -539,41 +876,54 @@ export function OrderDetailSlideOut({
           </div>
 
           {/* TForce Freight / Destination Terminal */}
-          {order.destination_terminal && (
+          {order_.destination_terminal ? (
             <div className="border rounded-lg p-4 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
               <div className="flex items-center gap-2 mb-2">
                 <Truck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                 <h3 className="font-semibold text-blue-700 dark:text-blue-300">TForce Freight Terminal</h3>
               </div>
               <div className="text-sm space-y-1 text-blue-700 dark:text-blue-300">
-                {order.destination_terminal.name && (
-                  <p className="font-medium">{order.destination_terminal.name}</p>
+                {order_.destination_terminal.name && (
+                  <p className="font-medium">{order_.destination_terminal.name}</p>
                 )}
-                {order.destination_terminal.code && (
-                  <p className="text-xs">Terminal Code: {order.destination_terminal.code}</p>
+                {order_.destination_terminal.code && (
+                  <p className="text-xs">Terminal Code: {order_.destination_terminal.code}</p>
                 )}
-                {order.destination_terminal.address && (
-                  <p>{order.destination_terminal.address}</p>
+                {order_.destination_terminal.address && (
+                  <p>{order_.destination_terminal.address}</p>
                 )}
-                {(order.destination_terminal.city || order.destination_terminal.state || order.destination_terminal.zip) && (
+                {(order_.destination_terminal.city || order_.destination_terminal.state || order_.destination_terminal.zip) && (
                   <p>
                     {[
-                      order.destination_terminal.city,
-                      order.destination_terminal.state,
-                      order.destination_terminal.zip
+                      order_.destination_terminal.city,
+                      order_.destination_terminal.state,
+                      order_.destination_terminal.zip
                     ].filter(Boolean).join(', ')}
                   </p>
                 )}
               </div>
             </div>
+          ) : (
+            // Detect TForce freight pickup from shipping address (QBO import pattern)
+            order_.shipping_address?.line2?.toLowerCase().includes('tforce') && (
+              <div className="border rounded-lg p-4 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                <div className="flex items-center gap-2 mb-2">
+                  <Truck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <h3 className="font-semibold text-blue-700 dark:text-blue-300">Freight Terminal Pickup</h3>
+                </div>
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  Customer will pick up at TForce Freight terminal
+                </p>
+              </div>
+            )
           )}
 
           {/* Items */}
           <div className="border rounded-lg p-4">
             <h3 className="font-semibold mb-3">Order Items</h3>
             <div className="divide-y">
-              {order.order_items && order.order_items.length > 0 ? (
-                order.order_items.map((item) => (
+              {order_.order_items && order_.order_items.length > 0 ? (
+                order_.order_items.map((item) => (
                   <div key={item.id} className="py-3 first:pt-0 last:pb-0">
                     <div className="flex justify-between items-start">
                       <div className="flex-1 pr-4">
@@ -589,28 +939,28 @@ export function OrderDetailSlideOut({
                     </div>
                   </div>
                 ))
-              ) : order.product_name ? (
+              ) : order_.product_name ? (
                 <div className="py-3 first:pt-0 last:pb-0">
                   <div className="flex justify-between items-start">
                     <div className="flex-1 pr-4">
-                      <p className="font-medium">{order.product_name}</p>
-                      {order.product_sku && (
-                        <p className="text-xs text-muted-foreground">SKU: {order.product_sku}</p>
+                      <p className="font-medium">{order_.product_name}</p>
+                      {order_.product_sku && (
+                        <p className="text-xs text-muted-foreground">SKU: {order_.product_sku}</p>
                       )}
-                      {order.truck_bed_length && (
-                        <p className="text-xs text-muted-foreground">Truck Bed: {order.truck_bed_length}</p>
+                      {order_.truck_bed_length && (
+                        <p className="text-xs text-muted-foreground">Truck Bed: {order_.truck_bed_length}</p>
                       )}
-                      {order.tonneau_cover !== null && order.tonneau_cover !== undefined && (
+                      {order_.tonneau_cover !== null && order_.tonneau_cover !== undefined && (
                         <p className="text-xs text-muted-foreground">
-                          Tonneau Cover: {order.tonneau_cover ? 'Yes' : 'No'}
+                          Tonneau Cover: {order_.tonneau_cover ? 'Yes' : 'No'}
                         </p>
                       )}
                       <p className="text-sm text-muted-foreground">
-                        {order.quantity || 1} x {formatPrice(order.product_price)}
+                        {order_.quantity || 1} x {formatPrice(order_.product_price)}
                       </p>
                     </div>
                     <p className="font-medium">
-                      {formatPrice((order.quantity || 1) * (order.product_price || 0))}
+                      {formatPrice((order_.quantity || 1) * (order_.product_price || 0))}
                     </p>
                   </div>
                 </div>
@@ -645,7 +995,7 @@ export function OrderDetailSlideOut({
               <div className="flex justify-between text-sm text-green-600">
                 <span>
                   Discount
-                  {order.promo_code && <span className="ml-1 text-xs">({order.promo_code})</span>}
+                  {order_.promo_code && <span className="ml-1 text-xs">({order_.promo_code})</span>}
                 </span>
                 <span>-{formatPrice(discountAmount)}</span>
               </div>
@@ -660,20 +1010,20 @@ export function OrderDetailSlideOut({
           {allNotes.length > 0 && (
             <div className="border rounded-lg p-4 space-y-3">
               <h3 className="font-semibold">Notes</h3>
-              {order.customer_notes && (
+              {order_.customer_notes && (
                 <div>
                   <p className="text-xs font-medium text-muted-foreground mb-1">Customer Notes</p>
-                  <p className="text-sm whitespace-pre-wrap">{order.customer_notes}</p>
+                  <p className="text-sm whitespace-pre-wrap">{order_.customer_notes}</p>
                 </div>
               )}
-              {order.internal_notes && (
+              {order_.internal_notes && (
                 <div>
                   <p className="text-xs font-medium text-muted-foreground mb-1">Internal Notes</p>
-                  <p className="text-sm whitespace-pre-wrap">{order.internal_notes}</p>
+                  <p className="text-sm whitespace-pre-wrap">{order_.internal_notes}</p>
                 </div>
               )}
-              {order.notes && !order.customer_notes && !order.internal_notes && (
-                <p className="text-sm whitespace-pre-wrap">{order.notes}</p>
+              {order_.notes && !order_.customer_notes && !order_.internal_notes && (
+                <p className="text-sm whitespace-pre-wrap">{order_.notes}</p>
               )}
             </div>
           )}
