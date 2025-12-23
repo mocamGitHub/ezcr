@@ -385,16 +385,19 @@ export async function POST(req: NextRequest) {
       }, { status: 429 });
     }
 
+    // Log the search for debugging
+    console.log('TForce BOL Search:', { number, code, pickupStartDate, pickupEndDate, responseCode: data.summary?.responseStatus?.code });
+
     // Check response status - handle both HTTP errors and TForce error codes
     const responseCode = data.summary?.responseStatus?.code;
     if (responseCode === 'RNF' || response.status === 404) {
-      // Reference Not Found - provide a friendly message
-      const refType = code === 'BL' ? 'Bill of Lading' : 'Purchase Order';
+      // Reference Not Found - provide a friendly message with helpful guidance
+      const refType = code === 'BL' ? 'BOL' : 'PO';
       return NextResponse.json({
         success: false,
         error: {
           type: 'NOT_FOUND',
-          message: `No shipment found for ${refType} #${number}. This BOL may be too old (TForce typically keeps records for 90-180 days) or the number may be incorrect.`,
+          message: `No shipment found for ${refType} #${number}. Note: The "eBOL ID" on TForce documents may not be searchable. If you have the 9-digit PRO number, enter it directly instead.`,
         },
       }, { status: 404 });
     }
