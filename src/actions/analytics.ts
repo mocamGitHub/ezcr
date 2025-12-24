@@ -61,17 +61,17 @@ export async function getDashboardStats(days: number = 30): Promise<DashboardSta
   // Current period orders
   const { data: currentOrders } = await supabase
     .from('orders')
-    .select('total_amount, customer_email, payment_status')
+    .select('grand_total, customer_email, payment_status')
     .gte('created_at', periodStart.toISOString())
-    .eq('payment_status', 'paid')
+    .eq('payment_status', 'succeeded')
 
   // Previous period orders for comparison
   const { data: previousOrders } = await supabase
     .from('orders')
-    .select('total_amount, customer_email, payment_status')
+    .select('grand_total, customer_email, payment_status')
     .gte('created_at', previousPeriodStart.toISOString())
     .lt('created_at', periodStart.toISOString())
-    .eq('payment_status', 'paid')
+    .eq('payment_status', 'succeeded')
 
   // Current period customers
   const { data: currentCustomers } = await supabase
@@ -88,8 +88,8 @@ export async function getDashboardStats(days: number = 30): Promise<DashboardSta
     .gte('first_order_date', previousPeriodStart.toISOString())
     .lt('first_order_date', periodStart.toISOString())
 
-  const currentRevenue = currentOrders?.reduce((sum, o) => sum + (o.total_amount || 0), 0) || 0
-  const previousRevenue = previousOrders?.reduce((sum, o) => sum + (o.total_amount || 0), 0) || 0
+  const currentRevenue = currentOrders?.reduce((sum, o) => sum + (o.grand_total || 0), 0) || 0
+  const previousRevenue = previousOrders?.reduce((sum, o) => sum + (o.grand_total || 0), 0) || 0
 
   const currentOrderCount = currentOrders?.length || 0
   const previousOrderCount = previousOrders?.length || 0
@@ -131,10 +131,10 @@ export async function getRevenueTrend(days: number = 30): Promise<RevenueDataPoi
 
   const { data: orders } = await supabase
     .from('orders')
-    .select('created_at, total_amount, payment_status')
+    .select('created_at, grand_total, payment_status')
     .gte('created_at', startDate.toISOString())
     .lte('created_at', endDate.toISOString())
-    .eq('payment_status', 'paid')
+    .eq('payment_status', 'succeeded')
     .order('created_at', { ascending: true })
 
   // Group by date
@@ -151,7 +151,7 @@ export async function getRevenueTrend(days: number = 30): Promise<RevenueDataPoi
     const date = format(new Date(order.created_at), 'yyyy-MM-dd')
     const existing = dateMap.get(date) || { revenue: 0, orders: 0 }
     dateMap.set(date, {
-      revenue: existing.revenue + (order.total_amount || 0),
+      revenue: existing.revenue + (order.grand_total || 0),
       orders: existing.orders + 1,
     })
   })
@@ -184,7 +184,7 @@ export async function getTopProducts(limit: number = 5): Promise<TopProduct[]> {
       )
     `)
     .gte('orders.created_at', thirtyDaysAgo.toISOString())
-    .eq('orders.payment_status', 'paid')
+    .eq('orders.payment_status', 'succeeded')
 
   // Aggregate by product
   const productMap = new Map<string, { name: string; revenue: number; quantity: number }>()
@@ -253,7 +253,7 @@ export async function getCustomerAcquisition(days: number = 30): Promise<Custome
     .select('customer_email, created_at')
     .gte('created_at', startDate.toISOString())
     .lte('created_at', endDate.toISOString())
-    .eq('payment_status', 'paid')
+    .eq('payment_status', 'succeeded')
     .order('created_at', { ascending: true })
 
   // Get customer first order dates
