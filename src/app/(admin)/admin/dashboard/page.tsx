@@ -36,11 +36,13 @@ import {
   getOrderStatusBreakdown,
   getCustomerAcquisition,
   getInventoryStatus,
+  getRecentActivity,
   type DashboardStats,
   type RevenueDataPoint,
   type TopProduct,
   type OrderStatusBreakdown,
   type CustomerAcquisition,
+  type ActivityItem,
 } from '@/actions/analytics'
 
 type InventoryStatus = {
@@ -72,6 +74,7 @@ export default function AdminDashboardPage() {
   const [orderStatus, setOrderStatus] = useState<OrderStatusBreakdown[]>([])
   const [customerAcquisition, setCustomerAcquisition] = useState<CustomerAcquisition[]>([])
   const [inventoryStatus, setInventoryStatus] = useState<InventoryStatus | null>(null)
+  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([])
 
   const handleSignOut = async () => {
     await signOut()
@@ -82,7 +85,7 @@ export default function AdminDashboardPage() {
     setLoading(true)
     try {
       const days = parseInt(period)
-      const [statsData, revenueData, productsData, statusData, acquisitionData, inventoryData] =
+      const [statsData, revenueData, productsData, statusData, acquisitionData, inventoryData, activityData] =
         await Promise.all([
           getDashboardStats(days),
           getRevenueTrend(days),
@@ -90,6 +93,7 @@ export default function AdminDashboardPage() {
           getOrderStatusBreakdown(),
           getCustomerAcquisition(days),
           getInventoryStatus(),
+          getRecentActivity(5),
         ])
 
       setStats(statsData)
@@ -98,6 +102,7 @@ export default function AdminDashboardPage() {
       setOrderStatus(statusData)
       setCustomerAcquisition(acquisitionData)
       setInventoryStatus(inventoryData)
+      setRecentActivity(activityData)
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
     } finally {
@@ -306,7 +311,7 @@ export default function AdminDashboardPage() {
         {/* Recent Activity */}
         <div className="bg-card border rounded-lg p-4">
           <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
-          <ActivityLog maxItems={5} loading={loading} />
+          <ActivityLog activities={recentActivity} maxItems={5} loading={loading} />
         </div>
       </div>
     </div>

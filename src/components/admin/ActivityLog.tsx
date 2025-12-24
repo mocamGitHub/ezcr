@@ -162,7 +162,7 @@ export function ActivityLog({
                   </Badge>
                 )}
               </div>
-              <p className="text-sm text-muted-foreground truncate">
+              <p className="text-sm text-muted-foreground">
                 {activity.description}
               </p>
               <p className="text-xs text-muted-foreground mt-1">

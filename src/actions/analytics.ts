@@ -171,30 +171,23 @@ export async function getTopProducts(limit: number = 5): Promise<TopProduct[]> {
 
   const thirtyDaysAgo = subDays(new Date(), 30)
 
-  const { data: orderItems } = await supabase
-    .from('order_items')
-    .select(`
-      product_id,
-      product_name,
-      quantity,
-      total_price,
-      orders!inner (
-        created_at,
-        payment_status
-      )
-    `)
-    .gte('orders.created_at', thirtyDaysAgo.toISOString())
-    .eq('orders.payment_status', 'succeeded')
+  // Query orders directly since product info is stored in orders table
+  const { data: orders } = await supabase
+    .from('orders')
+    .select('product_sku, product_name, quantity, grand_total')
+    .gte('created_at', thirtyDaysAgo.toISOString())
+    .eq('payment_status', 'succeeded')
 
-  // Aggregate by product
+  // Aggregate by product SKU
   const productMap = new Map<string, { name: string; revenue: number; quantity: number }>()
 
-  orderItems?.forEach(item => {
-    const existing = productMap.get(item.product_id) || { name: item.product_name, revenue: 0, quantity: 0 }
-    productMap.set(item.product_id, {
-      name: item.product_name,
-      revenue: existing.revenue + (item.total_price || 0),
-      quantity: existing.quantity + (item.quantity || 0),
+  orders?.forEach(order => {
+    const sku = order.product_sku || 'unknown'
+    const existing = productMap.get(sku) || { name: order.product_name || 'Unknown', revenue: 0, quantity: 0 }
+    productMap.set(sku, {
+      name: order.product_name || existing.name,
+      revenue: existing.revenue + (order.grand_total || 0),
+      quantity: existing.quantity + (order.quantity || 1),
     })
   })
 
@@ -293,6 +286,74 @@ export async function getCustomerAcquisition(days: number = 30): Promise<Custome
     newCustomers: data.newCustomers,
     returningCustomers: data.returningCustomers,
   }))
+}
+
+/**
+ * Get recent activity from orders
+ */
+export interface ActivityItem {
+  id: string
+  type: 'order' | 'inventory' | 'customer' | 'settings' | 'create' | 'update' | 'delete'
+  action: string
+  description: string
+  user?: string
+  timestamp: string
+  metadata?: Record<string, unknown>
+}
+
+export async function getRecentActivity(limit: number = 10): Promise<ActivityItem[]> {
+  const supabase = createServiceClient()
+
+  // Get recent orders (created or updated)
+  const { data: recentOrders } = await supabase
+    .from('orders')
+    .select('id, order_number, customer_name, status, grand_total, created_at, updated_at, shipped_at, delivered_at')
+    .order('updated_at', { ascending: false })
+    .limit(limit * 2) // Get more to filter duplicates
+
+  const activities: ActivityItem[] = []
+
+  recentOrders?.forEach(order => {
+    const createdAt = new Date(order.created_at)
+    const updatedAt = new Date(order.updated_at)
+    const hoursDiff = (updatedAt.getTime() - createdAt.getTime()) / (1000 * 60 * 60)
+    const formattedTotal = order.grand_total ? `$${order.grand_total.toLocaleString()}` : ''
+
+    // If created recently (within 1 hour of update), show as new order
+    if (hoursDiff < 1) {
+      activities.push({
+        id: `order-new-${order.id}`,
+        type: 'order',
+        action: `New Order #${order.order_number}`,
+        description: `${order.customer_name} - ${formattedTotal}`,
+        timestamp: order.created_at,
+      })
+    } else {
+      // Show as status update
+      let action = `Order #${order.order_number}`
+
+      if (order.status === 'delivered') {
+        action = `Delivered #${order.order_number}`
+      } else if (order.status === 'shipped') {
+        action = `Shipped #${order.order_number}`
+      } else if (order.status === 'processing') {
+        action = `Processing #${order.order_number}`
+      }
+
+      activities.push({
+        id: `order-update-${order.id}`,
+        type: 'order',
+        action,
+        description: `${order.customer_name} - ${formattedTotal}`,
+        timestamp: order.updated_at,
+      })
+    }
+  })
+
+  // Sort by timestamp and limit
+  return activities
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .slice(0, limit)
 }
 
 /**
