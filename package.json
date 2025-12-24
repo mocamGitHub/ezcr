@@ -23,9 +23,12 @@
     "test:e2e:debug": "playwright test --debug",
     "db:push": "npx supabase db push --db-url \"$DATABASE_URL\"",
     "db:diff": "npx supabase db diff --db-url \"$DATABASE_URL\"",
-    "db:reset": "npx supabase db reset --db-url \"$DATABASE_URL\""
+    "db:reset": "npx supabase db reset --db-url \"$DATABASE_URL\"",
+    "import:bols": "npx tsx scripts/import-bols.ts",
+    "import:bols:dry-run": "npx tsx scripts/import-bols.ts --dry-run"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.2",
     "@babel/runtime": "^7.28.4",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-checkbox": "^1.3.3",
