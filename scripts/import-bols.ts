@@ -18,8 +18,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { glob } from 'glob';
 
-// Load environment variables
-import 'dotenv/config';
+// Load environment variables from .env.local
+import * as dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
 
 // Types
 interface BOLData {
