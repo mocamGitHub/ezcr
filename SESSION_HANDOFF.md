@@ -1,106 +1,71 @@
-# Session Handoff - Books Admin UI Implementation
+# Session Handoff - BOL Review & Books OCR Testing
 
-**Date**: 2025-12-22
-**Time**: Evening Session (Late)
-**Previous Commit**: `6560681` - feat: Add OrderDetailSlideOut component with measurements display
-**Current Commit**: `6d0f8fe` - feat(books): Add Books admin UI for receipt/transaction matching
-**Current Status**: Complete - Books admin UI fully implemented
+**Date**: 2025-12-24
+**Time**: Morning Session
+**Previous Commit**: `2450430` - fix(dashboard): Use real data for analytics and activity
+**Current Commit**: `2450430` - (no new commits this session)
+**Current Status**: Complete - Reviewed unmatched BOLs, ready for Books OCR testing
 **Branch**: main
-**Dev Server**: Running at http://localhost:3001
+**Dev Server**: Running at http://localhost:3002
 
 ---
 
 ## What Was Accomplished This Session
 
-### 1. Books Workflow Updates
-- Simplified webhook authentication (disabled HMAC signature verification - webhook URL is secret)
-- Added better error messages showing available keys when validation fails
-- Created HARDCODED workflow variant for n8n instances without env vars
-- Committed: `f5f9619`
+### 1. Unmatched BOLs Review
+- Reviewed all 21 entries in `documents/unmatched-bols.csv`
+- Confirmed that 15 BOLs were already matched in the previous session
+- Identified 3 return shipments (not customer orders)
+- Identified 2 already matched via alternate methods
+- Only 1 truly unresolvable: John Edwards (no order in database)
+- Deleted outdated `unmatched-bols.csv` file
 
-### 2. Books Admin UI (Main Feature)
-- Added Books nav item to admin sidebar (BookOpen icon)
-- Created `/admin/books` page with:
-  - KPI dashboard cards (receipts total/matched/unmatched/exceptions, bank txns, cleared)
-  - Two tabs: Receipt Review Queue + Bank Transactions
-  - Sortable, filterable tables with search
-  - Bulk select with checkboxes
-  - Expandable rows showing top 3 match suggestions per receipt
-  - Confirm/Reject buttons for individual matches
-  - Bulk confirm/reject actions for selected items
-  - Drag & drop file upload for receipts (images, PDFs)
-  - CSV import button for bank transactions
-- Created `/admin/books/settings` page with threshold configuration:
-  - Auto-link threshold (%)
-  - Amount tolerance ($)
-  - Date window (days)
-  - Min receipt confidence (%)
-- Committed: `6d0f8fe`
+### 2. Books Receipt OCR Testing (Started)
+- Opened Books admin page at http://localhost:3002/admin/books
+- Verified n8n webhook environment variables are configured
+- Ready to test receipt upload and OCR processing
 
-### 3. Housekeeping
-- Added `.claude/settings.local.json` to gitignore
-- Tested receipt upload functionality - works end-to-end
-
-### Files Created/Modified This Session
-1. `src/config/admin-nav.ts` - Added Books nav item with BookOpen icon
-2. `src/actions/books.ts` - NEW: Server actions for data fetching, match operations, bulk actions
-3. `src/app/(admin)/admin/books/page.tsx` - NEW: Main Books admin page with tabs, tables, uploads
-4. `src/app/(admin)/admin/books/settings/page.tsx` - NEW: Settings page for threshold configuration
-5. `n8n/books/Books_ReceiptUpload_Process.workflow.json` - Simplified auth
-6. `n8n/books/Books_ReceiptUpload_Process_HARDCODED.workflow.json` - NEW: Hardcoded variant
-7. `.gitignore` - Added Claude Code local settings
+### Files Modified This Session (1 file)
+1. `documents/unmatched-bols.csv` - DELETED (outdated)
 
 ---
 
 ## Current State
 
 ### What's Working
-- Books storage bucket exists (private)
-- N8N webhook configured and reachable (returns 200)
-- Receipt upload API creates documents in database
-- Documents appear in review queue view
-- Books admin UI displays queue, KPIs, filters, tabs
-- Drag & drop upload with visual feedback
-- CSV import for bank transactions
-- Confirm/Reject match actions wired up
-- Settings page for threshold configuration
+- TForce tracking API with correct OAuth scope
+- BOL import script (78 orders have BOL data)
+- Dashboard shows real revenue, orders, products, activity
+- Books admin UI ready for receipt uploads
 
-### What's Pending
-- OCR extraction (n8n + Google Document AI) - Documents show null vendor/amount/date until processed
-- Match suggestions - Generated after OCR completes and bank transactions exist
-- Bank transactions need to be imported for matching to work
+### What's NOT Working / Pending
+- Books receipt OCR needs testing with real receipts
+- n8n workflow needs verification (webhook endpoint must be active)
 
 ---
 
-## Test Results
+## BOL Matching Summary
 
-Uploaded test receipt successfully:
-- Document created: `f18f3813-a9b9-469c-9e4b-b5c85536a530`
-- Status: `pending` (awaiting OCR processing)
-- Review queue shows 5 documents (all pending OCR)
-
----
-
-## Work-in-Progress (Uncommitted)
-
-The following files have uncommitted changes (orders feature - still in development):
-- `src/app/(admin)/admin/orders/page.tsx`
-- `src/components/crm/CustomerOrders.tsx`
-- `src/components/orders/` (new directory)
-- `supabase/migrations/00029_orders_configuration_link.sql`
+| Status | Count | Details |
+|--------|-------|---------|
+| **Already Matched** | 15 | Previous session matched via business name lookup |
+| **Return Shipments** | 3 | Returns to EZ Cycle Ramp (not customer orders) |
+| **Duplicate/Alt Carrier** | 2 | Rexford Burks (ArcBest), Kenneth Doubek (2nd BOL) |
+| **No Order Exists** | 1 | John Edwards - no order in database |
 
 ---
 
 ## Next Immediate Actions
 
-### 1. Test with Real Receipt
-Upload a real receipt image/PDF and verify n8n OCR extraction populates vendor, amount, date fields.
+### 1. Test Books Receipt OCR
+Upload a sample receipt to test the full flow:
+- Upload via Books admin UI
+- Verify n8n webhook receives the call
+- Check if OCR extracts vendor/amount/date
+- Verify match suggestions are generated
 
 ### 2. Import Bank Transactions
-Import a CSV of bank transactions to enable matching functionality.
-
-### 3. Test Full Matching Flow
-- Upload receipt → OCR extraction → Auto-match against bank transactions → Review suggestions
+Import bank CSV to enable receipt/transaction matching.
 
 ---
 
@@ -114,24 +79,22 @@ git log --oneline -5
 git status
 npm run dev  # If server not running
 
-# Open Books admin
-start http://localhost:3001/admin/books
+# Open Books page to continue testing
+start http://localhost:3002/admin/books
 ```
 
 ---
 
-## Git Commits This Session
+## Environment Notes
 
-| Commit | Description |
-|--------|-------------|
-| `f5f9619` | feat(books): Simplify webhook auth and add hardcoded workflow variant |
-| `d50b75a` | chore: Add Claude Code local settings to gitignore |
-| `6d0f8fe` | feat(books): Add Books admin UI for receipt/transaction matching |
+- **N8N_WEBHOOK_BASE_URL**: https://n8n.nexcyte.com/webhook
+- **BOOKS_STORAGE_BUCKET**: books
+- **ANTHROPIC_API_KEY**: Configured for BOL import script
 
 ---
 
 **Session Status**: Complete
-**Next Session**: Test OCR with real receipts, import bank transactions
-**Handoff Complete**: 2025-12-22
+**Next Session**: Test Books receipt OCR with real receipts
+**Handoff Complete**: 2025-12-24
 
-Books Admin UI is fully implemented and ready to use!
+BOL review complete - all matchable BOLs are now linked to orders!
