@@ -1,0 +1,63 @@
+{
+  "name": "NexCyte Scheduler Dispatcher (every 2m)",
+  "nodes": [
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyX",
+              "value": 2,
+              "unit": "minutes"
+            }
+          ]
+        }
+      },
+      "name": "Cron",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        300,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.NEXCYTE_PUBLIC_BASE_URL || 'https://dashboard.nexcyte.com'}}/api/internal/comms/dispatch?limit=25",
+        "method": "POST",
+        "sendBody": false,
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "x-nexcyte-internal-secret",
+              "value": "={{$env.NEXCYTE_INTERNAL_DISPATCH_SECRET}}"
+            }
+          ]
+        }
+      },
+      "name": "Dispatch Outbox",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        560,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Cron": {
+      "main": [
+        [
+          {
+            "node": "Dispatch Outbox",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "versionId": "1"
+}

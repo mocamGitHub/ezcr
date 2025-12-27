@@ -1,0 +1,23 @@
+[2025-12-27 12:45:27.150] ============================================================
+[2025-12-27 12:45:27.160] Drop-In install wrapper v7 starting
+[2025-12-27 12:45:27.165] RepoRoot: C:/Users/morri/Dropbox/Websites/ezcr
+[2025-12-27 12:45:27.169] ZipPath:  C:\Users\morri\Dropbox\Websites\ezcr\documents\NexCyte_Scheduler_MasterBundle_2025-12-24_WITH_INSTALLER_AND_ZEROTOUCH.zip
+[2025-12-27 12:45:27.173] Scratch:  C:\Temp\dropin_bundle_inspect
+[2025-12-27 12:45:27.176] Extract:  C:\Temp\dropin_bundle_inspect\extract_20251227_124527
+[2025-12-27 12:45:27.180] WrapperLog(scratch): C:\Temp\dropin_bundle_inspect\dropin_install_20251227_124527.log
+[2025-12-27 12:45:27.188] RepoLogs: C:\Users\morri\Dropbox\Websites\ezcr\docs\_dropin\logs
+[2025-12-27 12:45:27.191] ============================================================
+[2025-12-27 12:45:27.195] Extracting ZIP to: C:\Temp\dropin_bundle_inspect\extract_20251227_124527
+[2025-12-27 12:45:27.919] Installer raw: C:\Temp\dropin_bundle_inspect\extract_20251227_124527\NexCyte_Scheduler_MasterBundle_2025-12-24\installer\ZeroTouch_Install.ps1
+[2025-12-27 12:45:27.985] Patching installer header (CmdletBinding/param must be first executable elements).
+[2025-12-27 12:45:28.017] Installer patched: C:\Temp\dropin_bundle_inspect\patched_20251227_124527\ZeroTouch_Install.ps1.patched.ps1
+[2025-12-27 12:45:28.042] WARNING: AST parse errors found in installer script:
+[2025-12-27 12:45:28.051]   - The terminator '#>' is missing from the multiline comment.
+[2025-12-27 12:45:28.073] Installer params detected: MasterBundleZip, N8nImport, DryRun, Force
+[2025-12-27 12:45:28.080] Working directory for installer: C:\Temp\dropin_bundle_inspect\patched_20251227_124527
+[2025-12-27 12:45:28.108] Loading env file into child process: C:\Users\morri\Dropbox\Websites\ezcr\.env.local
+[2025-12-27 12:45:28.130] Loading env file into child process: C:\Users\morri\Dropbox\Websites\ezcr\.env.production
+[2025-12-27 12:45:28.155] Launching installer: C:\Program Files\PowerShell\7\pwsh.exe -NoProfile -ExecutionPolicy Bypass -File C:\Temp\dropin_bundle_inspect\patched_20251227_124527\ZeroTouch_Install.ps1.patched.ps1
+[2025-12-27 12:45:28.159] Installer stdout (scratch): C:\Temp\dropin_bundle_inspect\installer_stdout_20251227_124527.log
+[2025-12-27 12:45:28.166] Installer stderr (scratch): C:\Temp\dropin_bundle_inspect\installer_stderr_20251227_124527.log
+[2025-12-27 12:45:29.023] Installer exit code: 1

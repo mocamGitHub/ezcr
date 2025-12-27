@@ -1,0 +1,25 @@
+Step 1/5: Config check
+WARN: No DATABASE_URL / SUPABASE_DB_URL found. Will try supabase db push if CLI is available.
+WARN: Missing required env vars (this may block full automation): CALCOM_API_KEY, NEXCYTE_INTERNAL_DISPATCH_SECRET
+WARN: Supabase CLI not detected.
+psql detected.
+WARN: n8n import env vars missing (optional).
+Config check complete.
+Step 2/5: Installing master bundle files into repo
+RepoRoot:  C:\Users\morri\Dropbox\Websites\ezcr
+BundleZip: C:\Users\morri\Dropbox\Websites\ezcr\documents\NexCyte_Scheduler_MasterBundle_2025-12-24_WITH_INSTALLER_AND_ZEROTOUCH.zip
+RunId:     20251227_181115
+DryRun enabled: no files will be written.
+Extracting bundle into stagingƒ?Ý
+Get-ChildItem : Cannot find path 'C:\Users\morri\Dropbox\Websites\ezcr\.nexcyte\_bundle_staging\20251227_181115' 
+because it does not exist.
+At C:\Users\morri\Dropbox\Websites\ezcr\installer\Install_NexCyte_Scheduler.ps1:170 char:18
++ $extractedRoot = Get-ChildItem -LiteralPath $staging | Where-Object { ...
++                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (C:\Users\morri\...20251227_181115:String) [Get-ChildItem], ItemNotFound 
+   Exception
+    + FullyQualifiedErrorId : PathNotFound,Microsoft.PowerShell.Commands.GetChildItemCommand
+ 
+ERROR: Could not locate extracted root folder in staging.
+Step 3/5: Applying Supabase migrations
+ERROR: No way to apply migrations. Install Supabase CLI OR set DATABASE_URL and install psql.
