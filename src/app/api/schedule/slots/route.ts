@@ -38,11 +38,11 @@ export async function GET(request: NextRequest) {
     // Get scheduler settings for tenant
     const { data: settings, error: settingsError } = await supabase
       .from('nx_scheduler_settings')
-      .select('calcom_org_slug')
+      .select('organization_slug, is_enabled')
       .eq('tenant_id', tenantId)
       .single()
 
-    if (settingsError || !settings?.calcom_org_slug) {
+    if (settingsError || !settings?.organization_slug) {
       return NextResponse.json(
         { error: 'Scheduler not configured for this tenant' },
         { status: 400 }
