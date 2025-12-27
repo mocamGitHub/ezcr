@@ -1,0 +1,139 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createServiceClient } from '@/lib/supabase/server'
+import { requireAuth } from '@/lib/auth/api-auth'
+import { getTenantId } from '@/lib/tenant'
+import { calcomFetchJson, getCalcomConfigFromEnv } from '@/scheduler/calcomServerClient'
+
+/**
+ * POST /api/schedule/book
+ * Book an appointment
+ * Body: { purpose, start, timeZone, notes? }
+ */
+export async function POST(request: NextRequest) {
+  try {
+    // Require authentication
+    const authResult = await requireAuth(request)
+    if ('error' in authResult) {
+      return NextResponse.json(authResult.error, { status: authResult.status })
+    }
+    const { user } = authResult
+
+    // Parse request body
+    const body = await request.json().catch(() => ({}))
+    const { purpose, start, timeZone, notes } = body
+
+    if (!purpose || !start || !timeZone) {
+      return NextResponse.json(
+        { error: 'Missing required fields: purpose, start, timeZone' },
+        { status: 400 }
+      )
+    }
+
+    const supabase = createServiceClient()
+    const tenantId = await getTenantId()
+
+    // Get scheduler settings
+    const { data: settings, error: settingsError } = await supabase
+      .from('nx_scheduler_settings')
+      .select('calcom_org_slug')
+      .eq('tenant_id', tenantId)
+      .single()
+
+    if (settingsError || !settings?.calcom_org_slug) {
+      return NextResponse.json(
+        { error: 'Scheduler not configured for this tenant' },
+        { status: 400 }
+      )
+    }
+
+    // Get Cal.com event type ID
+    const { data: eventMap, error: eventMapError } = await supabase
+      .from('nx_scheduler_event_type_map')
+      .select('cal_event_type_id')
+      .eq('tenant_id', tenantId)
+      .eq('internal_key', purpose)
+      .single()
+
+    if (eventMapError || !eventMap?.cal_event_type_id) {
+      return NextResponse.json(
+        { error: `Event type not found for purpose: ${purpose}` },
+        { status: 400 }
+      )
+    }
+
+    // Get user profile for attendee info
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('first_name, last_name, email, phone')
+      .eq('id', user.id)
+      .single()
+
+    const attendeeName = profile
+      ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || user.email
+      : user.email
+
+    // Create booking in Cal.com
+    const cfg = getCalcomConfigFromEnv()
+    const booking = await calcomFetchJson<any>(cfg, {
+      method: 'POST',
+      path: '/v2/bookings',
+      body: {
+        eventTypeId: eventMap.cal_event_type_id,
+        start,
+        attendee: {
+          name: attendeeName,
+          email: user.email,
+          timeZone,
+          language: 'en',
+        },
+        metadata: {
+          notes: notes || null,
+          tenantId,
+          purpose,
+          userId: user.id,
+        },
+      },
+    })
+
+    // Mirror booking to local database
+    const { error: insertError } = await supabase
+      .from('nx_scheduler_booking')
+      .insert({
+        tenant_id: tenantId,
+        attendee_user_id: user.id,
+        cal_booking_uid: booking.uid || booking.id,
+        cal_event_type_id: eventMap.cal_event_type_id,
+        internal_purpose: purpose,
+        start_at: start,
+        end_at: booking.endTime || null,
+        status: 'confirmed',
+        attendee_email: user.email,
+        attendee_name: attendeeName,
+        attendee_phone: profile?.phone || null,
+        notes: notes || null,
+      })
+
+    if (insertError) {
+      console.error('Failed to mirror booking:', insertError)
+      // Don't fail the request - Cal.com booking succeeded
+    }
+
+    return NextResponse.json({
+      success: true,
+      booking: {
+        uid: booking.uid || booking.id,
+        start,
+        purpose,
+        status: 'confirmed',
+      },
+    })
+  } catch (error) {
+    console.error('Schedule book error:', error)
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to book appointment' },
+      { status: 500 }
+    )
+  }
+}
+
+export const dynamic = 'force-dynamic'
