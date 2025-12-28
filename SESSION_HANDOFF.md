@@ -1,137 +1,158 @@
-# Session Handoff - NexCyte Scheduler Integration Complete
+# Session Handoff - Analog Scheduler Enhancement Pack Complete
 
 **Date**: 2025-12-27
-**Time**: Evening Session
-**Previous Commit**: `fe32d77` - docs: Update session handoff for RLS fix completion
-**Current Commit**: `92cf517` - fix(scheduler): Use correct enum spelling 'cancelled' (British)
-**Current Status**: Scheduler fully integrated and working
+**Time**: Late Night Session
+**Previous Commit**: `92cf517` - fix(scheduler): Use correct enum spelling 'cancelled' (British)
+**Current Commit**: `86de310` - chore(deps): Add pg for database scripts
+**Current Status**: Enhancement pack fully implemented and tested
 **Branch**: main
-**Dev Server**: Running at http://localhost:3004
+**Dev Server**: Running at http://localhost:3005 ✅
 
 ---
 
 ## What Was Accomplished This Session
 
-### NexCyte Scheduler MasterBundle Installation
-- Extracted and installed scheduler bundle from ZIP
-- Fixed PowerShell installer scripts (removed stray backslashes)
-- Applied database migrations to dev/staging (7 new tables)
-- Seeded 15 notification templates (5 events x 3 tenants)
+### Analog-inspired Scheduler Enhancement Pack (META PROMPT)
+Implemented comprehensive enhancement pack with 5 major features:
 
-### Cal.com Integration
-- Configured Cal.com API with API key
-- Set organization to `nexcyte` for all 3 tenants
-- Mapped 4 event types:
-  - `intro_call` → Introduction (15min, ID: 4259746)
-  - `consultation` → Consultation (15min, ID: 4259768)
-  - `support` → Support Meeting (30min, ID: 4259760)
-  - `demo` → Ramp Demonstration (60min, ID: 4259752)
+### A) Local-first Search
+- Created Fuse.js search index with browser storage sync
+- GlobalSearch component with Cmd+K keyboard shortcut
+- Navigation to bookings/event-types/templates on selection
+- Demo data for testing when no tenant context
 
-### Scheduler API Routes (5 routes)
-- `/api/schedule/slots` - GET available time slots
-- `/api/schedule/book` - POST create booking
-- `/api/schedule/cancel` - POST cancel booking
-- `/api/schedule/reschedule` - POST reschedule booking
-- `/api/schedule/my-bookings` - GET user's bookings
+### B) ICS Import + Webcal Subscriptions
+- ICS file parser using ical.js library
+- Webcal subscription management (CRUD API)
+- Subscription sync service with diff detection
+- Tested with Google Calendar US Holidays (172 events synced)
+- n8n workflow for hourly refresh
 
-### Booking UI Components
-- `SchedulerBooking` - Main booking flow with purpose/date/time selection
-- `SchedulerBookingDialog` - Modal wrapper
-- `SchedulerBookingButton` - Quick trigger button
-- `MyBookings` - Display and manage user's bookings
-- Admin test page at `/admin/scheduler`
+### C) iOS Shortcuts API
+- Token-based authentication with SHA256 hashing
+- 4 API endpoints: today, block-time, create-link, reschedule
+- Token management UI at /admin/shortcuts
+- Audit logging for all shortcut actions
+- Tested token creation and API calls successfully
 
-### Bug Fixes Applied
-- Cal.com metadata simplified (50 key limit)
-- Enum spelling corrected: `cancelled` (British, matches DB)
-- Column names fixed: `booking_uid`, `organization_slug`, `purpose`
+### D) Calendar UX Polish
+- User calendar preferences hook (useCalendarPrefs)
+- Ambient notices component for non-blocking alerts
+- Calendar subscriptions admin page
 
-### Files Modified This Session (64+ files)
-Key files:
-1. `src/app/api/schedule/*/route.ts` - 5 API routes
-2. `src/components/scheduler/*.tsx` - UI components
-3. `src/scheduler/calcomServerClient.ts` - Cal.com API client
-4. `supabase/migrations/20251224_*.sql` - Database migrations
-5. `src/notifications/dispatcher/*` - Notification system
+### E) AI Calling Provider Stubs
+- Twilio Voice stub with TwiML generation
+- Bland.ai and Cal.ai stub implementations
+- Provider factory pattern for easy swapping
+
+### Database Migration Applied
+- 5 new tables: nx_external_calendar_subscription, nx_external_calendar_event, nx_shortcuts_token, nx_audit_log, nx_user_calendar_prefs
+- RLS policies for multi-tenant isolation
+- Indexes for performance
+
+### Files Modified This Session (40+ files)
+
+**Core Libraries:**
+1. `src/lib/ical/icsParser.ts` - ICS parsing with ical.js
+2. `src/lib/ical/webcalSync.ts` - Webcal sync service
+3. `src/lib/audit/logger.ts` - Audit trail logging
+4. `src/lib/shortcuts/tokenAuth.ts` - Token auth with SHA256
+5. `src/lib/search/searchIndex.ts` - Fuse.js search
+6. `src/lib/search/syncService.ts` - Data sync service
+7. `src/lib/ai-calling/*` - AI calling stubs
+
+**API Routes:**
+8. `src/app/api/calendar/import/route.ts` - ICS upload
+9. `src/app/api/calendar/subscriptions/route.ts` - Webcal CRUD
+10. `src/app/api/cron/webcal-refresh/route.ts` - Cron job
+11. `src/app/api/shortcuts/today/route.ts` - Today's schedule
+12. `src/app/api/shortcuts/block-time/route.ts` - Time blocks
+13. `src/app/api/shortcuts/tokens/route.ts` - Token management
+14. `src/app/api/search/route.ts` - Server search
+
+**UI Components:**
+15. `src/components/search/GlobalSearch.tsx` - Cmd+K search
+16. `src/components/shortcuts/TokenManager.tsx` - Token UI
+17. `src/components/calendar/SubscriptionsManager.tsx` - Webcal UI
+18. `src/components/ui/AmbientNotice.tsx` - Notifications
+19. `src/app/(admin)/admin/layout.tsx` - Added GlobalSearch
+
+**Tests:**
+20. `tests/unit/icsParser.test.ts` - 11 tests
+21. `tests/unit/searchIndex.test.ts` - 15 tests
+22. `tests/unit/tokenAuth.test.ts` - 11 tests
 
 ---
 
 ## Current State
 
-### What's Working
-- Scheduler API routes (all 5 endpoints)
-- Cal.com slot fetching (160+ slots available)
-- Booking creation via Cal.com API
-- Local booking mirroring to database
-- Booking UI components
-- My Bookings list with cancel functionality
-- Notification templates seeded
+### What's Working ✅
+- ✅ Global search with Cmd+K (7 demo items indexed)
+- ✅ Shortcuts API (token auth tested, today/block-time working)
+- ✅ Webcal subscriptions (US Holidays - 172 events synced)
+- ✅ Token management page (/admin/shortcuts)
+- ✅ Calendar subscriptions page (/admin/calendar/subscriptions)
+- ✅ All 223 unit tests passing
+- ✅ Database migration applied
 
 ### What's NOT Working / Pending
-- Reschedule UI (backend ready, UI shows alert)
-- Notification dispatcher (n8n workflow not configured)
-- `NEXCYTE_INTERNAL_DISPATCH_SECRET` not set in .env.local
+- ⏳ Subscriptions UI shows empty (requires authenticated session)
+- ⏳ Real AI calling (stubs only, no real calls)
+- ⏳ n8n webcal refresh workflow (needs import)
 
 ---
 
-## Environment Configuration
+## Test Data Created
 
-### .env.local (already configured)
+### Shortcuts Token
 ```
-CALCOM_API_KEY=cal_live_1d158d51bd2be0346852c750693facf8
-```
-
-### Still Needed (optional, for notification dispatch)
-```
-NEXCYTE_INTERNAL_DISPATCH_SECRET=<random-secret>
+Token: d5a827fb4969ae3dbf20ac1a5ffd5c2109152fde3f47c062cd66e6247559a5f8
+Scopes: today, block-time
 ```
 
----
-
-## Database Tables Created
-
-| Table | Purpose |
-|-------|---------|
-| nx_scheduler_settings | Cal.com org config per tenant |
-| nx_scheduler_event_type_map | Purpose → Cal.com event ID mapping |
-| nx_scheduler_booking | Local booking mirror |
-| nx_notification_outbox | Notification queue |
-| nx_notification_template | Email/SMS templates |
-| nx_user_profile | Extended user profile |
-| nx_tenant_membership | User-tenant relationships |
+### Webcal Subscription
+- Name: US Holidays
+- Events: 172 (2025-2030)
+- URL: Google Calendar US Holidays
 
 ---
 
 ## Next Immediate Actions
 
-### 1. Test Booking Flow (5 min)
-- Go to http://localhost:3004/admin/scheduler
-- Select a purpose and time slot
-- Complete booking
-- Check "My Bookings" tab
+### 1. Wire Up Authenticated Session (30 min)
+The subscriptions/search pages need user context to fetch real data:
+- Get tenant_id from authenticated session
+- Pass to GlobalSearch and SubscriptionsManager components
 
-### 2. Configure Notification Dispatch (Optional)
-- Set `NEXCYTE_INTERNAL_DISPATCH_SECRET` in .env.local
-- Configure n8n workflow from `n8n/workflow_dispatcher_every_2m.json`
+### 2. Import n8n Workflow (5 min)
+```bash
+# Import webcal refresh workflow
+n8n/workflow_webcal_refresh.json
+```
 
-### 3. Add Scheduler to Customer Portal (Future)
-- Import `SchedulerBookingButton` on customer-facing pages
-- Use `SchedulerBooking` in customer dashboard
+### 3. Test Full Flow (10 min)
+- Log in as a user
+- Create a shortcuts token via UI
+- Test Shortcuts API with real data
 
 ---
 
 ## How to Resume After /clear
 
-Run `/resume` or:
+Run the `/resume` command or:
 
 ```bash
 # Check current state
 git log --oneline -5
 git status
-npm run dev  # Server may be on port 3004
+npm run dev  # Server on port 3005
 
-# Test scheduler
-start http://localhost:3004/admin/scheduler
+# Read handoff document
+cat SESSION_HANDOFF.md
+
+# Test shortcuts API
+curl -s "http://localhost:3005/api/shortcuts/today" \
+  -H "Authorization: Bearer d5a827fb4969ae3dbf20ac1a5ffd5c2109152fde3f47c062cd66e6247559a5f8"
 ```
 
 ---
@@ -139,19 +160,35 @@ start http://localhost:3004/admin/scheduler
 ## Commits This Session
 
 ```
-92cf517 fix(scheduler): Use correct enum spelling 'cancelled' (British)
-0a59df2 fix(scheduler): Simplify Cal.com metadata to avoid validation error
-d194a69 feat(scheduler): Add booking UI components
-253290c fix(scheduler): correct column names in API routes to match schema
-2df432b fix(scheduler): Use correct column name organization_slug
-d454de5 feat(scheduler): Add schedule API routes
-206e549 chore(scheduler): install NexCyte Scheduler MasterBundle via zerotouch
+86de310 chore(deps): Add pg for database scripts
+d4effa4 feat(search): Add navigation on search result selection
+85e56eb chore(vitest): Include tests/unit directory in test runner
+151b3f2 chore(deps): Add ical.js and fuse.js dependencies
+041e15e test(scheduler): Add unit tests and n8n workflow
+0d90dd8 feat(scheduler): Add UI components and admin pages
+c3b2940 feat(scheduler): Add API routes for enhancement pack
+c09a122 feat(scheduler): Add core libraries for enhancement pack
+b40146d feat(scheduler): Add database tables for enhancement pack
+32a07f7 docs(scheduler): Add implementation map and runbook for Analog upgrade
 ```
 
 ---
 
-**Session Status**: Complete
-**Next Session**: Test booking flow, optionally configure notifications
+## Environment Notes
+
+### Dev Server
+- Port: 3005 (3000 was in use)
+- SSH Tunnel: localhost:54322 → remote database
+
+### Database
+- Migration applied via SSH tunnel
+- 5 new tables created with RLS
+
+---
+
+**Session Status**: ✅ Complete
+**Next Session**: Wire up auth context for full functionality
 **Handoff Complete**: 2025-12-27
 
-Scheduler integration complete! Cal.com booking flow is live.
+🎉 Analog-inspired Scheduler Enhancement Pack fully implemented!
+All 5 features (Search, ICS/Webcal, Shortcuts, UX Polish, AI Calling stubs) are in place.
