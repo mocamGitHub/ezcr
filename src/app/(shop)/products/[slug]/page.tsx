@@ -173,28 +173,20 @@ export default async function ProductPage({ params }: ProductPageProps) {
             </Button>
           </div>
 
-          {/* Features */}
-          <div className="border-t pt-6 mb-6">
-            <h3 className="font-semibold text-lg mb-4">Key Features</h3>
-            <ul className="space-y-2">
-              <li className="flex items-start">
-                <Check className="h-5 w-5 mr-2 text-[#0B5394] mt-0.5" />
-                <span>2 Year Neo-Dyne Manufacturers Warranty</span>
-              </li>
-              <li className="flex items-start">
-                <Check className="h-5 w-5 mr-2 text-[#0B5394] mt-0.5" />
-                <span>30-day money-back guarantee</span>
-              </li>
-              <li className="flex items-start">
-                <Check className="h-5 w-5 mr-2 text-[#0B5394] mt-0.5" />
-                <span>Veteran-owned business</span>
-              </li>
-              <li className="flex items-start">
-                <Check className="h-5 w-5 mr-2 text-[#0B5394] mt-0.5" />
-                <span>A+ BBB rating</span>
-              </li>
-            </ul>
-          </div>
+          {/* Product Features from specifications */}
+          {product.specifications?.features && product.specifications.features.length > 0 && (
+            <div className="border-t pt-6 mb-6">
+              <h3 className="font-semibold text-lg mb-4">Product Features</h3>
+              <ul className="space-y-2">
+                {product.specifications.features.map((feature: string, index: number) => (
+                  <li key={index} className="flex items-start">
+                    <Check className="h-5 w-5 mr-2 text-[#0B5394] mt-0.5 flex-shrink-0" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* Product Details */}
           {product.sku && (
@@ -209,9 +201,105 @@ export default async function ProductPage({ params }: ProductPageProps) {
       {product.description && (
         <div className="mt-12 border-t pt-8">
           <h2 className="text-2xl font-bold mb-4">Description</h2>
-          <div className="prose prose-lg max-w-none">
+          <div className="prose prose-lg max-w-none space-y-4">
             <p className="text-muted-foreground">{product.description}</p>
+            {/* Additional descriptions from specifications */}
+            {product.specifications?.additionalDescriptions?.map((desc: string, index: number) => (
+              <p key={index} className="text-muted-foreground">{desc}</p>
+            ))}
           </div>
+        </div>
+      )}
+
+      {/* Specifications */}
+      {(product.specifications?.imperial || product.specifications?.metric) && (
+        <div className="mt-12 border-t pt-8">
+          <h2 className="text-2xl font-bold mb-6">Specifications</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Imperial Measurements */}
+            {product.specifications?.imperial && (
+              <div className="bg-muted/50 rounded-lg p-6">
+                <h3 className="font-semibold text-lg mb-4">Imperial (US)</h3>
+                <dl className="space-y-3">
+                  {product.specifications.imperial.length && (
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Length</dt>
+                      <dd className="font-medium">{product.specifications.imperial.length}</dd>
+                    </div>
+                  )}
+                  {product.specifications.imperial.weight && (
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Weight</dt>
+                      <dd className="font-medium">{product.specifications.imperial.weight}</dd>
+                    </div>
+                  )}
+                  {product.specifications.imperial.height && (
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Max Load Height</dt>
+                      <dd className="font-medium">{product.specifications.imperial.height}</dd>
+                    </div>
+                  )}
+                  {product.specifications.imperial.wheelbase && (
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Max Wheelbase</dt>
+                      <dd className="font-medium">{product.specifications.imperial.wheelbase}</dd>
+                    </div>
+                  )}
+                  {product.specifications.imperial.payload && (
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Max Payload</dt>
+                      <dd className="font-medium">{product.specifications.imperial.payload}</dd>
+                    </div>
+                  )}
+                </dl>
+              </div>
+            )}
+
+            {/* Metric Measurements */}
+            {product.specifications?.metric && (
+              <div className="bg-muted/50 rounded-lg p-6">
+                <h3 className="font-semibold text-lg mb-4">Metric</h3>
+                <dl className="space-y-3">
+                  {product.specifications.metric.length && (
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Length</dt>
+                      <dd className="font-medium">{product.specifications.metric.length}</dd>
+                    </div>
+                  )}
+                  {product.specifications.metric.weight && (
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Weight</dt>
+                      <dd className="font-medium">{product.specifications.metric.weight}</dd>
+                    </div>
+                  )}
+                  {product.specifications.metric.height && (
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Max Load Height</dt>
+                      <dd className="font-medium">{product.specifications.metric.height}</dd>
+                    </div>
+                  )}
+                  {product.specifications.metric.wheelbase && (
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Max Wheelbase</dt>
+                      <dd className="font-medium">{product.specifications.metric.wheelbase}</dd>
+                    </div>
+                  )}
+                  {product.specifications.metric.payload && (
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Max Payload</dt>
+                      <dd className="font-medium">{product.specifications.metric.payload}</dd>
+                    </div>
+                  )}
+                </dl>
+              </div>
+            )}
+          </div>
+          {/* Measurement Note */}
+          {product.specifications?.measurementNote && (
+            <p className="text-sm text-muted-foreground mt-4 italic">
+              {product.specifications.measurementNote}
+            </p>
+          )}
         </div>
       )}
 
