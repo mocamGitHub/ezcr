@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { AdminLayout } from '@/components/admin/AdminLayout'
+import { GlobalSearch } from '@/components/search/GlobalSearch'
 
 export default function AdminRootLayout({
   children,
@@ -16,5 +17,10 @@ export default function AdminRootLayout({
     }
   }, [])
 
-  return <AdminLayout>{children}</AdminLayout>
+  return (
+    <AdminLayout>
+      {children}
+      <GlobalSearch />
+    </AdminLayout>
+  )
 }

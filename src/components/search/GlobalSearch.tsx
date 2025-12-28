@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { Search, X, Calendar, FileText, Loader2, Clock } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -9,7 +10,7 @@ import { syncSearchIndex, isSyncNeeded } from '@/lib/search/syncService'
 import { cn } from '@/lib/utils'
 
 interface GlobalSearchProps {
-  tenantId: string
+  tenantId?: string
   onSelect?: (item: SearchableItem) => void
 }
 
@@ -28,6 +29,7 @@ const typeLabels = {
 }
 
 export function GlobalSearch({ tenantId, onSelect }: GlobalSearchProps) {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
@@ -80,7 +82,23 @@ export function GlobalSearch({ tenantId, onSelect }: GlobalSearchProps) {
   const syncData = async () => {
     setSyncing(true)
     try {
-      await syncSearchIndex(tenantId)
+      if (tenantId) {
+        await syncSearchIndex(tenantId)
+      } else {
+        // Add demo data for testing when no tenant context
+        const index = getSearchIndex()
+        if (index.count === 0) {
+          index.addItems([
+            { id: 'demo:booking:1', type: 'booking', title: 'Team Standup', subtitle: 'scheduled' },
+            { id: 'demo:booking:2', type: 'booking', title: 'Client Call - Acme Corp', subtitle: 'scheduled' },
+            { id: 'demo:booking:3', type: 'booking', title: 'Product Demo', subtitle: 'completed' },
+            { id: 'demo:event:1', type: 'event_type', title: 'intro_call', subtitle: 'Cal.com ID: 4259719' },
+            { id: 'demo:event:2', type: 'event_type', title: 'consultation', subtitle: 'Cal.com ID: 4259718' },
+            { id: 'demo:template:1', type: 'template', title: 'Booking Confirmation', subtitle: 'email • booking_created' },
+            { id: 'demo:template:2', type: 'template', title: 'Reminder 24h', subtitle: 'sms • reminder_24h' },
+          ])
+        }
+      }
     } catch (error) {
       console.error('Failed to sync search index:', error)
     } finally {
@@ -91,7 +109,23 @@ export function GlobalSearch({ tenantId, onSelect }: GlobalSearchProps) {
   const handleSelect = useCallback((item: SearchableItem) => {
     setOpen(false)
     onSelect?.(item)
-  }, [onSelect])
+
+    // Navigate based on item type
+    const itemId = item.id.split(':').pop() // Extract actual ID from prefixed ID
+    switch (item.type) {
+      case 'booking':
+        router.push(`/admin/scheduler/bookings/${itemId}`)
+        break
+      case 'event_type':
+        router.push('/admin/scheduler/event-types')
+        break
+      case 'template':
+        router.push(`/admin/notifications/templates/${itemId}`)
+        break
+      default:
+        console.log('Selected:', item)
+    }
+  }, [onSelect, router])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
