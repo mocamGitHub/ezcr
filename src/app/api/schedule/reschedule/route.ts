@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (booking.status === 'canceled') {
+    if (booking.status === 'cancelled') {
       return NextResponse.json(
         { error: 'Cannot reschedule a cancelled booking' },
         { status: 400 }

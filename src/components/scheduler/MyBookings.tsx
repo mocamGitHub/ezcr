@@ -19,7 +19,7 @@ interface Booking {
   cal_event_type_id: number
   start_at: string
   end_at: string | null
-  status: 'scheduled' | 'canceled' | 'rescheduled'
+  status: 'scheduled' | 'cancelled' | 'rescheduled'
   title: string
   attendee_email: string
   metadata: {
@@ -103,7 +103,7 @@ export function MyBookings({ onReschedule, showPast = false }: MyBookingsProps) 
   const getStatusBadge = (status: Booking['status'], startAt: string) => {
     const isInPast = isPast(parseISO(startAt))
 
-    if (status === 'canceled') {
+    if (status === 'cancelled') {
       return (
         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
           Cancelled

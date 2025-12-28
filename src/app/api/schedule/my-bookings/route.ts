@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
     if (upcoming) {
       query = query
         .gte('start_at', new Date().toISOString())
-        .neq('status', 'canceled')
+        .neq('status', 'cancelled')
     }
 
     const { data: bookings, error } = await query
