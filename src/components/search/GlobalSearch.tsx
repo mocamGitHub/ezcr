@@ -7,10 +7,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input'
 import { getSearchIndex, type SearchResult, type SearchableItem } from '@/lib/search/searchIndex'
 import { syncSearchIndex, isSyncNeeded } from '@/lib/search/syncService'
+import { useAuth } from '@/contexts/AuthContext'
 import { cn } from '@/lib/utils'
 
 interface GlobalSearchProps {
-  tenantId?: string
   onSelect?: (item: SearchableItem) => void
 }
 
@@ -28,8 +28,10 @@ const typeLabels = {
   contact: 'Contact',
 }
 
-export function GlobalSearch({ tenantId, onSelect }: GlobalSearchProps) {
+export function GlobalSearch({ onSelect }: GlobalSearchProps) {
   const router = useRouter()
+  const { profile } = useAuth()
+  const tenantId = profile?.tenant_id
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])

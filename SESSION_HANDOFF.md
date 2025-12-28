@@ -1,10 +1,9 @@
-# Session Handoff - Analog Scheduler Enhancement Pack Complete
+# Session Handoff - Auth Context Wired Up
 
-**Date**: 2025-12-27
-**Time**: Late Night Session
-**Previous Commit**: `92cf517` - fix(scheduler): Use correct enum spelling 'cancelled' (British)
-**Current Commit**: `86de310` - chore(deps): Add pg for database scripts
-**Current Status**: Enhancement pack fully implemented and tested
+**Date**: 2025-12-28
+**Time**: Morning Session
+**Previous Commit**: `615abb1` - docs: Update session handoff for Enhancement Pack completion
+**Current Status**: Auth context wired up for search and subscriptions
 **Branch**: main
 **Dev Server**: Running at http://localhost:3005 ✅
 
@@ -12,82 +11,39 @@
 
 ## What Was Accomplished This Session
 
-### Analog-inspired Scheduler Enhancement Pack (META PROMPT)
-Implemented comprehensive enhancement pack with 5 major features:
+### Auth Context Wired Up for Search & Subscriptions
 
-### A) Local-first Search
-- Created Fuse.js search index with browser storage sync
-- GlobalSearch component with Cmd+K keyboard shortcut
-- Navigation to bookings/event-types/templates on selection
-- Demo data for testing when no tenant context
+**GlobalSearch Component** (`src/components/search/GlobalSearch.tsx`):
+- Now uses `useAuth()` hook to get tenant_id from authenticated user profile
+- Removed tenantId prop requirement - gets it automatically from auth context
+- When authenticated, syncs real data (bookings, event types, templates)
+- Falls back to demo data when no auth (for testing)
 
-### B) ICS Import + Webcal Subscriptions
-- ICS file parser using ical.js library
-- Webcal subscription management (CRUD API)
-- Subscription sync service with diff detection
-- Tested with Google Calendar US Holidays (172 events synced)
-- n8n workflow for hourly refresh
+**SubscriptionsManager Component** (`src/components/calendar/SubscriptionsManager.tsx`):
+- Added 401 error handling for better auth error messages
+- Shows "Please sign in to..." toast on auth failures
+- Works with existing API auth (requireAuth)
 
-### C) iOS Shortcuts API
-- Token-based authentication with SHA256 hashing
-- 4 API endpoints: today, block-time, create-link, reschedule
-- Token management UI at /admin/shortcuts
-- Audit logging for all shortcut actions
-- Tested token creation and API calls successfully
+### Previous Session: Analog-inspired Scheduler Enhancement Pack
+- Local-first Search (Fuse.js, Cmd+K)
+- ICS Import + Webcal Subscriptions
+- iOS Shortcuts API
+- Calendar UX Polish
+- AI Calling Provider Stubs
 
-### D) Calendar UX Polish
-- User calendar preferences hook (useCalendarPrefs)
-- Ambient notices component for non-blocking alerts
-- Calendar subscriptions admin page
+### Files Modified This Session
 
-### E) AI Calling Provider Stubs
-- Twilio Voice stub with TwiML generation
-- Bland.ai and Cal.ai stub implementations
-- Provider factory pattern for easy swapping
-
-### Database Migration Applied
-- 5 new tables: nx_external_calendar_subscription, nx_external_calendar_event, nx_shortcuts_token, nx_audit_log, nx_user_calendar_prefs
-- RLS policies for multi-tenant isolation
-- Indexes for performance
-
-### Files Modified This Session (40+ files)
-
-**Core Libraries:**
-1. `src/lib/ical/icsParser.ts` - ICS parsing with ical.js
-2. `src/lib/ical/webcalSync.ts` - Webcal sync service
-3. `src/lib/audit/logger.ts` - Audit trail logging
-4. `src/lib/shortcuts/tokenAuth.ts` - Token auth with SHA256
-5. `src/lib/search/searchIndex.ts` - Fuse.js search
-6. `src/lib/search/syncService.ts` - Data sync service
-7. `src/lib/ai-calling/*` - AI calling stubs
-
-**API Routes:**
-8. `src/app/api/calendar/import/route.ts` - ICS upload
-9. `src/app/api/calendar/subscriptions/route.ts` - Webcal CRUD
-10. `src/app/api/cron/webcal-refresh/route.ts` - Cron job
-11. `src/app/api/shortcuts/today/route.ts` - Today's schedule
-12. `src/app/api/shortcuts/block-time/route.ts` - Time blocks
-13. `src/app/api/shortcuts/tokens/route.ts` - Token management
-14. `src/app/api/search/route.ts` - Server search
-
-**UI Components:**
-15. `src/components/search/GlobalSearch.tsx` - Cmd+K search
-16. `src/components/shortcuts/TokenManager.tsx` - Token UI
-17. `src/components/calendar/SubscriptionsManager.tsx` - Webcal UI
-18. `src/components/ui/AmbientNotice.tsx` - Notifications
-19. `src/app/(admin)/admin/layout.tsx` - Added GlobalSearch
-
-**Tests:**
-20. `tests/unit/icsParser.test.ts` - 11 tests
-21. `tests/unit/searchIndex.test.ts` - 15 tests
-22. `tests/unit/tokenAuth.test.ts` - 11 tests
+1. `src/components/search/GlobalSearch.tsx` - Added useAuth() hook for tenant context
+2. `src/components/calendar/SubscriptionsManager.tsx` - Added 401 error handling
+3. `SESSION_HANDOFF.md` - Updated handoff notes
 
 ---
 
 ## Current State
 
 ### What's Working ✅
-- ✅ Global search with Cmd+K (7 demo items indexed)
+- ✅ Global search with Cmd+K - now uses authenticated tenant context
+- ✅ Subscriptions UI - works with authenticated sessions
 - ✅ Shortcuts API (token auth tested, today/block-time working)
 - ✅ Webcal subscriptions (US Holidays - 172 events synced)
 - ✅ Token management page (/admin/shortcuts)
@@ -96,7 +52,6 @@ Implemented comprehensive enhancement pack with 5 major features:
 - ✅ Database migration applied
 
 ### What's NOT Working / Pending
-- ⏳ Subscriptions UI shows empty (requires authenticated session)
 - ⏳ Real AI calling (stubs only, no real calls)
 - ⏳ n8n webcal refresh workflow (needs import)
 
@@ -119,21 +74,17 @@ Scopes: today, block-time
 
 ## Next Immediate Actions
 
-### 1. Wire Up Authenticated Session (30 min)
-The subscriptions/search pages need user context to fetch real data:
-- Get tenant_id from authenticated session
-- Pass to GlobalSearch and SubscriptionsManager components
-
-### 2. Import n8n Workflow (5 min)
+### 1. Import n8n Workflow (5 min)
 ```bash
 # Import webcal refresh workflow
 n8n/workflow_webcal_refresh.json
 ```
 
-### 3. Test Full Flow (10 min)
-- Log in as a user
-- Create a shortcuts token via UI
-- Test Shortcuts API with real data
+### 2. Test Full Flow with Authenticated User
+- Log in to admin dashboard
+- Press Cmd+K to test global search (should sync real data)
+- Visit /admin/calendar/subscriptions to test subscriptions
+- Create a shortcuts token via /admin/shortcuts
 
 ---
 
@@ -187,8 +138,7 @@ b40146d feat(scheduler): Add database tables for enhancement pack
 ---
 
 **Session Status**: ✅ Complete
-**Next Session**: Wire up auth context for full functionality
-**Handoff Complete**: 2025-12-27
+**Handoff Complete**: 2025-12-28
 
-🎉 Analog-inspired Scheduler Enhancement Pack fully implemented!
-All 5 features (Search, ICS/Webcal, Shortcuts, UX Polish, AI Calling stubs) are in place.
+✅ Auth context wired up for GlobalSearch and SubscriptionsManager.
+Search now syncs real data when authenticated, falls back to demo data otherwise.
