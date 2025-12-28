@@ -1,0 +1,288 @@
+{
+  "generated_at": "2025-12-27T20:45:00Z",
+  "branch": "chore/scheduler-analog-upgrade-20251227",
+  "repo_root": "C:/Users/morri/Dropbox/Websites/ezcr",
+
+  "detected_frameworks": [
+    "next.js@15",
+    "react@19",
+    "typescript@5",
+    "tailwindcss@4",
+    "supabase",
+    "radix-ui"
+  ],
+
+  "package_manager": "npm",
+  "runtime": "node",
+  "node_version": ">=18",
+
+  "apps": [
+    {
+      "name": "ezcr",
+      "type": "next.js",
+      "entry": "src/app",
+      "port_default": 3000
+    }
+  ],
+
+  "packages": [],
+
+  "database": {
+    "type": "supabase-postgres",
+    "url_env_names": [
+      "NEXT_PUBLIC_SUPABASE_URL",
+      "SUPABASE_SERVICE_KEY",
+      "DATABASE_URL"
+    ],
+    "migration_paths": [
+      "supabase/migrations/"
+    ],
+    "seed_paths": [
+      "supabase/seed/",
+      "supabase/fomo_seed.sql",
+      "supabase/testimonials_seed.sql"
+    ],
+    "existing_tables": {
+      "core": [
+        "tenants",
+        "user_profiles",
+        "products",
+        "product_categories",
+        "orders",
+        "contacts"
+      ],
+      "scheduler": [
+        "nx_user_profile",
+        "nx_scheduler_settings",
+        "nx_scheduler_event_type_map",
+        "nx_scheduler_booking",
+        "nx_tenant_membership",
+        "nx_notification_outbox",
+        "nx_notification_template"
+      ]
+    },
+    "rls_enabled": true,
+    "rls_helper_functions": [
+      "nx_uid()",
+      "nx_is_tenant_member(tenant_id)",
+      "nx_is_tenant_admin(tenant_id)"
+    ]
+  },
+
+  "auth": {
+    "provider": "supabase-auth",
+    "key_files": [
+      "src/lib/auth/api-auth.ts",
+      "src/middleware.ts",
+      "src/lib/supabase/server.ts",
+      "src/lib/supabase/client.ts"
+    ],
+    "roles": [
+      "customer",
+      "viewer",
+      "customer_service",
+      "admin",
+      "owner"
+    ],
+    "notes": "Middleware protects /admin/*. API routes use requireAuth() or requireRole()."
+  },
+
+  "tenancy": {
+    "strategy": "soft-isolation",
+    "key_files": [
+      "src/lib/tenant.ts",
+      "supabase/migrations/20251224_000001_calcom_scheduler.sql"
+    ],
+    "tenant_slugs": [
+      "ezcr-dev",
+      "ezcr-staging",
+      "ezcr-01"
+    ],
+    "resolution": "Environment-based (NEXT_PUBLIC_TENANT_SLUG or NODE_ENV)",
+    "notes": "tenant_id enforced via RLS policies using nx_is_tenant_member()"
+  },
+
+  "scheduling": {
+    "provider": "cal.com-api-v2",
+    "key_routes": [
+      "src/app/api/schedule/slots/route.ts",
+      "src/app/api/schedule/book/route.ts",
+      "src/app/api/schedule/cancel/route.ts",
+      "src/app/api/schedule/reschedule/route.ts",
+      "src/app/api/schedule/my-bookings/route.ts"
+    ],
+    "key_components": [
+      "src/components/scheduler/SchedulerBooking.tsx",
+      "src/components/scheduler/MyBookings.tsx",
+      "src/scheduler/admin-ui/EventTypeMapClient.tsx",
+      "src/scheduler/admin-ui/SchedulerSettingsClient.tsx"
+    ],
+    "key_api": [
+      "src/scheduler/calcomServerClient.ts"
+    ],
+    "admin_page": "src/app/(admin)/admin/scheduler/page.tsx",
+    "env_vars": [
+      "CALCOM_API_KEY",
+      "CALCOM_API_BASE_URL",
+      "CALCOM_API_VERSION"
+    ],
+    "notes": "Uses Cal.com API v2 with Bearer auth. Local booking mirror in nx_scheduler_booking."
+  },
+
+  "notifications": {
+    "key_files": [
+      "src/notifications/dispatcher/dispatchOne.ts",
+      "src/notifications/dispatcher/render.ts",
+      "src/notifications/dispatcher/types.ts",
+      "src/notifications/dispatcher/providers/mailgun.ts",
+      "src/notifications/dispatcher/providers/twilio.ts"
+    ],
+    "templates_table": "nx_notification_template",
+    "outbox_table": "nx_notification_outbox",
+    "notes": "Outbox pattern. n8n workflow dispatches every 2 minutes."
+  },
+
+  "jobs": {
+    "runner": "n8n",
+    "key_files": [
+      "n8n/workflow_dispatcher_every_2m.json",
+      "n8n/process-scheduled-emails-workflow.json"
+    ],
+    "alternative_runners": [
+      "vercel-cron",
+      "coolify-cron",
+      "pg_cron"
+    ],
+    "notes": "n8n workflows for background jobs. Can also use /api/cron/* endpoints."
+  },
+
+  "tests": {
+    "framework": "vitest",
+    "e2e_framework": "playwright",
+    "paths": [
+      "tests/unit/",
+      "tests/integration/",
+      "tests/e2e/",
+      "src/lib/ufe/"
+    ],
+    "config_files": [
+      "vitest.config.ts",
+      "playwright.config.ts"
+    ],
+    "commands": {
+      "unit": "npm run test",
+      "e2e": "npm run test:e2e"
+    }
+  },
+
+  "ui": {
+    "component_library": "custom + radix-ui",
+    "styling": "tailwindcss",
+    "icons": "lucide-react",
+    "toasts": "sonner",
+    "animations": "framer-motion",
+    "key_paths": [
+      "src/components/ui/",
+      "src/components/scheduler/",
+      "src/components/admin/"
+    ]
+  },
+
+  "existing_integrations": {
+    "stripe": {
+      "files": [
+        "src/lib/stripe/",
+        "src/app/api/stripe/"
+      ],
+      "status": "active"
+    },
+    "tforce_freight": {
+      "files": [
+        "src/app/api/tforce-tracking/route.ts",
+        "ezcycleramp-shipping/"
+      ],
+      "status": "active"
+    },
+    "quickbooks": {
+      "files": [
+        "src/app/(admin)/admin/qbo/"
+      ],
+      "status": "active"
+    },
+    "anthropic_ai": {
+      "files": [
+        "src/app/api/ai/",
+        "src/lib/ai/"
+      ],
+      "status": "active"
+    },
+    "twilio_sms": {
+      "files": [
+        "src/notifications/dispatcher/providers/twilio.ts",
+        "src/lib/comms/"
+      ],
+      "status": "configured"
+    },
+    "mailgun": {
+      "files": [
+        "src/notifications/dispatcher/providers/mailgun.ts",
+        "src/lib/email/"
+      ],
+      "status": "configured"
+    }
+  },
+
+  "files_to_add_phase2": {
+    "migrations": [
+      "supabase/migrations/20251227_001_scheduler_enhancements.sql"
+    ],
+    "api_routes": [
+      "src/app/api/calendar/import/route.ts",
+      "src/app/api/calendar/subscriptions/route.ts",
+      "src/app/api/cron/webcal-refresh/route.ts",
+      "src/app/api/shortcuts/today/route.ts",
+      "src/app/api/shortcuts/block-time/route.ts",
+      "src/app/api/shortcuts/create-booking-link/route.ts",
+      "src/app/api/shortcuts/reschedule/route.ts",
+      "src/app/api/shortcuts/tokens/route.ts",
+      "src/app/api/search/route.ts"
+    ],
+    "lib": [
+      "src/lib/ical/icsParser.ts",
+      "src/lib/ical/webcalSync.ts",
+      "src/lib/search/searchIndex.ts",
+      "src/lib/search/syncService.ts",
+      "src/lib/shortcuts/tokenAuth.ts",
+      "src/lib/audit/logger.ts",
+      "src/lib/ai-calling/types.ts",
+      "src/lib/ai-calling/providers/index.ts"
+    ],
+    "components": [
+      "src/components/search/GlobalSearch.tsx",
+      "src/components/search/SearchResults.tsx",
+      "src/components/calendar/ICSImportDialog.tsx",
+      "src/components/calendar/SubscriptionsManager.tsx",
+      "src/components/shortcuts/TokenManager.tsx",
+      "src/components/ui/AmbientNotice.tsx",
+      "src/components/ui/TimeInput.tsx",
+      "src/components/calendar/CalendarPrefsDialog.tsx"
+    ],
+    "hooks": [
+      "src/hooks/useGlobalSearch.ts",
+      "src/hooks/useCalendarPrefs.ts"
+    ],
+    "pages": [
+      "src/app/(admin)/admin/calendar/subscriptions/page.tsx",
+      "src/app/(admin)/admin/shortcuts/page.tsx"
+    ],
+    "tests": [
+      "tests/unit/icsParser.test.ts",
+      "tests/unit/tokenAuth.test.ts",
+      "tests/unit/searchIndex.test.ts",
+      "tests/integration/shortcuts-api.test.ts"
+    ],
+    "n8n": [
+      "n8n/workflow_webcal_refresh.json"
+    ]
+  }
+}
