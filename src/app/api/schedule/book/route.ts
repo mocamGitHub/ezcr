@@ -73,6 +73,8 @@ export async function POST(request: NextRequest) {
       : user.email
 
     // Create booking in Cal.com
+    // Note: Cal.com metadata has strict limits (50 keys, 40 char keys, 500 char values)
+    // Keep Cal.com metadata minimal - we store full details locally
     const cfg = getCalcomConfigFromEnv()
     const booking = await calcomFetchJson<any>(cfg, {
       method: 'POST',
@@ -87,10 +89,8 @@ export async function POST(request: NextRequest) {
           language: 'en',
         },
         metadata: {
-          notes: notes || null,
-          tenantId,
           purpose,
-          userId: user.id,
+          notes: notes ? notes.slice(0, 500) : undefined,
         },
       },
     })
