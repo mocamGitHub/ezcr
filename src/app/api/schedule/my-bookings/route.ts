@@ -30,14 +30,14 @@ export async function GET(request: NextRequest) {
       .from('nx_scheduler_booking')
       .select(`
         id,
-        cal_booking_uid,
-        internal_purpose,
+        booking_uid,
+        cal_event_type_id,
         start_at,
         end_at,
         status,
-        attendee_name,
+        title,
         attendee_email,
-        notes,
+        metadata,
         created_at,
         updated_at
       `)
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
     if (upcoming) {
       query = query
         .gte('start_at', new Date().toISOString())
-        .neq('status', 'cancelled')
+        .neq('status', 'canceled')
     }
 
     const { data: bookings, error } = await query

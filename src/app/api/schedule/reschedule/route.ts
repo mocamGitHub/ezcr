@@ -35,9 +35,9 @@ export async function POST(request: NextRequest) {
     // Verify booking belongs to this tenant and user can reschedule it
     const { data: booking, error: bookingError } = await supabase
       .from('nx_scheduler_booking')
-      .select('id, attendee_user_id, status, internal_purpose')
+      .select('id, attendee_user_id, status, metadata')
       .eq('tenant_id', tenantId)
-      .eq('cal_booking_uid', bookingUid)
+      .eq('booking_uid', bookingUid)
       .single()
 
     if (bookingError || !booking) {
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (booking.status === 'cancelled') {
+    if (booking.status === 'canceled') {
       return NextResponse.json(
         { error: 'Cannot reschedule a cancelled booking' },
         { status: 400 }
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Update local mirror
+    // Update local mirror - mark old booking as rescheduled
     const newBookingUid = result.uid || result.id || bookingUid
     const { error: updateError } = await supabase
       .from('nx_scheduler_booking')
@@ -102,20 +102,26 @@ export async function POST(request: NextRequest) {
         ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || user.email
         : user.email
 
+      const purpose = (booking.metadata as any)?.purpose || 'rescheduled'
+
       await supabase
         .from('nx_scheduler_booking')
         .insert({
           tenant_id: tenantId,
           attendee_user_id: user.id,
-          cal_booking_uid: newBookingUid,
+          booking_uid: newBookingUid,
           cal_event_type_id: result.eventTypeId || null,
-          internal_purpose: booking.internal_purpose,
           start_at: newStart,
           end_at: result.endTime || null,
-          status: 'confirmed',
+          status: 'scheduled',
           attendee_email: user.email,
-          attendee_name: attendeeName,
-          attendee_phone: profile?.phone || null,
+          title: `${purpose} - ${attendeeName}`,
+          metadata: {
+            purpose,
+            attendee_name: attendeeName,
+            attendee_phone: profile?.phone || null,
+            rescheduled_from: bookingUid,
+          },
         })
     }
 

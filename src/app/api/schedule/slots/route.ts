@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
       .from('nx_scheduler_event_type_map')
       .select('cal_event_type_id')
       .eq('tenant_id', tenantId)
-      .eq('internal_key', purpose)
+      .eq('purpose', purpose)
       .single()
 
     if (eventMapError || !eventMap?.cal_event_type_id) {

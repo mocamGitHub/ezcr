@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       .from('nx_scheduler_event_type_map')
       .select('cal_event_type_id')
       .eq('tenant_id', tenantId)
-      .eq('internal_key', purpose)
+      .eq('purpose', purpose)
       .single()
 
     if (eventMapError || !eventMap?.cal_event_type_id) {
@@ -96,21 +96,25 @@ export async function POST(request: NextRequest) {
     })
 
     // Mirror booking to local database
+    const bookingUid = booking.uid || booking.id || `local-${Date.now()}`
     const { error: insertError } = await supabase
       .from('nx_scheduler_booking')
       .insert({
         tenant_id: tenantId,
         attendee_user_id: user.id,
-        cal_booking_uid: booking.uid || booking.id,
+        booking_uid: bookingUid,
         cal_event_type_id: eventMap.cal_event_type_id,
-        internal_purpose: purpose,
         start_at: start,
         end_at: booking.endTime || null,
-        status: 'confirmed',
+        status: 'scheduled',
         attendee_email: user.email,
-        attendee_name: attendeeName,
-        attendee_phone: profile?.phone || null,
-        notes: notes || null,
+        title: `${purpose} - ${attendeeName}`,
+        metadata: {
+          purpose,
+          notes: notes || null,
+          attendee_name: attendeeName,
+          attendee_phone: profile?.phone || null,
+        },
       })
 
     if (insertError) {
@@ -121,10 +125,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       booking: {
-        uid: booking.uid || booking.id,
+        uid: bookingUid,
         start,
         purpose,
-        status: 'confirmed',
+        status: 'scheduled',
       },
     })
   } catch (error) {

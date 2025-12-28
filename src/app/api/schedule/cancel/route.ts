@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       .from('nx_scheduler_booking')
       .select('id, attendee_user_id, status')
       .eq('tenant_id', tenantId)
-      .eq('cal_booking_uid', bookingUid)
+      .eq('booking_uid', bookingUid)
       .single()
 
     if (bookingError || !booking) {
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (booking.status === 'cancelled') {
+    if (booking.status === 'canceled') {
       return NextResponse.json(
         { error: 'Booking is already cancelled' },
         { status: 400 }
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     const { error: updateError } = await supabase
       .from('nx_scheduler_booking')
       .update({
-        status: 'cancelled',
+        status: 'canceled',
         updated_at: new Date().toISOString(),
       })
       .eq('id', booking.id)
