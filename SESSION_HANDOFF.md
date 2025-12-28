@@ -1,120 +1,157 @@
-# Session Handoff - Admin Dashboard RLS Fix
+# Session Handoff - NexCyte Scheduler Integration Complete
 
-**Date**: 2025-12-24
-**Time**: Afternoon Session
-**Previous Commit**: `eb016fb` - fix: Add glob dependency and load .env.local in BOL import script
-**Current Commit**: `7379113` - fix(rls): Add admin RLS policies for orders and inventory pages
-**Current Status**: Complete - Dashboard RLS issues fixed and verified
+**Date**: 2025-12-27
+**Time**: Evening Session
+**Previous Commit**: `fe32d77` - docs: Update session handoff for RLS fix completion
+**Current Commit**: `92cf517` - fix(scheduler): Use correct enum spelling 'cancelled' (British)
+**Current Status**: Scheduler fully integrated and working
 **Branch**: main
-**Dev Server**: Running at http://localhost:3003 ✅
+**Dev Server**: Running at http://localhost:3004
 
 ---
 
 ## What Was Accomplished This Session
 
-### 1. Fixed Admin Dashboard Loading Issues
-- **Problem**: Orders Management and Inventory Management pages were stuck in infinite loading state
-- **Root Cause**: Row Level Security (RLS) policies were too restrictive
-  - `orders` table only allowed users to view their own orders (`auth.uid() = user_id`)
-  - Authenticated admins couldn't see all orders/inventory despite passing middleware auth check
-- **Solution**: Created migration `00031_admin_rls_policies.sql` with permissive policies for authenticated users
+### NexCyte Scheduler MasterBundle Installation
+- Extracted and installed scheduler bundle from ZIP
+- Fixed PowerShell installer scripts (removed stray backslashes)
+- Applied database migrations to dev/staging (7 new tables)
+- Seeded 15 notification templates (5 events x 3 tenants)
 
-### 2. RLS Policies Added
-| Table | Policy | Access |
-|-------|--------|--------|
-| `orders` | Authenticated users can view all orders | SELECT |
-| `orders` | Authenticated users can update orders | UPDATE |
-| `order_items` | Authenticated users can view all order items | SELECT |
-| `products` | Authenticated users can update products | UPDATE |
-| `product_configurations` | Authenticated users can view all configurations | SELECT |
-| `contacts` | Authenticated users can view contacts | SELECT |
+### Cal.com Integration
+- Configured Cal.com API with API key
+- Set organization to `nexcyte` for all 3 tenants
+- Mapped 4 event types:
+  - `intro_call` → Introduction (15min, ID: 4259746)
+  - `consultation` → Consultation (15min, ID: 4259768)
+  - `support` → Support Meeting (30min, ID: 4259760)
+  - `demo` → Ramp Demonstration (60min, ID: 4259752)
 
-### 3. Verified All Dashboard Sections
-- Analyzed all 25+ admin pages for similar RLS issues
-- Confirmed pages using server actions (service key) are unaffected
-- Verified profile/settings pages work with existing "own profile" RLS
+### Scheduler API Routes (5 routes)
+- `/api/schedule/slots` - GET available time slots
+- `/api/schedule/book` - POST create booking
+- `/api/schedule/cancel` - POST cancel booking
+- `/api/schedule/reschedule` - POST reschedule booking
+- `/api/schedule/my-bookings` - GET user's bookings
 
-### Files Modified This Session (1 file)
-1. `supabase/migrations/00031_admin_rls_policies.sql` - NEW: Admin RLS policies
+### Booking UI Components
+- `SchedulerBooking` - Main booking flow with purpose/date/time selection
+- `SchedulerBookingDialog` - Modal wrapper
+- `SchedulerBookingButton` - Quick trigger button
+- `MyBookings` - Display and manage user's bookings
+- Admin test page at `/admin/scheduler`
+
+### Bug Fixes Applied
+- Cal.com metadata simplified (50 key limit)
+- Enum spelling corrected: `cancelled` (British, matches DB)
+- Column names fixed: `booking_uid`, `organization_slug`, `purpose`
+
+### Files Modified This Session (64+ files)
+Key files:
+1. `src/app/api/schedule/*/route.ts` - 5 API routes
+2. `src/components/scheduler/*.tsx` - UI components
+3. `src/scheduler/calcomServerClient.ts` - Cal.com API client
+4. `supabase/migrations/20251224_*.sql` - Database migrations
+5. `src/notifications/dispatcher/*` - Notification system
 
 ---
 
 ## Current State
 
-### What's Working ✅
-- ✅ Orders Management page loads with all orders
-- ✅ Inventory Management page loads with all products
-- ✅ All other admin pages (CRM, Contacts, Comms, QBO, etc.)
-- ✅ Dashboard analytics with real data
-- ✅ TForce tracking integration
+### What's Working
+- Scheduler API routes (all 5 endpoints)
+- Cal.com slot fetching (160+ slots available)
+- Booking creation via Cal.com API
+- Local booking mirroring to database
+- Booking UI components
+- My Bookings list with cancel functionality
+- Notification templates seeded
 
 ### What's NOT Working / Pending
-- ⏳ Books receipt OCR testing (from previous session)
+- Reschedule UI (backend ready, UI shows alert)
+- Notification dispatcher (n8n workflow not configured)
+- `NEXCYTE_INTERNAL_DISPATCH_SECRET` not set in .env.local
 
 ---
 
-## Technical Details
+## Environment Configuration
 
-### Why This Fix is Secure
-1. Next.js middleware (`src/middleware.ts:55-103`) verifies admin roles before users can access `/admin` routes
-2. Only users with roles `owner`, `admin`, `customer_service`, or `viewer` can reach these pages
-3. The RLS policies are for authenticated users who have already passed the middleware check
+### .env.local (already configured)
+```
+CALCOM_API_KEY=cal_live_1d158d51bd2be0346852c750693facf8
+```
 
-### Pages Using Browser Client (Fixed)
-- `orders/page.tsx` → Fixed with new policies
-- `inventory/page.tsx` → Already had permissive policy
-- `profile/page.tsx` → Uses "own profile" RLS
-- `settings/page.tsx` → Uses "own profile" RLS
+### Still Needed (optional, for notification dispatch)
+```
+NEXCYTE_INTERNAL_DISPATCH_SECRET=<random-secret>
+```
 
-### Pages Using Server Actions (Unaffected)
-- All other admin pages use `createServiceClient()` which bypasses RLS
+---
+
+## Database Tables Created
+
+| Table | Purpose |
+|-------|---------|
+| nx_scheduler_settings | Cal.com org config per tenant |
+| nx_scheduler_event_type_map | Purpose → Cal.com event ID mapping |
+| nx_scheduler_booking | Local booking mirror |
+| nx_notification_outbox | Notification queue |
+| nx_notification_template | Email/SMS templates |
+| nx_user_profile | Extended user profile |
+| nx_tenant_membership | User-tenant relationships |
 
 ---
 
 ## Next Immediate Actions
 
-### 1. Test Books Receipt OCR
-Upload a sample receipt to test the full OCR flow.
+### 1. Test Booking Flow (5 min)
+- Go to http://localhost:3004/admin/scheduler
+- Select a purpose and time slot
+- Complete booking
+- Check "My Bookings" tab
 
-### 2. Continue with any pending admin features
-The dashboard is now fully functional.
+### 2. Configure Notification Dispatch (Optional)
+- Set `NEXCYTE_INTERNAL_DISPATCH_SECRET` in .env.local
+- Configure n8n workflow from `n8n/workflow_dispatcher_every_2m.json`
+
+### 3. Add Scheduler to Customer Portal (Future)
+- Import `SchedulerBookingButton` on customer-facing pages
+- Use `SchedulerBooking` in customer dashboard
 
 ---
 
 ## How to Resume After /clear
 
-Run the `/resume` command or:
+Run `/resume` or:
 
 ```bash
 # Check current state
 git log --oneline -5
 git status
-npm run dev  # If server not running
+npm run dev  # Server may be on port 3004
 
-# Verify dashboard pages load
-start http://localhost:3003/admin/orders
-start http://localhost:3003/admin/inventory
+# Test scheduler
+start http://localhost:3004/admin/scheduler
 ```
 
 ---
 
-## Database Connection
+## Commits This Session
 
-SSH tunnel for direct database access:
-```bash
-ssh -f -N -L 54322:10.0.3.5:5432 root@5.161.84.153
-# Note: Port 54322 was in use, used 54323 this session
 ```
-
-Apply migrations via Docker:
-```bash
-cat migration.sql | ssh root@5.161.84.153 "docker exec -i supabase-db-ok0kw088ss4swwo4wc84gg0w psql -U supabase_admin -d postgres"
+92cf517 fix(scheduler): Use correct enum spelling 'cancelled' (British)
+0a59df2 fix(scheduler): Simplify Cal.com metadata to avoid validation error
+d194a69 feat(scheduler): Add booking UI components
+253290c fix(scheduler): correct column names in API routes to match schema
+2df432b fix(scheduler): Use correct column name organization_slug
+d454de5 feat(scheduler): Add schedule API routes
+206e549 chore(scheduler): install NexCyte Scheduler MasterBundle via zerotouch
 ```
 
 ---
 
-**Session Status**: ✅ Complete
-**Next Session**: Books OCR testing or other admin features
-**Handoff Complete**: 2025-12-24
+**Session Status**: Complete
+**Next Session**: Test booking flow, optionally configure notifications
+**Handoff Complete**: 2025-12-27
 
-🎉 Admin dashboard RLS issues resolved - all pages loading correctly!
+Scheduler integration complete! Cal.com booking flow is live.
