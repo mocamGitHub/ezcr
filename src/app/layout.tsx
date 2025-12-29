@@ -18,9 +18,10 @@ import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
 
-// Force dynamic rendering for all pages to avoid static generation issues
+// Force dynamic rendering globally due to widespread useSearchParams() usage
+// To optimize: wrap useSearchParams calls in Suspense boundaries at each call site
+// Performance improvements: framer-motion removed, chat widget lazy-loaded
 export const dynamic = 'force-dynamic'
-export const revalidate = 0
 export const runtime = 'nodejs'
 
 export const metadata: Metadata = {

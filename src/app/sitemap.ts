@@ -2,6 +2,9 @@
 import { MetadataRoute } from 'next'
 import { createClient } from '@/lib/supabase/server'
 
+// Sitemap must be dynamically rendered because it fetches from database
+export const dynamic = 'force-dynamic'
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://ezcycleramp.com'
 
