@@ -90,24 +90,31 @@ export async function GET(request: NextRequest) {
     const totalPages = count ? Math.ceil(count / limit) : 0;
 
     // -------------------- Success Response --------------------
-    return NextResponse.json({
-      testimonials: testimonials || [],
-      pagination: {
-        total: count || 0,
-        page,
-        limit,
-        total_pages: totalPages,
-        has_next_page: page < totalPages,
-        has_prev_page: page > 1,
+    return NextResponse.json(
+      {
+        testimonials: testimonials || [],
+        pagination: {
+          total: count || 0,
+          page,
+          limit,
+          total_pages: totalPages,
+          has_next_page: page < totalPages,
+          has_prev_page: page > 1,
+        },
+        filters: {
+          product_id: filters.product_id,
+          rating: filters.rating,
+          featured: filters.featured,
+          sort_by: filters.sort_by,
+          sort_order: filters.sort_order,
+        },
       },
-      filters: {
-        product_id: filters.product_id,
-        rating: filters.rating,
-        featured: filters.featured,
-        sort_by: filters.sort_by,
-        sort_order: filters.sort_order,
-      },
-    });
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=60',
+        },
+      }
+    );
   } catch (error) {
     console.error('Unexpected error in fetch testimonials:', error);
     return NextResponse.json(

@@ -119,12 +119,19 @@ export async function GET() {
       {} as Record<string, any>
     )
 
-    return NextResponse.json({
-      measurementRanges: measurementRangesObj,
-      pricing: pricingObj,
-      rules: rulesObj,
-      settings: settingsObj,
-    })
+    return NextResponse.json(
+      {
+        measurementRanges: measurementRangesObj,
+        pricing: pricingObj,
+        rules: rulesObj,
+        settings: settingsObj,
+      },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=300',
+        },
+      }
+    )
   } catch (error) {
     console.error('Error fetching configurator settings:', error)
     return NextResponse.json(

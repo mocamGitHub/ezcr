@@ -44,7 +44,14 @@ export async function GET() {
       priority: data.priority,
     }
 
-    return NextResponse.json({ config })
+    return NextResponse.json(
+      { config },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=30',
+        },
+      }
+    )
   } catch {
     // Return null to use defaults if there's any error
     return NextResponse.json({ config: null })

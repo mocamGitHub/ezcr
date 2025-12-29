@@ -3,6 +3,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ShoppingCart } from 'lucide-react'
@@ -17,6 +18,8 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const { addItem } = useCart()
+  const router = useRouter()
+  const productUrl = `/products/${product.slug}`
   const isOutOfStock = product.inventory_count <= 0
   const isLowStock = product.inventory_count > 0 && product.inventory_count <= 5
   const isComingSoon = product.coming_soon
@@ -26,9 +29,12 @@ export function ProductCard({ product }: ProductCardProps) {
   const primaryImage = product.product_images?.find(img => img.is_primary) || product.product_images?.[0]
 
   return (
-    <div className="group relative border rounded-lg overflow-hidden hover:shadow-lg transition-shadow bg-background flex flex-col h-full">
+    <div
+      className="group relative border rounded-lg overflow-hidden hover:shadow-lg transition-shadow bg-background flex flex-col h-full"
+      onMouseEnter={() => router.prefetch(productUrl)}
+    >
       {/* Image */}
-      <Link href={`/products/${product.slug}`}>
+      <Link href={productUrl}>
         <div className="aspect-[4/3] relative bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
           {primaryImage ? (
             <Image
@@ -84,7 +90,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
       {/* Content */}
       <div className="p-6 text-center flex flex-col flex-1">
-        <Link href={`/products/${product.slug}`}>
+        <Link href={productUrl}>
           <h3 className="font-semibold text-lg mb-2 hover:text-[#F78309] transition-colors line-clamp-2">
             {product.name}
           </h3>
@@ -110,7 +116,7 @@ export function ProductCard({ product }: ProductCardProps) {
         {/* Actions - Always at bottom */}
         <div className="flex gap-2 mt-auto">
           <Button asChild className="flex-1 bg-[#0B5394] hover:bg-[#0B5394]/90">
-            <Link href={`/products/${product.slug}`}>
+            <Link href={productUrl}>
               View Details
             </Link>
           </Button>
