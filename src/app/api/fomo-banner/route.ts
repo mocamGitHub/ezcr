@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { requireRole, ROLE_GROUPS } from '@/lib/auth/api-auth'
 
 export async function GET() {
   try {
@@ -51,13 +52,16 @@ export async function GET() {
 }
 
 // POST endpoint for admin to create/update FOMO banners
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  // Require admin role
+  const authResult = await requireRole(request, ROLE_GROUPS.ADMIN_ROLES)
+  if ('error' in authResult) {
+    return NextResponse.json(authResult.error, { status: authResult.status })
+  }
+
   try {
     const supabase = await createClient()
     const body = await request.json()
-
-    // Verify user is admin (you'd add proper auth check here)
-    // For now, just insert/update the banner
 
     const { data, error } = await supabase
       .from('fomo_banners')
