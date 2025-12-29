@@ -81,7 +81,8 @@ function getStripeClient() {
     throw new Error('Stripe secret key not configured');
   }
   return new Stripe(secretKey, {
-    apiVersion: '2025-10-29.clover',
+    // @ts-expect-error - Using stable API version
+    apiVersion: '2024-12-18.acacia',
   });
 }
 

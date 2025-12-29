@@ -93,8 +93,8 @@ export function CustomerTable({
   const headerClass = "px-4 py-3 font-medium text-sm cursor-pointer hover:bg-muted/70 transition-colors select-none"
 
   return (
-    <div className="border rounded-lg overflow-hidden">
-      <table className="w-full">
+    <div className="border rounded-lg overflow-x-auto">
+      <table className="w-full min-w-[600px] lg:min-w-0">
         <thead className="bg-muted/50 border-b">
           <tr>
             <th
@@ -108,7 +108,7 @@ export function CustomerTable({
             </th>
             {showHealthScore && (
               <th
-                className={`text-left ${headerClass}`}
+                className={`text-left ${headerClass} hidden sm:table-cell`}
                 onClick={() => onSortChange('health_score')}
               >
                 <div className="flex items-center">
@@ -117,27 +117,29 @@ export function CustomerTable({
                 </div>
               </th>
             )}
-            <th className="text-left px-4 py-3 font-medium text-sm">Tags</th>
+            <th className="text-left px-4 py-3 font-medium text-sm hidden lg:table-cell">Tags</th>
             <th
               className={`text-right ${headerClass}`}
               onClick={() => onSortChange('order_count')}
             >
               <div className="flex items-center justify-end">
-                Orders
+                <span className="hidden sm:inline">Orders</span>
+                <span className="sm:hidden">#</span>
                 <SortIcon column="order_count" />
               </div>
             </th>
             <th
-              className={`text-right ${headerClass}`}
+              className={`text-right ${headerClass} hidden md:table-cell`}
               onClick={() => onSortChange('lifetime_value')}
             >
               <div className="flex items-center justify-end">
-                Lifetime Value
+                <span className="hidden lg:inline">Lifetime Value</span>
+                <span className="lg:hidden">LTV</span>
                 <SortIcon column="lifetime_value" />
               </div>
             </th>
             <th
-              className={`text-left ${headerClass}`}
+              className={`text-left ${headerClass} hidden lg:table-cell`}
               onClick={() => onSortChange('last_order_date')}
             >
               <div className="flex items-center">
@@ -150,7 +152,8 @@ export function CustomerTable({
               onClick={() => onSortChange('open_task_count')}
             >
               <div className="flex items-center justify-center">
-                Tasks
+                <span className="hidden sm:inline">Tasks</span>
+                <span className="sm:hidden">T</span>
                 <SortIcon column="open_task_count" />
               </div>
             </th>
@@ -175,27 +178,33 @@ export function CustomerTable({
               <td className="px-4 py-4 sm:py-3">
                 <div>
                   <div className="font-medium">{customer.name || 'Unknown'}</div>
-                  <div className="text-sm text-muted-foreground">{customer.customer_email}</div>
+                  <div className="text-sm text-muted-foreground truncate max-w-[200px]">{customer.customer_email}</div>
                   {customer.phone && (
-                    <div className="text-sm text-muted-foreground">{customer.phone}</div>
+                    <div className="text-sm text-muted-foreground hidden sm:block">{customer.phone}</div>
+                  )}
+                  {/* Show health score inline on mobile */}
+                  {showHealthScore && (
+                    <div className="sm:hidden mt-1">
+                      <HealthScoreBadge score={customer.health_score ?? 0} />
+                    </div>
                   )}
                 </div>
               </td>
               {showHealthScore && (
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 hidden sm:table-cell">
                   <HealthScoreBadge score={customer.health_score ?? 0} />
                 </td>
               )}
-              <td className="px-4 py-3">
+              <td className="px-4 py-3 hidden lg:table-cell">
                 <CustomerTagBadges tags={customer.tags || []} />
               </td>
               <td className="px-4 py-3 text-right font-medium">
                 {customer.order_count}
               </td>
-              <td className="px-4 py-3 text-right font-medium">
+              <td className="px-4 py-3 text-right font-medium hidden md:table-cell">
                 {formatCurrency(customer.lifetime_value)}
               </td>
-              <td className="px-4 py-3 text-sm text-muted-foreground">
+              <td className="px-4 py-3 text-sm text-muted-foreground hidden lg:table-cell">
                 {customer.last_order_date
                   ? new Date(customer.last_order_date).toLocaleDateString('en-US', {
                       year: 'numeric',

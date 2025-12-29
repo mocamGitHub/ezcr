@@ -43,6 +43,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useAuth } from '@/contexts/AuthContext'
 import { type FOMOBannerConfig, DEFAULT_CONFIGS } from '@/components/marketing/FOMOBanner'
 
@@ -88,6 +89,8 @@ export default function FOMOManagementPage() {
   const [editingBanner, setEditingBanner] = useState<FOMOBannerConfig | null>(null)
   const [showDialog, setShowDialog] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [bannerToDelete, setBannerToDelete] = useState<FOMOBannerConfig | null>(null)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   // Load banners
   useEffect(() => {
@@ -126,19 +129,27 @@ export default function FOMOManagementPage() {
     setShowDialog(true)
   }
 
-  const handleDelete = async (bannerId: string) => {
-    if (!confirm('Are you sure you want to delete this banner?')) return
+  const handleDeleteClick = (banner: FOMOBannerConfig) => {
+    setBannerToDelete(banner)
+    setShowDeleteDialog(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!bannerToDelete) return
 
     try {
-      const response = await fetch(`/api/admin/fomo-banners?id=${bannerId}`, {
+      const response = await fetch(`/api/admin/fomo-banners?id=${bannerToDelete.id}`, {
         method: 'DELETE',
       })
       if (response.ok) {
-        setBanners(banners.filter((b) => b.id !== bannerId))
+        setBanners(banners.filter((b) => b.id !== bannerToDelete.id))
       }
     } catch (err) {
       console.error('Error deleting banner:', err)
       setError('Failed to delete banner')
+    } finally {
+      setBannerToDelete(null)
+      setShowDeleteDialog(false)
     }
   }
 
@@ -310,7 +321,7 @@ export default function FOMOManagementPage() {
                       variant="ghost"
                       size="icon"
                       className="text-destructive hover:text-destructive"
-                      onClick={() => handleDelete(banner.id)}
+                      onClick={() => handleDeleteClick(banner)}
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -637,6 +648,17 @@ export default function FOMOManagementPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        title="Delete Banner"
+        description={`Are you sure you want to delete this ${bannerToDelete?.type || ''} banner? This action cannot be undone.`}
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={handleDeleteConfirm}
+      />
     </div>
   )
 }

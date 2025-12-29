@@ -59,20 +59,35 @@ export function InventoryTable({ products, loading, onRefresh }: InventoryTableP
     return <InventoryTableSkeleton />
   }
 
+  if (products.length === 0) {
+    return (
+      <div className="border rounded-lg p-12 text-center">
+        <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
+          <PackagePlus className="h-6 w-6 text-muted-foreground" />
+        </div>
+        <h3 className="font-medium text-lg mb-1">No products found</h3>
+        <p className="text-muted-foreground text-sm">
+          There are no products matching your current filters.
+        </p>
+      </div>
+    )
+  }
+
   return (
     <>
-      <div className="border rounded-lg overflow-hidden">
+      {/* Responsive: horizontal scroll on mobile, hide non-essential columns */}
+      <div className="border rounded-lg overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Product</TableHead>
-              <TableHead>SKU</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead className="text-right">Current Stock</TableHead>
-              <TableHead className="text-right">Threshold</TableHead>
+              <TableHead className="hidden sm:table-cell">SKU</TableHead>
+              <TableHead className="hidden lg:table-cell">Category</TableHead>
+              <TableHead className="text-right">Stock</TableHead>
+              <TableHead className="text-right hidden md:table-cell">Threshold</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="text-right">Unit Price</TableHead>
-              <TableHead className="text-right">Total Value</TableHead>
+              <TableHead className="text-right hidden lg:table-cell">Unit Price</TableHead>
+              <TableHead className="text-right hidden md:table-cell">Total Value</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -85,7 +100,11 @@ export function InventoryTable({ products, loading, onRefresh }: InventoryTableP
                 <TableRow key={product.id}>
                   <TableCell className="font-medium">
                     <div className="flex flex-col">
-                      <span>{product.name}</span>
+                      <span className="line-clamp-1">{product.name}</span>
+                      {/* Show SKU on mobile since column is hidden */}
+                      <span className="text-xs text-muted-foreground font-mono sm:hidden">
+                        {product.sku}
+                      </span>
                       {!product.is_active && (
                         <Badge variant="outline" className="w-fit mt-1 text-xs">
                           Inactive
@@ -93,10 +112,10 @@ export function InventoryTable({ products, loading, onRefresh }: InventoryTableP
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="font-mono text-sm">
+                  <TableCell className="font-mono text-sm hidden sm:table-cell">
                     {product.sku}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden lg:table-cell">
                     {product.product_categories?.name || (
                       <span className="text-muted-foreground">Uncategorized</span>
                     )}
@@ -112,19 +131,21 @@ export function InventoryTable({ products, loading, onRefresh }: InventoryTableP
                       {product.inventory_count}
                     </span>
                   </TableCell>
-                  <TableCell className="text-right text-muted-foreground">
+                  <TableCell className="text-right text-muted-foreground hidden md:table-cell">
                     {product.low_stock_threshold}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={status.variant} className={`flex items-center gap-1 w-fit ${status.className || ''}`}>
+                    <Badge variant={status.variant} className={`flex items-center gap-1 w-fit whitespace-nowrap ${status.className || ''}`}>
                       {status.icon && <status.icon className="h-3 w-3" />}
-                      {status.label}
+                      <span className="hidden sm:inline">{status.label}</span>
+                      {/* Short label on mobile */}
+                      <span className="sm:hidden">{status.label === 'Out of Stock' ? 'OOS' : status.label === 'Low Stock' ? 'Low' : 'OK'}</span>
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right hidden lg:table-cell">
                     ${product.base_price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </TableCell>
-                  <TableCell className="text-right font-medium">
+                  <TableCell className="text-right font-medium hidden md:table-cell">
                     ${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </TableCell>
                   <TableCell className="text-right">

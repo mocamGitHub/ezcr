@@ -24,7 +24,8 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
-import { RefreshCw, Search, Eye, Package, DollarSign, Clock, CheckSquare, Truck, XCircle, Download } from 'lucide-react'
+import { RefreshCw, Search, Eye, Package, DollarSign, Clock, CheckSquare, Truck, XCircle, Download, ShoppingCart } from 'lucide-react'
+import { EmptyStateInline } from '@/components/ui/empty-state'
 import { formatDistanceToNow } from 'date-fns'
 import { toast } from 'sonner'
 import { exportToCSV, orderColumns, getExportFilename } from '@/lib/utils/export'
@@ -811,11 +812,11 @@ export default function AdminOrdersPage() {
                 </TableCell>
               </TableRow>
             ) : sortedOrders.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                  No orders found
-                </TableCell>
-              </TableRow>
+              <EmptyStateInline
+                colSpan={8}
+                icon={ShoppingCart}
+                message="No orders found matching your filters"
+              />
             ) : (
               sortedOrders.map((order) => (
                 <TableRow

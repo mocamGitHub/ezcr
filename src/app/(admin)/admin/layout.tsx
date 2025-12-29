@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { AdminLayout } from '@/components/admin/AdminLayout'
 import { GlobalSearch } from '@/components/search/GlobalSearch'
+import { KeyboardShortcutsModal } from '@/components/admin/KeyboardShortcutsModal'
 
 export default function AdminRootLayout({
   children,
@@ -21,6 +22,7 @@ export default function AdminRootLayout({
     <AdminLayout>
       {children}
       <GlobalSearch />
+      <KeyboardShortcutsModal />
     </AdminLayout>
   )
 }
