@@ -48,7 +48,27 @@ export default function InboxPage() {
         channel: channelFilter,
         status: statusFilter,
       })
-      setConversations(data)
+      // Transform API response to match component's expected type
+      const transformed = data.map((conv: any) => {
+        const contact = conv.comms_contacts?.[0] ?? null
+        return {
+          id: conv.id,
+          channel: conv.channel,
+          subject: conv.subject,
+          status: conv.status,
+          created_at: conv.created_at,
+          updated_at: conv.updated_at,
+          contact: contact ? {
+            id: contact.id,
+            email: contact.email,
+            phone_e164: contact.phone_e164,
+            display_name: contact.display_name,
+          } : null,
+          message_count: conv.message_count ?? 0,
+          last_message: conv.last_message,
+        }
+      })
+      setConversations(transformed)
     } catch (error) {
       console.error('Error fetching conversations:', error)
     } finally {

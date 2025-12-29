@@ -186,7 +186,7 @@ export function GlobalSearch({ onSelect }: GlobalSearchProps) {
           <div className="max-h-80 overflow-y-auto py-2">
             {results.length === 0 && query && (
               <div className="px-4 py-8 text-center text-muted-foreground">
-                No results found for "{query}"
+                No results found for &quot;{query}&quot;
               </div>
             )}
 

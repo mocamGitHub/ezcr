@@ -23,5 +23,5 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "docs", "ezcycleramp-shipping"]
+  "exclude": ["node_modules", "docs", "documents", "ezcycleramp-shipping", ".nexcyte", ".dropin", "tools", "scripts"]
 }

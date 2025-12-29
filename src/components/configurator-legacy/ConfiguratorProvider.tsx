@@ -75,7 +75,7 @@ interface ConfiguratorContextType {
 
   // Quote actions
   executeEmailQuote: () => Promise<{ success: boolean; message: string }>
-  executePrintQuote: () => { success: boolean; message: string }
+  executePrintQuote: () => Promise<{ success: boolean; message: string }>
 
   // Conversion helpers
   convertToInches: (value: number) => number

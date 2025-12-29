@@ -81,8 +81,8 @@ async function maybeUploadAttachment(args: {
   }
 }
 
-export async function POST(req: Request, { params }: { params: { secret: string } }) {
-  const secret = params.secret;
+export async function POST(req: Request, { params }: { params: Promise<{ secret: string }> }) {
+  const { secret } = await params;
   const supabase = createSupabaseAdmin();
 
   // Resolve inbound route -> tenant

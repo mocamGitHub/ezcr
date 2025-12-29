@@ -123,13 +123,6 @@ export default function AdminOrdersPage() {
       const { data, error } = await query
 
       if (error) throw error
-      // Debug: log first order with phone
-      const orderWithPhone = data?.find(o => o.customer_phone)
-      if (orderWithPhone) {
-        console.log('Order with phone:', orderWithPhone.customer_email, orderWithPhone.customer_phone)
-      } else {
-        console.log('No orders with customer_phone found. Sample order keys:', data?.[0] ? Object.keys(data[0]) : 'no data')
-      }
       setOrders(data || [])
     } catch (err) {
       console.error('Error fetching orders:', err)

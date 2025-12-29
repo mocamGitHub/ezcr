@@ -824,13 +824,13 @@ export function OrderDetailSlideOut({
                     </p>
                     {order_.configuration.motorcycle && (
                       <div className="text-muted-foreground space-y-0.5">
-                        {order_.configuration.motorcycle.wheelbase > 0 && (
+                        {(order_.configuration.motorcycle.wheelbase ?? 0) > 0 && (
                           <p>Wheelbase: {order_.configuration.motorcycle.wheelbase}&quot;</p>
                         )}
-                        {order_.configuration.motorcycle.length > 0 && (
+                        {(order_.configuration.motorcycle.length ?? 0) > 0 && (
                           <p>Total Length: {order_.configuration.motorcycle.length}&quot;</p>
                         )}
-                        {order_.configuration.motorcycle.weight > 0 && (
+                        {(order_.configuration.motorcycle.weight ?? 0) > 0 && (
                           <p>Weight: {order_.configuration.motorcycle.weight} lbs</p>
                         )}
                       </div>

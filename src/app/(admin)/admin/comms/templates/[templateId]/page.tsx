@@ -37,7 +37,7 @@ type TemplateVersion = {
 export default function TemplateDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const templateId = params.templateId as string
+  const templateId = params?.templateId as string
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)

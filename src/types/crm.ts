@@ -118,7 +118,7 @@ export interface CustomerListFilters {
 }
 
 export interface CustomerListSortOptions {
-  field: 'name' | 'lifetime_value' | 'order_count' | 'last_order_date' | 'health_score'
+  field: 'name' | 'lifetime_value' | 'order_count' | 'last_order_date' | 'health_score' | 'open_task_count'
   direction: 'asc' | 'desc'
 }
 

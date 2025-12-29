@@ -75,12 +75,13 @@ export function ContactModal() {
       })
     } else if (pendingAction === 'print') {
       // Automatically generate PDF
-      const result = executePrintQuote()
-      if (result.success) {
-        showToast(result.message, 'success', 'PDF Quote Generated!')
-      } else {
-        showToast(result.message, 'error', 'Failed to Generate PDF')
-      }
+      executePrintQuote().then((result) => {
+        if (result.success) {
+          showToast(result.message, 'success', 'PDF Quote Generated!')
+        } else {
+          showToast(result.message, 'error', 'Failed to Generate PDF')
+        }
+      })
     }
 
     setPendingAction(null)

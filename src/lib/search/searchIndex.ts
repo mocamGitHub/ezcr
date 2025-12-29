@@ -3,7 +3,7 @@
  * Uses Fuse.js for fuzzy search with browser-side caching
  */
 
-import Fuse from 'fuse.js'
+import Fuse, { FuseResultMatch, IFuseOptions } from 'fuse.js'
 
 export interface SearchableItem {
   id: string
@@ -18,11 +18,11 @@ export interface SearchableItem {
 export interface SearchResult {
   item: SearchableItem
   score: number
-  matches?: readonly Fuse.FuseResultMatch[]
+  matches?: readonly FuseResultMatch[]
 }
 
 // Fuse.js options for fuzzy matching
-const fuseOptions: Fuse.IFuseOptions<SearchableItem> = {
+const fuseOptions: IFuseOptions<SearchableItem> = {
   keys: [
     { name: 'title', weight: 0.4 },
     { name: 'subtitle', weight: 0.3 },

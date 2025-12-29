@@ -346,6 +346,7 @@ export async function getToolStats(): Promise<{
     inactive: 0,
     trial: 0,
     cancelled: 0,
+    expired: 0,
   }
 
   let totalMonthlyCost = 0

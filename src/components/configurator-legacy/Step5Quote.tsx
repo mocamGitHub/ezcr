@@ -193,14 +193,14 @@ export function Step5Quote() {
     }
   }
 
-  const handlePrintQuote = () => {
+  const handlePrintQuote = async () => {
     if (!hasContactInfo) {
       setPendingAction('print')
       setShowContactModal(true)
       return
     }
 
-    const result = executePrintQuote()
+    const result = await executePrintQuote()
     if (result.success) {
       showToast('Check your downloads folder for the PDF', 'success', 'PDF Quote Generated!')
     } else {

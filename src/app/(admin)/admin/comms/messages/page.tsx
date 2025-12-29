@@ -33,10 +33,10 @@ export default function MessagesPage() {
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(true)
   const [messages, setMessages] = useState<Message[]>([])
-  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '')
+  const [searchQuery, setSearchQuery] = useState(searchParams?.get('search') || '')
   const [channelFilter, setChannelFilter] = useState<string>('all')
   const [directionFilter, setDirectionFilter] = useState<string>('all')
-  const [statusFilter, setStatusFilter] = useState<string>(searchParams.get('status') || 'all')
+  const [statusFilter, setStatusFilter] = useState<string>(searchParams?.get('status') || 'all')
 
   const fetchData = async () => {
     setLoading(true)

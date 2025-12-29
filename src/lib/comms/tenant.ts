@@ -10,9 +10,9 @@ export type TenantContext = { tenantId: string };
  *
  * Production: inject x-nc-tenant-id via middleware based on hostname/subdomain.
  */
-export function requireTenant(): TenantContext {
-  const h = headers();
-  const c = cookies();
+export async function requireTenant(): Promise<TenantContext> {
+  const h = await headers();
+  const c = await cookies();
 
   const fromHeader = h.get("x-nc-tenant-id")?.trim();
   if (fromHeader) return { tenantId: fromHeader };

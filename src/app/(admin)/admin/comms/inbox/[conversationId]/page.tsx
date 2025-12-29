@@ -34,7 +34,7 @@ type Conversation = {
 
 export default function ConversationDetailPage() {
   const params = useParams()
-  const conversationId = params.conversationId as string
+  const conversationId = params?.conversationId as string
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const [loading, setLoading] = useState(true)
@@ -47,7 +47,21 @@ export default function ConversationDetailPage() {
     setLoading(true)
     try {
       const data = await getConversation(conversationId)
-      setConversation(data.conversation)
+      // Transform API response to match component's expected type
+      const conv = data.conversation
+      const contact = conv.comms_contacts?.[0] ?? null
+      setConversation({
+        id: conv.id,
+        channel: conv.channel,
+        subject: conv.subject,
+        status: conv.status,
+        contact: contact ? {
+          id: contact.id,
+          email: contact.email,
+          phone_e164: contact.phone_e164,
+          display_name: contact.display_name,
+        } : null,
+      })
       setMessages(data.messages)
     } catch (error) {
       console.error('Error fetching conversation:', error)

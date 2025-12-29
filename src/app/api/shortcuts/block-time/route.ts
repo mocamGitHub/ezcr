@@ -77,9 +77,9 @@ export async function POST(request: NextRequest) {
         .select()
         .single()
 
-      if (subError) {
+      if (subError || !newSub) {
         return NextResponse.json(
-          { error: `Failed to create block container: ${subError.message}` },
+          { error: `Failed to create block container: ${subError?.message ?? 'Unknown error'}` },
           { status: 500 }
         )
       }
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
     const { data: block, error: blockError } = await supabase
       .from('nx_external_calendar_event')
       .insert({
-        subscription_id: subscription.id,
+        subscription_id: subscription!.id,
         tenant_id: token.tenantId,
         external_uid: `block-${blockId}`,
         title: title || 'Blocked Time',

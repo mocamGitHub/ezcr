@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
         // Deduct inventory for order items
         const { data: orderItems, error: itemsError } = await supabaseAdmin
           .from('order_items')
-          .select('id, product_id, variant_id, quantity, tenant_id')
+          .select('id, product_id, variant_id, quantity, tenant_id, product_name, product_sku, unit_price, total_price')
           .eq('order_id', orderId)
 
         if (itemsError) {

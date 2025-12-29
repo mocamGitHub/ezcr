@@ -24,7 +24,7 @@ export default function ShortcutsPage() {
         <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
           <li>Create a token with the permissions you need</li>
           <li>Copy the token (it will only be shown once)</li>
-          <li>In Shortcuts app, use "Get Contents of URL" action</li>
+          <li>In Shortcuts app, use &quot;Get Contents of URL&quot; action</li>
           <li>Set the Authorization header to: Bearer YOUR_TOKEN</li>
           <li>Call the API endpoints below</li>
         </ol>
@@ -34,7 +34,7 @@ export default function ShortcutsPage() {
           <div>
             <span className="text-blue-600">GET</span>{' '}
             <span>/api/shortcuts/today</span>
-            <span className="text-muted-foreground ml-2">- Get today's schedule</span>
+            <span className="text-muted-foreground ml-2">- Get today&apos;s schedule</span>
           </div>
           <div>
             <span className="text-green-600">POST</span>{' '}

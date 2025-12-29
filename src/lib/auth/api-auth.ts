@@ -117,7 +117,7 @@ export function hasRole(user: AuthUser, allowedRoles: string[]): boolean {
  */
 export async function requireAuth(
   request: NextRequest
-): Promise<{ user: AuthUser; error?: never } | { error: any; status: number; user?: never }> {
+): Promise<{ user: AuthUser } | { error: unknown; status: number }> {
   const authResult = await authenticateRequest(request)
 
   if (!authResult.authenticated || !authResult.user) {
@@ -137,7 +137,7 @@ export async function requireAuth(
 export async function requireRole(
   request: NextRequest,
   allowedRoles: string[]
-): Promise<{ user: AuthUser; error?: never } | { error: any; status: number; user?: never }> {
+): Promise<{ user: AuthUser } | { error: unknown; status: number }> {
   const authResult = await requireAuth(request)
 
   if ('error' in authResult) {
