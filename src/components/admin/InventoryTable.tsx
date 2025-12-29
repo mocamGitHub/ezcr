@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { InventoryTableSkeleton } from '@/components/ui/table-skeleton'
 import { Edit, History, PackagePlus, PackageMinus, AlertTriangle } from 'lucide-react'
 import { InventoryAdjustmentDialog } from './InventoryAdjustmentDialog'
 
@@ -55,14 +56,7 @@ export function InventoryTable({ products, loading, onRefresh }: InventoryTableP
   }
 
   if (loading) {
-    return (
-      <div className="border rounded-lg">
-        <div className="p-8 text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" />
-          <p className="mt-4 text-muted-foreground">Loading inventory...</p>
-        </div>
-      </div>
-    )
+    return <InventoryTableSkeleton />
   }
 
   return (

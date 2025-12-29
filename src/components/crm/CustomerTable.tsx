@@ -5,6 +5,7 @@ import type { CustomerProfile } from '@/types/crm'
 import { formatCurrency } from '@/lib/utils'
 import { HealthScoreBadge } from './HealthScoreBadge'
 import { CustomerTagBadges } from './CustomerTagBadges'
+import { CustomerTableSkeleton } from '@/components/ui/table-skeleton'
 import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 
 export type SortField = 'name' | 'health_score' | 'order_count' | 'lifetime_value' | 'last_order_date' | 'open_task_count'
@@ -78,16 +79,7 @@ export function CustomerTable({
   }, [customers, sortBy, sortOrder])
 
   if (loading) {
-    return (
-      <div className="border rounded-lg overflow-hidden">
-        <div className="animate-pulse">
-          <div className="h-12 bg-muted"></div>
-          {Array.from({ length: 10 }).map((_, i) => (
-            <div key={i} className="h-16 border-t bg-card"></div>
-          ))}
-        </div>
-      </div>
-    )
+    return <CustomerTableSkeleton />
   }
 
   if (customers.length === 0) {
