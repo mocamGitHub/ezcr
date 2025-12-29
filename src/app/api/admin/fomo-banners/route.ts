@@ -1,13 +1,17 @@
-import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { authenticateAdmin } from '@/lib/auth/api-auth'
 
 // GET all FOMO banners for admin management
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    const { supabase, error: authError } = await authenticateAdmin(request)
+
+    if (authError) {
+      return NextResponse.json({ error: authError.message }, { status: authError.status })
+    }
 
     // Fetch ALL banners for admin (no filtering by enabled/dates)
-    const { data, error } = await supabase
+    const { data, error } = await supabase!
       .from('fomo_banners')
       .select('*')
       .order('priority', { ascending: true })
@@ -47,12 +51,17 @@ export async function GET() {
 }
 
 // POST - Create new banner
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    const { supabase, error: authError } = await authenticateAdmin(request)
+
+    if (authError) {
+      return NextResponse.json({ error: authError.message }, { status: authError.status })
+    }
+
     const body = await request.json()
 
-    const { data, error } = await supabase
+    const { data, error } = await supabase!
       .from('fomo_banners')
       .insert({
         enabled: body.enabled ?? true,
@@ -88,16 +97,21 @@ export async function POST(request: Request) {
 }
 
 // PUT - Update existing banner
-export async function PUT(request: Request) {
+export async function PUT(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    const { supabase, error: authError } = await authenticateAdmin(request)
+
+    if (authError) {
+      return NextResponse.json({ error: authError.message }, { status: authError.status })
+    }
+
     const body = await request.json()
 
     if (!body.id) {
       return NextResponse.json({ error: 'Banner ID is required' }, { status: 400 })
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabase!
       .from('fomo_banners')
       .update({
         enabled: body.enabled,
@@ -134,9 +148,14 @@ export async function PUT(request: Request) {
 }
 
 // DELETE - Remove banner
-export async function DELETE(request: Request) {
+export async function DELETE(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    const { supabase, error: authError } = await authenticateAdmin(request)
+
+    if (authError) {
+      return NextResponse.json({ error: authError.message }, { status: authError.status })
+    }
+
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 
@@ -144,7 +163,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'Banner ID is required' }, { status: 400 })
     }
 
-    const { error } = await supabase
+    const { error } = await supabase!
       .from('fomo_banners')
       .delete()
       .eq('id', id)
