@@ -662,11 +662,11 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
   }
 
   // Execute print quote action
-  const executePrintQuote = (): { success: boolean; message: string } => {
+  const executePrintQuote = async (): Promise<{ success: boolean; message: string }> => {
     try {
       const { subtotal, salesTax, processingFee, total } = calculateTotals()
 
-      generateQuotePDF({
+      await generateQuotePDF({
         contact: {
           firstName: configData.contact.firstName || '',
           lastName: configData.contact.lastName || '',

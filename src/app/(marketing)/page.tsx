@@ -1,4 +1,5 @@
 // src/app/(marketing)/page.tsx
+import { Suspense } from 'react'
 import {
   HeroSlider,
   ProductShowcase,
@@ -8,6 +9,7 @@ import {
   CTASection,
 } from '@/components/marketing/HomePageClient'
 import { FeaturedProducts } from '@/components/products/FeaturedProducts'
+import { FeaturedProductsSkeleton } from '@/components/products/FeaturedProductsSkeleton'
 import { ComparisonTable } from '@/components/marketing/ComparisonTable'
 import { QuickConfigurator } from '@/components/marketing/QuickConfigurator'
 import { BlogPreview } from '@/components/blog/BlogPreview'
@@ -29,7 +31,9 @@ export default function HomePage() {
       <QuickConfigurator />
 
       {/* Featured Products - from database */}
-      <FeaturedProducts />
+      <Suspense fallback={<FeaturedProductsSkeleton />}>
+        <FeaturedProducts />
+      </Suspense>
 
       {/* Comparison Table */}
       <ComparisonTable />
