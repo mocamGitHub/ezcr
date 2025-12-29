@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth } from '@/lib/auth/api-auth'
 import { getTenantId } from '@/lib/tenant'
+import { withRateLimit, RATE_LIMITS } from '@/lib/rate-limit'
 
 /**
  * GET /api/search
@@ -9,6 +10,12 @@ import { getTenantId } from '@/lib/tenant'
  * Query: q (search term), type (optional filter), limit (default 50)
  */
 export async function GET(request: NextRequest) {
+  // Rate limit: 30 requests per minute for search endpoints
+  const rateLimit = withRateLimit(request, RATE_LIMITS.search)
+  if (rateLimit.limited) {
+    return rateLimit.response
+  }
+
   try {
     const authResult = await requireAuth(request)
     if ('error' in authResult) {

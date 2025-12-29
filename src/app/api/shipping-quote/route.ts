@@ -21,6 +21,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { withRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 // ============================================
 // CONFIGURATION
@@ -638,6 +639,12 @@ async function logError(
 // ============================================
 
 export async function POST(req: NextRequest) {
+  // Rate limit: 60 requests per minute for standard endpoints
+  const rateLimit = withRateLimit(req, RATE_LIMITS.standard);
+  if (rateLimit.limited) {
+    return rateLimit.response;
+  }
+
   const supabase = getSupabaseClient();
 
   try {

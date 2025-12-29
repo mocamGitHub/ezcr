@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { withRateLimit, RATE_LIMITS } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
@@ -8,6 +9,12 @@ export const dynamic = 'force-dynamic'
  * Helps users through the configuration process conversationally
  */
 export async function POST(request: Request) {
+  // Rate limit: 20 requests per minute for AI endpoints
+  const rateLimit = withRateLimit(request, RATE_LIMITS.ai)
+  if (rateLimit.limited) {
+    return rateLimit.response
+  }
+
   try {
     const { messages, configurationContext } = await request.json()
 

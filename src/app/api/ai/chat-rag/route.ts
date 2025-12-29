@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentTenant } from '@/lib/tenant'
 import { NextResponse } from 'next/server'
+import { withRateLimit, RATE_LIMITS } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,6 +11,12 @@ export const dynamic = 'force-dynamic'
  * Can answer any business-related questions using vector similarity search
  */
 export async function POST(request: Request) {
+  // Rate limit: 20 requests per minute for AI endpoints
+  const rateLimit = withRateLimit(request, RATE_LIMITS.ai)
+  if (rateLimit.limited) {
+    return rateLimit.response
+  }
+
   try {
     const { messages, sessionId, context } = await request.json()
 

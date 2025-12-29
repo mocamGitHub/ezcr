@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 import { sendNewTestimonialNotification } from '@/lib/email/admin-notifications';
+import { withRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 // =====================================================
 // VALIDATION SCHEMA
@@ -30,6 +31,12 @@ interface SubmitTestimonialRequest {
 // =====================================================
 
 export async function POST(request: NextRequest) {
+  // Rate limit: 5 requests per minute for submission endpoints
+  const rateLimit = withRateLimit(request, RATE_LIMITS.submission);
+  if (rateLimit.limited) {
+    return rateLimit.response;
+  }
+
   try {
     const supabase = await createClient();
 
