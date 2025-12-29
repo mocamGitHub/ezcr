@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { getCurrentTenant } from '@/lib/tenant'
 import { requireRole, ROLE_GROUPS } from '@/lib/auth/api-auth'
+import { inventoryAdjustSchema, validateRequest } from '@/lib/validations/api-schemas'
 
 /**
  * Manual Inventory Adjustment API
@@ -31,15 +32,24 @@ export async function POST(request: NextRequest) {
 
     const { user } = authResult
 
+    // Parse and validate request body
     const body = await request.json()
+    const validation = validateRequest(inventoryAdjustSchema, body)
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: validation.error.message, details: validation.error.details },
+        { status: 400 }
+      )
+    }
+
     const {
       productId,
       variantId,
       quantityChange,
-      transactionType = 'adjustment',
+      transactionType,
       reason,
       referenceId,
-    } = body
+    } = validation.data
 
     // Get tenant ID
     const tenantSlug = getCurrentTenant()
@@ -63,30 +73,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Unauthorized: User does not belong to this tenant' },
         { status: 403 }
-      )
-    }
-
-    // Validate required fields
-    if (!productId || quantityChange === undefined || quantityChange === 0) {
-      return NextResponse.json(
-        { error: 'Missing required fields: productId, quantityChange' },
-        { status: 400 }
-      )
-    }
-
-    if (!reason || reason.trim() === '') {
-      return NextResponse.json(
-        { error: 'Reason is required for inventory adjustments' },
-        { status: 400 }
-      )
-    }
-
-    // Validate transaction type
-    const validTypes = ['adjustment', 'restock', 'damage', 'initial']
-    if (!validTypes.includes(transactionType)) {
-      return NextResponse.json(
-        { error: `Invalid transaction type. Must be one of: ${validTypes.join(', ')}` },
-        { status: 400 }
       )
     }
 

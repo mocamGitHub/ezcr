@@ -1,5 +1,23 @@
 import type { NextConfig } from "next";
 
+// Content Security Policy
+// Note: 'unsafe-inline' for scripts is required for Next.js without nonce implementation
+// For stricter CSP, implement nonce-based script loading
+const ContentSecurityPolicy = `
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://maps.googleapis.com;
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+  img-src 'self' blob: data: https://*.supabase.co https://*.stripe.com https://maps.gstatic.com;
+  font-src 'self' https://fonts.gstatic.com;
+  connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://maps.googleapis.com;
+  frame-src 'self' https://js.stripe.com https://hooks.stripe.com;
+  object-src 'none';
+  base-uri 'self';
+  form-action 'self';
+  frame-ancestors 'none';
+  upgrade-insecure-requests;
+`.replace(/\s{2,}/g, ' ').trim();
+
 // Security headers for all routes
 const securityHeaders = [
   {
@@ -29,6 +47,10 @@ const securityHeaders = [
   {
     key: 'Permissions-Policy',
     value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+  },
+  {
+    key: 'Content-Security-Policy',
+    value: ContentSecurityPolicy,
   },
 ];
 

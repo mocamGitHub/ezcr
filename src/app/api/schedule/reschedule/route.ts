@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, ROLE_GROUPS } from '@/lib/auth/api-auth'
 import { getTenantId } from '@/lib/tenant'
 import { calcomFetchJson, getCalcomConfigFromEnv } from '@/scheduler/calcomServerClient'
+import { scheduleRescheduleSchema, validateRequest } from '@/lib/validations/api-schemas'
 
 /**
  * POST /api/schedule/reschedule
@@ -18,16 +19,17 @@ export async function POST(request: NextRequest) {
     }
     const { user } = authResult
 
-    // Parse request body
+    // Parse and validate request body
     const body = await request.json().catch(() => ({}))
-    const { bookingUid, newStart, reason } = body
-
-    if (!bookingUid || !newStart) {
+    const validation = validateRequest(scheduleRescheduleSchema, body)
+    if (!validation.success) {
       return NextResponse.json(
-        { error: 'Missing required fields: bookingUid, newStart' },
+        { error: validation.error.message, details: validation.error.details },
         { status: 400 }
       )
     }
+
+    const { bookingUid, newStart, reason } = validation.data
 
     const supabase = createServiceClient()
     const tenantId = await getTenantId()

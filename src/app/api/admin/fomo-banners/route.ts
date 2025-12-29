@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateAdmin } from '@/lib/auth/api-auth'
+import { fomoBannerCreateSchema, fomoBannerUpdateSchema, validateRequest } from '@/lib/validations/api-schemas'
 
 // GET all FOMO banners for admin management
 export async function GET(request: NextRequest) {
@@ -59,27 +60,37 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: authError.message }, { status: authError.status })
     }
 
+    // Parse and validate request body
     const body = await request.json()
+    const validation = validateRequest(fomoBannerCreateSchema, body)
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: validation.error.message, details: validation.error.details },
+        { status: 400 }
+      )
+    }
+
+    const validatedData = validation.data
 
     const { data, error } = await supabase!
       .from('fomo_banners')
       .insert({
-        enabled: body.enabled ?? true,
-        type: body.type,
-        message: body.message,
-        end_date: body.endDate,
-        stock_count: body.stockCount,
-        stock_threshold: body.stockThreshold,
-        recent_purchases: body.recentPurchases,
-        visitor_count: body.visitorCount,
-        background_color: body.backgroundColor,
-        text_color: body.textColor,
-        accent_color: body.accentColor,
-        position: body.position || 'top',
-        dismissible: body.dismissible ?? true,
-        show_icon: body.showIcon ?? true,
-        start_date: body.startDate || new Date().toISOString(),
-        priority: body.priority || 1,
+        enabled: validatedData.enabled,
+        type: validatedData.type,
+        message: validatedData.message,
+        end_date: validatedData.endDate,
+        stock_count: validatedData.stockCount,
+        stock_threshold: validatedData.stockThreshold,
+        recent_purchases: validatedData.recentPurchases,
+        visitor_count: validatedData.visitorCount,
+        background_color: validatedData.backgroundColor,
+        text_color: validatedData.textColor,
+        accent_color: validatedData.accentColor,
+        position: validatedData.position,
+        dismissible: validatedData.dismissible,
+        show_icon: validatedData.showIcon,
+        start_date: validatedData.startDate || new Date().toISOString(),
+        priority: validatedData.priority,
       })
       .select()
       .single()
@@ -105,33 +116,39 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: authError.message }, { status: authError.status })
     }
 
+    // Parse and validate request body
     const body = await request.json()
-
-    if (!body.id) {
-      return NextResponse.json({ error: 'Banner ID is required' }, { status: 400 })
+    const validation = validateRequest(fomoBannerUpdateSchema, body)
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: validation.error.message, details: validation.error.details },
+        { status: 400 }
+      )
     }
+
+    const validatedData = validation.data
 
     const { data, error } = await supabase!
       .from('fomo_banners')
       .update({
-        enabled: body.enabled,
-        type: body.type,
-        message: body.message,
-        end_date: body.endDate,
-        stock_count: body.stockCount,
-        stock_threshold: body.stockThreshold,
-        recent_purchases: body.recentPurchases,
-        visitor_count: body.visitorCount,
-        background_color: body.backgroundColor,
-        text_color: body.textColor,
-        accent_color: body.accentColor,
-        position: body.position,
-        dismissible: body.dismissible,
-        show_icon: body.showIcon,
-        start_date: body.startDate,
-        priority: body.priority,
+        enabled: validatedData.enabled,
+        type: validatedData.type,
+        message: validatedData.message,
+        end_date: validatedData.endDate,
+        stock_count: validatedData.stockCount,
+        stock_threshold: validatedData.stockThreshold,
+        recent_purchases: validatedData.recentPurchases,
+        visitor_count: validatedData.visitorCount,
+        background_color: validatedData.backgroundColor,
+        text_color: validatedData.textColor,
+        accent_color: validatedData.accentColor,
+        position: validatedData.position,
+        dismissible: validatedData.dismissible,
+        show_icon: validatedData.showIcon,
+        start_date: validatedData.startDate,
+        priority: validatedData.priority,
       })
-      .eq('id', body.id)
+      .eq('id', validatedData.id)
       .select()
       .single()
 

@@ -1,35 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
+import { inventorySuppressAlertSchema, validateRequest } from '@/lib/validations/api-schemas'
 
 // ============================================
 // API: Toggle Inventory Alert Suppression
 // POST /api/inventory/suppress-alert
 // ============================================
 
-interface ToggleAlertRequest {
-  productId: string
-  alertType: 'low_stock' | 'out_of_stock'
-  suppress: boolean
-}
-
 export async function POST(request: NextRequest) {
   try {
-    const body: ToggleAlertRequest = await request.json()
-    const { productId, alertType, suppress } = body
-
-    // Validate input
-    if (!productId) {
-      return NextResponse.json({ error: 'Product ID is required' }, { status: 400 })
-    }
-
-    if (!['low_stock', 'out_of_stock'].includes(alertType)) {
+    // Parse and validate request body
+    const body = await request.json()
+    const validation = validateRequest(inventorySuppressAlertSchema, body)
+    if (!validation.success) {
       return NextResponse.json(
-        { error: 'Invalid alert type. Use "low_stock" or "out_of_stock"' },
+        { error: validation.error.message, details: validation.error.details },
         { status: 400 }
       )
     }
+
+    const { productId, alertType, suppress } = validation.data
 
     // Create authenticated Supabase client
     const cookieStore = await cookies()

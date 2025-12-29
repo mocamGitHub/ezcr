@@ -2,11 +2,22 @@ import { NextRequest, NextResponse } from 'next/server'
 import { stripe, STRIPE_CONFIG } from '@/lib/stripe/config'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { getCurrentTenant } from '@/lib/tenant'
+import { checkoutSchema, validateRequest } from '@/lib/validations/api-schemas'
 import Stripe from 'stripe'
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+
+    // Validate request body with Zod
+    const validation = validateRequest(checkoutSchema, body)
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: validation.error.message, details: validation.error.details },
+        { status: 400 }
+      )
+    }
+
     const {
       cartItems,
       customerEmail,
@@ -14,12 +25,11 @@ export async function POST(request: NextRequest) {
       customerPhone,
       shippingAddress,
       billingAddress,
-      // Shipping quote data
       shippingQuoteId,
       destinationTerminal,
       estimatedTransitDays,
       configurationId,
-    } = body
+    } = validation.data
 
     // Get tenant ID from environment-aware configuration
     const tenantSlug = getCurrentTenant()
@@ -38,21 +48,6 @@ export async function POST(request: NextRequest) {
     }
 
     const TENANT_ID = tenant.id
-
-    // Validate required fields
-    if (!cartItems || cartItems.length === 0) {
-      return NextResponse.json(
-        { error: 'Cart is empty' },
-        { status: 400 }
-      )
-    }
-
-    if (!customerEmail || !shippingAddress || !billingAddress) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
-    }
 
     // Validate inventory availability for all cart items
     const inventoryCheckErrors: string[] = []
