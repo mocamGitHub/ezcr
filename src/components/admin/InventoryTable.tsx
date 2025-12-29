@@ -128,28 +128,34 @@ export function InventoryTable({ products, loading, onRefresh }: InventoryTableP
                     ${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex items-center justify-end gap-1 sm:gap-2">
                       <Button
-                        size="sm"
+                        size="icon-touch"
                         variant="outline"
                         onClick={() => handleAdjust(product, 'increase')}
                         title="Increase inventory"
+                        aria-label={`Increase inventory for ${product.name}`}
+                        className="sm:size-8"
                       >
                         <PackagePlus className="h-4 w-4" />
                       </Button>
                       <Button
-                        size="sm"
+                        size="icon-touch"
                         variant="outline"
                         onClick={() => handleAdjust(product, 'decrease')}
                         title="Decrease inventory"
+                        aria-label={`Decrease inventory for ${product.name}`}
+                        className="sm:size-8"
                       >
                         <PackageMinus className="h-4 w-4" />
                       </Button>
                       <Button
-                        size="sm"
+                        size="icon-touch"
                         variant="outline"
                         asChild
                         title="View history"
+                        aria-label={`View inventory history for ${product.name}`}
+                        className="sm:size-8"
                       >
                         <Link href={`/admin/inventory/${product.id}`}>
                           <History className="h-4 w-4" />

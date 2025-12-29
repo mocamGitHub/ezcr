@@ -6,8 +6,9 @@ import { getProductBySlug, getProducts } from '@/lib/supabase/queries'
 import { AddToCartButton } from '@/components/cart/AddToCartButton'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { formatPrice } from '@/lib/utils/format'
-import { ArrowLeft, Check, X, Play } from 'lucide-react'
+import { Check, X, Play } from 'lucide-react'
 import { ChatCTA } from '@/components/chat/ChatCTA'
 import { VideoEmbed } from '@/components/video/VideoEmbed'
 
@@ -61,14 +62,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
   return (
     <div>
       {/* Breadcrumb */}
-      <div className="mb-6">
-        <Button asChild variant="ghost" className="hover:text-[#0B5394]">
-          <Link href="/products">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Products
-          </Link>
-        </Button>
-      </div>
+      <Breadcrumb
+        className="mb-6"
+        items={[
+          { label: "Products", href: "/products" },
+          { label: product.name },
+        ]}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         {/* Product Images */}

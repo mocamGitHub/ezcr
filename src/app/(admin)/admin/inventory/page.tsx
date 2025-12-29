@@ -10,6 +10,7 @@ import { RefreshCw, Search, AlertTriangle, Download } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { toast } from 'sonner'
 import { exportToCSV, inventoryColumns, getExportFilename } from '@/lib/utils/export'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 interface Product {
   id: string
@@ -28,6 +29,7 @@ interface Product {
 }
 
 export default function InventoryDashboardPage() {
+  usePageTitle('Inventory')
   const [products, setProducts] = useState<Product[]>([])
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)

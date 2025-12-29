@@ -5,8 +5,10 @@ import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { Bell, Save, BarChart3 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 export default function SettingsPage() {
+  usePageTitle('Settings')
   const { refreshProfile } = useAuth()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)

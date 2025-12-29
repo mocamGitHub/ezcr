@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useTransition } from 'react';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import { StaticStarRating } from '@/components/ui/star-rating';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -105,6 +106,7 @@ interface PaginationMeta {
 // =====================================================
 
 export default function AdminTestimonialsPage() {
+  usePageTitle('Testimonials');
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [pagination, setPagination] = useState<PaginationMeta | null>(null);
   const [isLoading, setIsLoading] = useState(true);

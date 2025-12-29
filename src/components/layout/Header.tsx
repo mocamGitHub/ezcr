@@ -10,7 +10,7 @@ import { WishlistHeaderButton } from '@/components/wishlist/WishlistHeaderButton
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/contexts/AuthContext'
 import Image from 'next/image'
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 
 export function Header() {
   const { theme, toggleTheme } = useTheme()
@@ -22,11 +22,52 @@ export function Header() {
   const [showSearch, setShowSearch] = useState(false)
   const [searchQuery, setSearchQuery] = useState(searchParams?.get('q') || '')
   const [mounted, setMounted] = useState(false)
+  const mobileMenuRef = useRef<HTMLDivElement>(null)
+  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null)
+  const userMenuRef = useRef<HTMLDivElement>(null)
+  const userMenuButtonRef = useRef<HTMLButtonElement>(null)
 
   // Prevent hydration mismatch by only rendering theme-dependent UI after mount
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Handle escape key to close menus
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showMobileMenu) {
+          setShowMobileMenu(false)
+          mobileMenuButtonRef.current?.focus()
+        }
+        if (showUserMenu) {
+          setShowUserMenu(false)
+          userMenuButtonRef.current?.focus()
+        }
+        if (showSearch) {
+          setShowSearch(false)
+        }
+      }
+    }
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [showMobileMenu, showUserMenu, showSearch])
+
+  // Focus first link when mobile menu opens
+  useEffect(() => {
+    if (showMobileMenu && mobileMenuRef.current) {
+      const firstLink = mobileMenuRef.current.querySelector('a')
+      firstLink?.focus()
+    }
+  }, [showMobileMenu])
+
+  // Focus first link when user menu opens
+  useEffect(() => {
+    if (showUserMenu && userMenuRef.current) {
+      const firstLink = userMenuRef.current.querySelector('a, button')
+      ;(firstLink as HTMLElement)?.focus()
+    }
+  }, [showUserMenu])
 
   // Get user initials for avatar
   const getUserInitials = () => {
@@ -134,7 +175,11 @@ export function Header() {
           ) : user ? (
             <div className="relative">
               <button
-                aria-label="Account"
+                ref={userMenuButtonRef}
+                aria-label="Account menu"
+                aria-expanded={showUserMenu}
+                aria-haspopup="true"
+                aria-controls="user-menu"
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 className="flex items-center justify-center w-9 h-9 rounded-full bg-[#0B5394] text-white font-semibold text-sm hover:bg-[#0B5394]/90 transition-colors focus:outline-none focus:ring-2 focus:ring-[#0B5394] focus:ring-offset-2"
               >
@@ -147,10 +192,17 @@ export function Header() {
                   <div
                     className="fixed inset-0 z-40"
                     onClick={() => setShowUserMenu(false)}
+                    aria-hidden="true"
                   />
 
                   {/* Dropdown Menu */}
-                  <div className="absolute right-0 mt-2 w-56 bg-card border rounded-lg shadow-lg z-50">
+                  <div
+                    id="user-menu"
+                    ref={userMenuRef}
+                    role="menu"
+                    aria-label="User account menu"
+                    className="absolute right-0 mt-2 w-56 bg-card border rounded-lg shadow-lg z-50"
+                  >
                     <div className="px-4 py-3 border-b">
                       {profile ? (
                         <>
@@ -170,11 +222,12 @@ export function Header() {
                       )}
                     </div>
 
-                    <div className="py-2">
+                    <div className="py-2" role="group">
                       {(!profile || ['owner', 'admin', 'customer_service', 'viewer'].includes(profile.role)) && (
                         <Link
                           href="/admin/dashboard"
-                          className="flex items-center px-4 py-2 text-sm hover:bg-muted transition-colors"
+                          role="menuitem"
+                          className="flex items-center px-4 py-2 text-sm hover:bg-muted transition-colors focus:outline-none focus:bg-muted"
                           onClick={() => setShowUserMenu(false)}
                         >
                           <Settings className="h-4 w-4 mr-2" />
@@ -184,7 +237,8 @@ export function Header() {
 
                       <Link
                         href="/admin/profile"
-                        className="flex items-center px-4 py-2 text-sm hover:bg-muted transition-colors"
+                        role="menuitem"
+                        className="flex items-center px-4 py-2 text-sm hover:bg-muted transition-colors focus:outline-none focus:bg-muted"
                         onClick={() => setShowUserMenu(false)}
                       >
                         <User className="h-4 w-4 mr-2" />
@@ -192,8 +246,9 @@ export function Header() {
                       </Link>
 
                       <button
+                        role="menuitem"
                         onClick={handleSignOut}
-                        className="flex items-center w-full px-4 py-2 text-sm hover:bg-muted transition-colors text-left"
+                        className="flex items-center w-full px-4 py-2 text-sm hover:bg-muted transition-colors text-left focus:outline-none focus:bg-muted"
                       >
                         <LogOut className="h-4 w-4 mr-2" />
                         Sign Out
@@ -233,10 +288,13 @@ export function Header() {
 
           {/* Mobile Menu Button */}
           <Button
+            ref={mobileMenuButtonRef}
             variant="ghost"
             size="icon"
             className="md:hidden"
-            aria-label="Menu"
+            aria-label={showMobileMenu ? 'Close menu' : 'Open menu'}
+            aria-expanded={showMobileMenu}
+            aria-controls="mobile-menu"
             onClick={() => setShowMobileMenu(!showMobileMenu)}
           >
             {showMobileMenu ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -272,13 +330,20 @@ export function Header() {
 
       {/* Mobile Menu */}
       {showMobileMenu && (
-        <div className="md:hidden border-t bg-background">
+        <div
+          id="mobile-menu"
+          ref={mobileMenuRef}
+          className="md:hidden border-t bg-background"
+          role="menu"
+          aria-label="Main navigation"
+        >
           <nav className="flex flex-col px-4 py-4 space-y-4">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-lg font-medium transition-colors hover:text-[#F78309] py-2"
+                role="menuitem"
+                className="text-lg font-medium transition-colors hover:text-[#F78309] py-2 focus:outline-none focus:ring-2 focus:ring-[#0B5394] focus:ring-offset-2 rounded"
                 onClick={() => setShowMobileMenu(false)}
               >
                 {link.label}

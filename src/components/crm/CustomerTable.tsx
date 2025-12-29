@@ -161,9 +161,18 @@ export function CustomerTable({
             <tr
               key={customer.customer_email}
               onClick={() => onCustomerClick(customer.customer_email)}
-              className="border-t hover:bg-muted/30 cursor-pointer transition-colors"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  onCustomerClick(customer.customer_email)
+                }
+              }}
+              tabIndex={0}
+              role="button"
+              aria-label={`View details for ${customer.name || customer.customer_email}`}
+              className="border-t hover:bg-muted/30 cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary"
             >
-              <td className="px-4 py-3">
+              <td className="px-4 py-4 sm:py-3">
                 <div>
                   <div className="font-medium">{customer.name || 'Unknown'}</div>
                   <div className="text-sm text-muted-foreground">{customer.customer_email}</div>

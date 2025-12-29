@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { RefreshCw, DollarSign, ShoppingCart, Users, TrendingUp, Calendar } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { usePageTitle } from '@/hooks/usePageTitle'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -59,6 +60,7 @@ type InventoryStatus = {
 }
 
 export default function AdminDashboardPage() {
+  usePageTitle('Dashboard')
   const router = useRouter()
   const { user, profile, signOut } = useAuth()
   const [loading, setLoading] = useState(true)
