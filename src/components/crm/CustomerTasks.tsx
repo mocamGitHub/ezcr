@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import type { CustomerTask } from '@/types/crm'
 import { createCustomerTask, updateCustomerTask, deleteCustomerTask } from '@/actions/crm'
+import { toast } from 'sonner'
 
 interface CustomerTasksProps {
   tasks: CustomerTask[]
@@ -47,7 +48,7 @@ export function CustomerTasks({ tasks, customerEmail, onUpdate }: CustomerTasksP
       onUpdate()
     } catch (err) {
       console.error('Failed to create task:', err)
-      alert('Failed to create task. Please try again.')
+      toast.error('Failed to create task. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -68,7 +69,7 @@ export function CustomerTasks({ tasks, customerEmail, onUpdate }: CustomerTasksP
       onUpdate()
     } catch (err) {
       console.error('Failed to update task:', err)
-      alert('Failed to update task. Please try again.')
+      toast.error('Failed to update task. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -84,7 +85,7 @@ export function CustomerTasks({ tasks, customerEmail, onUpdate }: CustomerTasksP
       onUpdate()
     } catch (err) {
       console.error('Failed to toggle task:', err)
-      alert('Failed to update task. Please try again.')
+      toast.error('Failed to update task. Please try again.')
     }
   }
 
@@ -96,7 +97,7 @@ export function CustomerTasks({ tasks, customerEmail, onUpdate }: CustomerTasksP
       onUpdate()
     } catch (err) {
       console.error('Failed to delete task:', err)
-      alert('Failed to delete task. Please try again.')
+      toast.error('Failed to delete task. Please try again.')
     }
   }
 

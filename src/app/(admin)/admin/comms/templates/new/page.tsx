@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { toast } from 'sonner'
 import {
   Select,
   SelectContent,
@@ -30,7 +31,7 @@ export default function NewTemplatePage() {
 
   const handleSave = async () => {
     if (!formData.name) {
-      alert('Please enter a template name')
+      toast.error('Please enter a template name')
       return
     }
 
@@ -47,7 +48,7 @@ export default function NewTemplatePage() {
       router.push(`/admin/comms/templates/${template.id}`)
     } catch (error) {
       console.error('Error creating template:', error)
-      alert('Error creating template')
+      toast.error('Error creating template')
     } finally {
       setSaving(false)
     }

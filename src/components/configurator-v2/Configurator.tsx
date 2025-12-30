@@ -13,6 +13,7 @@ import { Step4Configuration } from './Step4Configuration'
 import { Step5Quote } from './Step5Quote'
 import { ContactModal } from './ContactModal'
 import { ChatWidget } from './ChatWidget'
+import { toast } from 'sonner'
 
 function ConfiguratorContent() {
   const { currentStep, loadConfiguration } = useConfigurator()
@@ -26,7 +27,7 @@ function ConfiguratorContent() {
       loadConfiguration(loadId)
         .then((success) => {
           if (!success) {
-            alert('Failed to load configuration')
+            toast.error('Failed to load configuration')
           }
         })
         .finally(() => setIsLoading(false))

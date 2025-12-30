@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { SchedulerBooking, SchedulerBookingButton, MyBookings } from '@/components/scheduler'
 import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
 
 export default function SchedulerPage() {
   const [tab, setTab] = useState<'book' | 'my-bookings'>('book')
@@ -39,8 +40,7 @@ export default function SchedulerPage() {
       <div className="bg-white dark:bg-slate-900 rounded-xl shadow-lg p-6">
         {tab === 'book' && (
           <SchedulerBooking
-            onSuccess={booking => {
-              console.log('Booking successful:', booking)
+            onSuccess={() => {
               // Switch to my-bookings tab after successful booking
               setTimeout(() => setTab('my-bookings'), 2000)
             }}
@@ -49,9 +49,8 @@ export default function SchedulerPage() {
 
         {tab === 'my-bookings' && (
           <MyBookings
-            onReschedule={booking => {
-              console.log('Reschedule requested for:', booking)
-              alert('Reschedule functionality coming soon!')
+            onReschedule={() => {
+              toast.info('Reschedule functionality coming soon!')
             }}
           />
         )}

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import type { CustomerNote } from '@/types/crm'
 import { addCustomerNote, updateCustomerNote, deleteCustomerNote } from '@/actions/crm'
+import { toast } from 'sonner'
 
 interface CustomerNotesProps {
   notes: CustomerNote[]
@@ -31,7 +32,7 @@ export function CustomerNotes({ notes, customerEmail, onUpdate }: CustomerNotesP
       onUpdate()
     } catch (err) {
       console.error('Failed to add note:', err)
-      alert('Failed to add note. Please try again.')
+      toast.error('Failed to add note. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -49,7 +50,7 @@ export function CustomerNotes({ notes, customerEmail, onUpdate }: CustomerNotesP
       onUpdate()
     } catch (err) {
       console.error('Failed to update note:', err)
-      alert('Failed to update note. Please try again.')
+      toast.error('Failed to update note. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -63,7 +64,7 @@ export function CustomerNotes({ notes, customerEmail, onUpdate }: CustomerNotesP
       onUpdate()
     } catch (err) {
       console.error('Failed to delete note:', err)
-      alert('Failed to delete note. Please try again.')
+      toast.error('Failed to delete note. Please try again.')
     }
   }
 

@@ -53,7 +53,6 @@ export async function sendAdminNotification(params: AdminEmailParams): Promise<{
       tags: ['admin-notification'],
     })
 
-    console.log('Admin notification email sent successfully')
     return { success: true }
   } catch (error: any) {
     console.error('Error sending admin notification:', error)

@@ -19,7 +19,7 @@ function hmac(base: string) {
   return crypto.createHmac("sha256", N8N_WEBHOOK_SECRET).update(base).digest("hex");
 }
 
-// TODO: implement against your tenant membership model.
+// See ezcr-owa: implement proper tenant membership access control
 async function assertTenantAccess(_tenantId: string) {
   return true;
 }

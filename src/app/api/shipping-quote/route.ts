@@ -499,7 +499,6 @@ ${error.details ? `API Response:\n${JSON.stringify(error.details, null, 2)}` : '
           }),
         }
       );
-      console.log('SMS notification sent');
     } catch (smsError) {
       console.error('Failed to send SMS:', smsError);
     }
@@ -528,7 +527,6 @@ ${error.details ? `API Response:\n${JSON.stringify(error.details, null, 2)}` : '
           ],
         }),
       });
-      console.log('Email notification sent');
     } catch (emailError) {
       console.error('Failed to send email:', emailError);
     }
@@ -702,12 +700,10 @@ export async function POST(req: NextRequest) {
     );
 
     if (cachedQuote) {
-      console.log(`Returning cached quote for ZIP ${request.destinationZip}`);
       return NextResponse.json(cachedQuote);
     }
 
     // Get fresh quote from T-Force
-    console.log(`Fetching new quote for ZIP ${request.destinationZip}`);
 
     const productConfig = PRODUCT_FREIGHT[request.productSku];
     const tforceRequest = buildTForceRequest(request, productConfig);

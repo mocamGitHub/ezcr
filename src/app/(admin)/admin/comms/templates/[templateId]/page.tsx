@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { getTemplate, saveTemplate } from '../../actions'
+import { toast } from 'sonner'
 
 type Template = {
   id: string
@@ -100,11 +101,11 @@ export default function TemplateDetailPage() {
         template.channel
       )
 
-      alert('Template saved successfully!')
+      toast.success('Template saved successfully!')
       fetchData()
     } catch (error) {
       console.error('Error saving template:', error)
-      alert('Error saving template')
+      toast.error('Error saving template')
     } finally {
       setSaving(false)
     }

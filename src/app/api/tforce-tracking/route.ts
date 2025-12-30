@@ -385,9 +385,6 @@ export async function POST(req: NextRequest) {
       }, { status: 429 });
     }
 
-    // Log the search for debugging
-    console.log('TForce BOL Search:', { number, code, pickupStartDate, pickupEndDate, responseCode: data.summary?.responseStatus?.code });
-
     // Check response status - handle both HTTP errors and TForce error codes
     const responseCode = data.summary?.responseStatus?.code;
     if (responseCode === 'RNF' || response.status === 404) {

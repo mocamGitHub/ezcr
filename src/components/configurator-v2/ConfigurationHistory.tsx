@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Trash2, ExternalLink, Calendar, DollarSign, Package } from 'lucide-react'
 import { formatDistance } from 'date-fns'
+import { toast } from 'sonner'
 
 interface SavedConfiguration {
   id: string
@@ -57,11 +58,11 @@ export function ConfigurationHistory() {
       if (response.ok) {
         setConfigurations((prev) => prev.filter((config) => config.id !== id))
       } else {
-        alert('Failed to delete configuration')
+        toast.error('Failed to delete configuration')
       }
     } catch (error) {
       console.error('Error deleting configuration:', error)
-      alert('Failed to delete configuration')
+      toast.error('Failed to delete configuration')
     } finally {
       setDeletingId(null)
     }

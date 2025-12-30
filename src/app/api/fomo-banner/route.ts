@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { requireRole, ROLE_GROUPS } from '@/lib/auth/api-auth'
+import { fomoBannerUpdateSchema, validateRequest } from '@/lib/validations/api-schemas'
 
 export async function GET() {
   try {
@@ -70,26 +71,37 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
     const body = await request.json()
 
+    // Validate request body
+    const validation = validateRequest(fomoBannerUpdateSchema, body)
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: validation.error.message, details: validation.error.details },
+        { status: 400 }
+      )
+    }
+
+    const validatedData = validation.data
+
     const { data, error } = await supabase
       .from('fomo_banners')
       .upsert({
-        id: body.id,
-        enabled: body.enabled,
-        type: body.type,
-        message: body.message,
-        end_date: body.endDate,
-        stock_count: body.stockCount,
-        stock_threshold: body.stockThreshold,
-        recent_purchases: body.recentPurchases,
-        visitor_count: body.visitorCount,
-        background_color: body.backgroundColor,
-        text_color: body.textColor,
-        accent_color: body.accentColor,
-        position: body.position,
-        dismissible: body.dismissible,
-        show_icon: body.showIcon,
-        start_date: body.startDate || new Date().toISOString(),
-        priority: body.priority || 1,
+        id: validatedData.id,
+        enabled: validatedData.enabled,
+        type: validatedData.type,
+        message: validatedData.message,
+        end_date: validatedData.endDate,
+        stock_count: validatedData.stockCount,
+        stock_threshold: validatedData.stockThreshold,
+        recent_purchases: validatedData.recentPurchases,
+        visitor_count: validatedData.visitorCount,
+        background_color: validatedData.backgroundColor,
+        text_color: validatedData.textColor,
+        accent_color: validatedData.accentColor,
+        position: validatedData.position,
+        dismissible: validatedData.dismissible,
+        show_icon: validatedData.showIcon,
+        start_date: validatedData.startDate || new Date().toISOString(),
+        priority: validatedData.priority || 1,
       })
       .select()
       .single()

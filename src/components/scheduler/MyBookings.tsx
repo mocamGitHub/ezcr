@@ -12,6 +12,7 @@ import {
   RotateCcw,
 } from 'lucide-react'
 import { format, parseISO, isPast } from 'date-fns'
+import { toast } from 'sonner'
 
 interface Booking {
   id: string
@@ -94,7 +95,7 @@ export function MyBookings({ onReschedule, showPast = false }: MyBookingsProps) 
       // Refresh bookings
       await fetchBookings()
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to cancel booking')
+      toast.error(err instanceof Error ? err.message : 'Failed to cancel booking')
     } finally {
       setCancellingId(null)
     }

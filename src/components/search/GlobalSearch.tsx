@@ -125,7 +125,7 @@ export function GlobalSearch({ onSelect }: GlobalSearchProps) {
         router.push(`/admin/notifications/templates/${itemId}`)
         break
       default:
-        console.log('Selected:', item)
+        break
     }
   }, [onSelect, router])
 

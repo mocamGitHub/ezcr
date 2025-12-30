@@ -92,6 +92,18 @@ export function CustomerTable({
 
   const headerClass = "px-4 py-3 font-medium text-sm cursor-pointer hover:bg-muted/70 transition-colors select-none"
 
+  const getSortAriaLabel = (column: SortField, label: string) => {
+    if (sortBy !== column) {
+      return `Sort by ${label}`
+    }
+    return sortOrder === 'asc' ? `Sort by ${label}, currently ascending` : `Sort by ${label}, currently descending`
+  }
+
+  const getAriaSort = (column: SortField): 'ascending' | 'descending' | 'none' => {
+    if (sortBy !== column) return 'none'
+    return sortOrder === 'asc' ? 'ascending' : 'descending'
+  }
+
   return (
     <div className="border rounded-lg overflow-x-auto">
       <table className="w-full min-w-[600px] lg:min-w-0">
@@ -100,6 +112,11 @@ export function CustomerTable({
             <th
               className={`text-left ${headerClass}`}
               onClick={() => onSortChange('name')}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === 'Enter' && onSortChange('name')}
+              aria-label={getSortAriaLabel('name', 'customer name')}
+              aria-sort={getAriaSort('name')}
             >
               <div className="flex items-center">
                 Customer
@@ -110,6 +127,11 @@ export function CustomerTable({
               <th
                 className={`text-left ${headerClass} hidden sm:table-cell`}
                 onClick={() => onSortChange('health_score')}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => e.key === 'Enter' && onSortChange('health_score')}
+                aria-label={getSortAriaLabel('health_score', 'health score')}
+                aria-sort={getAriaSort('health_score')}
               >
                 <div className="flex items-center">
                   Health
@@ -121,6 +143,11 @@ export function CustomerTable({
             <th
               className={`text-right ${headerClass}`}
               onClick={() => onSortChange('order_count')}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === 'Enter' && onSortChange('order_count')}
+              aria-label={getSortAriaLabel('order_count', 'order count')}
+              aria-sort={getAriaSort('order_count')}
             >
               <div className="flex items-center justify-end">
                 <span className="hidden sm:inline">Orders</span>
@@ -131,6 +158,11 @@ export function CustomerTable({
             <th
               className={`text-right ${headerClass} hidden md:table-cell`}
               onClick={() => onSortChange('lifetime_value')}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === 'Enter' && onSortChange('lifetime_value')}
+              aria-label={getSortAriaLabel('lifetime_value', 'lifetime value')}
+              aria-sort={getAriaSort('lifetime_value')}
             >
               <div className="flex items-center justify-end">
                 <span className="hidden lg:inline">Lifetime Value</span>
@@ -141,6 +173,11 @@ export function CustomerTable({
             <th
               className={`text-left ${headerClass} hidden lg:table-cell`}
               onClick={() => onSortChange('last_order_date')}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === 'Enter' && onSortChange('last_order_date')}
+              aria-label={getSortAriaLabel('last_order_date', 'last order date')}
+              aria-sort={getAriaSort('last_order_date')}
             >
               <div className="flex items-center">
                 Last Order
@@ -150,6 +187,11 @@ export function CustomerTable({
             <th
               className={`text-center ${headerClass}`}
               onClick={() => onSortChange('open_task_count')}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === 'Enter' && onSortChange('open_task_count')}
+              aria-label={getSortAriaLabel('open_task_count', 'open tasks')}
+              aria-sort={getAriaSort('open_task_count')}
             >
               <div className="flex items-center justify-center">
                 <span className="hidden sm:inline">Tasks</span>

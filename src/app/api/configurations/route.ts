@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
 
     const TENANT_ID = tenant.id
 
-    // TODO: Get session_id from cookies or generate one
+    // See ezcr-e48: Get session_id from cookies instead of temp value
     const session_id = 'temp-session-' + Date.now()
 
     // Get product ID for the selected ramp model

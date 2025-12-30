@@ -134,7 +134,7 @@ export function calculatePrice(config: Step4Data): PriceBreakdown {
   }, 0)
 
   // Accessories price (would need to look up from products)
-  const accessoriesPrice = 0 // TODO: Implement when accessories are added
+  const accessoriesPrice = 0 // See ezcr-9ok
 
   // Services price
   let servicesPrice = 0

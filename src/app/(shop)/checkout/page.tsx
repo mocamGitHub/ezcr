@@ -10,14 +10,85 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Loader2 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { getStripe } from '@/lib/stripe/client'
 import { toast } from 'sonner'
+
+type FormErrors = {
+  firstName?: string
+  lastName?: string
+  email?: string
+  phone?: string
+  address?: string
+  city?: string
+  state?: string
+  zip?: string
+}
+
+const validateEmail = (email: string): boolean => {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+}
+
+const validatePhone = (phone: string): boolean => {
+  // Accept various phone formats: (XXX) XXX-XXXX, XXX-XXX-XXXX, XXXXXXXXXX
+  return /^[\d\s\-\(\)\.+]{10,}$/.test(phone.replace(/\D/g, ''))
+}
+
+const validateZip = (zip: string): boolean => {
+  // US ZIP code: 5 digits or 5+4 format
+  return /^\d{5}(-\d{4})?$/.test(zip)
+}
 
 export default function CheckoutPage() {
   const { cart, clearCart } = useCart()
   const router = useRouter()
   const [isProcessing, setIsProcessing] = useState(false)
+  const [errors, setErrors] = useState<FormErrors>({})
+  const [touched, setTouched] = useState<Record<string, boolean>>({})
+
+  const validateField = useCallback((name: string, value: string): string | undefined => {
+    switch (name) {
+      case 'firstName':
+      case 'lastName':
+        return !value.trim() ? 'This field is required' : undefined
+      case 'email':
+        if (!value.trim()) return 'Email is required'
+        if (!validateEmail(value)) return 'Please enter a valid email address'
+        return undefined
+      case 'phone':
+        if (!value.trim()) return 'Phone number is required'
+        if (!validatePhone(value)) return 'Please enter a valid phone number'
+        return undefined
+      case 'address':
+        return !value.trim() ? 'Street address is required' : undefined
+      case 'city':
+        return !value.trim() ? 'City is required' : undefined
+      case 'state':
+        return !value.trim() ? 'State is required' : undefined
+      case 'zip':
+        if (!value.trim()) return 'ZIP code is required'
+        if (!validateZip(value)) return 'Please enter a valid ZIP code (e.g., 12345)'
+        return undefined
+      default:
+        return undefined
+    }
+  }, [])
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setTouched(prev => ({ ...prev, [name]: true }))
+    const error = validateField(name, value)
+    setErrors(prev => ({ ...prev, [name]: error }))
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    // Only validate on change if field has been touched
+    if (touched[name]) {
+      const error = validateField(name, value)
+      setErrors(prev => ({ ...prev, [name]: error }))
+    }
+  }
 
   // Redirect if cart is empty
   if (cart.items.length === 0) {
@@ -136,21 +207,76 @@ export default function CheckoutPage() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="firstName">First Name</Label>
-                    <Input id="firstName" name="firstName" disabled={isProcessing} required />
+                    <Label htmlFor="firstName">First Name <span className="text-destructive">*</span></Label>
+                    <Input
+                      id="firstName"
+                      name="firstName"
+                      disabled={isProcessing}
+                      required
+                      onBlur={handleBlur}
+                      onChange={handleChange}
+                      aria-invalid={!!errors.firstName}
+                      aria-describedby={errors.firstName ? 'firstName-error' : undefined}
+                      className={errors.firstName ? 'border-destructive' : ''}
+                    />
+                    {errors.firstName && (
+                      <p id="firstName-error" className="text-sm text-destructive mt-1">{errors.firstName}</p>
+                    )}
                   </div>
                   <div>
-                    <Label htmlFor="lastName">Last Name</Label>
-                    <Input id="lastName" name="lastName" disabled={isProcessing} required />
+                    <Label htmlFor="lastName">Last Name <span className="text-destructive">*</span></Label>
+                    <Input
+                      id="lastName"
+                      name="lastName"
+                      disabled={isProcessing}
+                      required
+                      onBlur={handleBlur}
+                      onChange={handleChange}
+                      aria-invalid={!!errors.lastName}
+                      aria-describedby={errors.lastName ? 'lastName-error' : undefined}
+                      className={errors.lastName ? 'border-destructive' : ''}
+                    />
+                    {errors.lastName && (
+                      <p id="lastName-error" className="text-sm text-destructive mt-1">{errors.lastName}</p>
+                    )}
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" name="email" type="email" disabled={isProcessing} required />
+                  <Label htmlFor="email">Email <span className="text-destructive">*</span></Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    disabled={isProcessing}
+                    required
+                    onBlur={handleBlur}
+                    onChange={handleChange}
+                    aria-invalid={!!errors.email}
+                    aria-describedby={errors.email ? 'email-error' : undefined}
+                    className={errors.email ? 'border-destructive' : ''}
+                  />
+                  {errors.email && (
+                    <p id="email-error" className="text-sm text-destructive mt-1">{errors.email}</p>
+                  )}
                 </div>
                 <div>
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input id="phone" name="phone" type="tel" disabled={isProcessing} required />
+                  <Label htmlFor="phone">Phone <span className="text-destructive">*</span></Label>
+                  <Input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    disabled={isProcessing}
+                    required
+                    placeholder="(555) 123-4567"
+                    onBlur={handleBlur}
+                    onChange={handleChange}
+                    aria-invalid={!!errors.phone}
+                    aria-describedby={errors.phone ? 'phone-error' : undefined}
+                    className={errors.phone ? 'border-destructive' : ''}
+                  />
+                  {errors.phone && (
+                    <p id="phone-error" className="text-sm text-destructive mt-1">{errors.phone}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -160,8 +286,21 @@ export default function CheckoutPage() {
               <h2 className="text-xl font-semibold mb-4">Shipping Address</h2>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="address">Street Address</Label>
-                  <Input id="address" name="address" disabled={isProcessing} required />
+                  <Label htmlFor="address">Street Address <span className="text-destructive">*</span></Label>
+                  <Input
+                    id="address"
+                    name="address"
+                    disabled={isProcessing}
+                    required
+                    onBlur={handleBlur}
+                    onChange={handleChange}
+                    aria-invalid={!!errors.address}
+                    aria-describedby={errors.address ? 'address-error' : undefined}
+                    className={errors.address ? 'border-destructive' : ''}
+                  />
+                  {errors.address && (
+                    <p id="address-error" className="text-sm text-destructive mt-1">{errors.address}</p>
+                  )}
                 </div>
                 <div>
                   <Label htmlFor="address2">Apartment, suite, etc. (optional)</Label>
@@ -169,21 +308,61 @@ export default function CheckoutPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="city">City</Label>
-                    <Input id="city" name="city" disabled={isProcessing} required />
+                    <Label htmlFor="city">City <span className="text-destructive">*</span></Label>
+                    <Input
+                      id="city"
+                      name="city"
+                      disabled={isProcessing}
+                      required
+                      onBlur={handleBlur}
+                      onChange={handleChange}
+                      aria-invalid={!!errors.city}
+                      aria-describedby={errors.city ? 'city-error' : undefined}
+                      className={errors.city ? 'border-destructive' : ''}
+                    />
+                    {errors.city && (
+                      <p id="city-error" className="text-sm text-destructive mt-1">{errors.city}</p>
+                    )}
                   </div>
                   <div>
-                    <Label htmlFor="state">State</Label>
-                    <Input id="state" name="state" disabled={isProcessing} required />
+                    <Label htmlFor="state">State <span className="text-destructive">*</span></Label>
+                    <Input
+                      id="state"
+                      name="state"
+                      disabled={isProcessing}
+                      required
+                      onBlur={handleBlur}
+                      onChange={handleChange}
+                      aria-invalid={!!errors.state}
+                      aria-describedby={errors.state ? 'state-error' : undefined}
+                      className={errors.state ? 'border-destructive' : ''}
+                    />
+                    {errors.state && (
+                      <p id="state-error" className="text-sm text-destructive mt-1">{errors.state}</p>
+                    )}
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="zip">ZIP Code</Label>
-                    <Input id="zip" name="zip" disabled={isProcessing} required />
+                    <Label htmlFor="zip">ZIP Code <span className="text-destructive">*</span></Label>
+                    <Input
+                      id="zip"
+                      name="zip"
+                      disabled={isProcessing}
+                      required
+                      placeholder="12345"
+                      onBlur={handleBlur}
+                      onChange={handleChange}
+                      aria-invalid={!!errors.zip}
+                      aria-describedby={errors.zip ? 'zip-error' : undefined}
+                      className={errors.zip ? 'border-destructive' : ''}
+                    />
+                    {errors.zip && (
+                      <p id="zip-error" className="text-sm text-destructive mt-1">{errors.zip}</p>
+                    )}
                   </div>
                   <div>
-                    <Label htmlFor="country">Country</Label>
+                    <Label htmlFor="country">Country <span className="text-destructive">*</span></Label>
                     <Input
                       id="country"
                       name="country"

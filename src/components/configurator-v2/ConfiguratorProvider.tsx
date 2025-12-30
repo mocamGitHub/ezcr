@@ -22,6 +22,7 @@ import {
 import { useShippingQuote, ShippingQuoteResponse } from '@/hooks/useShippingQuote'
 import type { UFEResult, TonneauType, RollDirection, RampModelId } from '@/lib/ufe'
 import { evaluateAdvanced, getRampModel } from '@/lib/ufe'
+import { toast } from 'sonner'
 
 interface ConfiguratorContextType {
   // State
@@ -528,7 +529,7 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
   const selectDelivery = (id: string, name: string, price: number) => {
     // Check for Demo + Ship incompatibility
     if (id === 'ship' && configData.service.id === 'demo') {
-      alert('⚠️ Shipping is not available with Demo service. Switching to Pickup.')
+      toast.warning('Shipping is not available with Demo service. Switching to Pickup.')
       return // Don't change delivery
     }
 
@@ -541,7 +542,7 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
   const selectService = (id: string, name: string, price: number) => {
     // Check for Demo + Ship incompatibility
     if (id === 'demo' && configData.delivery.id === 'ship') {
-      alert('⚠️ Demo service is not available with Shipping. Switching to Pickup.')
+      toast.warning('Demo service is not available with Shipping. Switching to Pickup.')
       setConfigData((prev) => ({
         ...prev,
         service: { id, name, price },

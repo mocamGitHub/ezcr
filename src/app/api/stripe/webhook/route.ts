@@ -32,9 +32,8 @@ async function triggerN8NWorkflow(order: any, orderNumber: string) {
         },
       }),
     })
-    console.log('✅ N8N workflow triggered')
   } catch (error) {
-    console.error('❌ N8N trigger failed:', error)
+    console.error('N8N trigger failed:', error)
   }
 }
 
@@ -67,9 +66,8 @@ async function sendSlackNotification(order: any, orderNumber: string) {
         ],
       }),
     })
-    console.log('✅ Slack notification sent')
   } catch (error) {
-    console.error('❌ Slack notification failed:', error)
+    console.error('Slack notification failed:', error)
   }
 }
 
@@ -134,8 +132,6 @@ export async function POST(request: NextRequest) {
           )
         }
 
-        console.log(`✅ Payment successful for order ${orderNumber} (${orderId})`)
-
         // Deduct inventory for order items
         const { data: orderItems, error: itemsError } = await supabaseAdmin
           .from('order_items')
@@ -159,9 +155,8 @@ export async function POST(request: NextRequest) {
                 p_reference_id: orderNumber,
                 p_created_by: null, // System transaction
               })
-              console.log(`  ✅ Deducted ${item.quantity} from product ${item.product_id}`)
             } catch (invError) {
-              console.error(`  ❌ Failed to deduct inventory for product ${item.product_id}:`, invError)
+              console.error(`Failed to deduct inventory for product ${item.product_id}:`, invError)
               // Don't fail the webhook, but log the error
               // Admin will need to reconcile manually
             }
@@ -234,8 +229,6 @@ export async function POST(request: NextRequest) {
               status: 'canceled',
             })
             .eq('id', orderId)
-
-          console.log(`❌ Checkout session expired for order ${orderId}`)
         }
         break
       }
@@ -258,8 +251,6 @@ export async function POST(request: NextRequest) {
               status: 'canceled',
             })
             .eq('id', order.id)
-
-          console.log(`❌ Payment failed for order ${order.order_number}`)
         }
         break
       }
@@ -282,8 +273,6 @@ export async function POST(request: NextRequest) {
               status: 'refunded',
             })
             .eq('id', order.id)
-
-          console.log(`💰 Refund processed for order ${order.order_number}`)
 
           // Restore inventory for refunded items
           const { data: orderItems, error: itemsError } = await supabaseAdmin
@@ -308,9 +297,8 @@ export async function POST(request: NextRequest) {
                   p_reference_id: order.order_number,
                   p_created_by: null, // System transaction
                 })
-                console.log(`  ✅ Restored ${item.quantity} to product ${item.product_id}`)
               } catch (invError) {
-                console.error(`  ❌ Failed to restore inventory for product ${item.product_id}:`, invError)
+                console.error(`Failed to restore inventory for product ${item.product_id}:`, invError)
               }
             }
           }
@@ -319,7 +307,8 @@ export async function POST(request: NextRequest) {
       }
 
       default:
-        console.log(`Unhandled event type: ${event.type}`)
+        // Unhandled event type - silently ignore
+        break
     }
 
     return NextResponse.json({ received: true })

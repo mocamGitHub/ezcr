@@ -131,7 +131,6 @@ async function handleCheckoutSessionCompleted(
   supabase: any,
   session: Stripe.Checkout.Session
 ) {
-  console.log(`Processing checkout session: ${session.id}`);
 
   const metadata = session.metadata || {};
   const product = determineProductFromMetadata(metadata);
@@ -211,8 +210,6 @@ async function handlePaymentIntentSucceeded(
   supabase: any,
   paymentIntent: Stripe.PaymentIntent
 ) {
-  console.log(`Processing payment intent: ${paymentIntent.id}`);
-
   // Check if order already exists (might have been created by checkout.session.completed)
   const { data: existingOrder } = await supabase
     .from('orders')
@@ -221,7 +218,6 @@ async function handlePaymentIntentSucceeded(
     .single();
 
   if (existingOrder) {
-    console.log(`Order already exists for payment intent ${paymentIntent.id}`);
     return;
   }
 
@@ -285,8 +281,6 @@ async function handlePaymentFailed(
   supabase: any,
   paymentIntent: Stripe.PaymentIntent
 ) {
-  console.log(`Payment failed: ${paymentIntent.id}`);
-
   const metadata = paymentIntent.metadata || {};
 
   // Log failed payment for follow-up
@@ -309,7 +303,6 @@ async function handlePaymentFailed(
 // ============================================
 
 async function createOrder(supabase: any, orderData: OrderData) {
-  console.log(`Creating order: ${orderData.orderNumber}`);
 
   // 1. Find and update lead if exists
   let leadId = orderData.leadId;
@@ -377,8 +370,6 @@ async function createOrder(supabase: any, orderData: OrderData) {
     throw orderError;
   }
 
-  console.log(`Order created: ${order.id}`);
-
   // 3. Update lead as converted (if exists)
   if (leadId) {
     await supabase
@@ -398,8 +389,6 @@ async function createOrder(supabase: any, orderData: OrderData) {
       })
       .eq('lead_id', leadId)
       .eq('status', 'active');
-
-    console.log(`Lead ${leadId} marked as converted`);
   }
 
   // 4. Trigger post-purchase automation
@@ -441,7 +430,6 @@ async function triggerN8NWorkflow(orderData: OrderData, order: any) {
         },
       }),
     });
-    console.log('N8N workflow triggered');
   } catch (error) {
     console.error('N8N trigger failed:', error);
   }
@@ -491,8 +479,6 @@ async function sendOrderConfirmationEmail(orderData: OrderData, order: any) {
       .from('orders')
       .update({ order_confirmation_sent_at: new Date().toISOString() })
       .eq('id', order.id);
-
-    console.log('Order confirmation email sent');
   } catch (error) {
     console.error('Email send failed:', error);
   }
@@ -537,16 +523,14 @@ async function sendSlackNotification(orderData: OrderData, order: any) {
         ],
       }),
     });
-    console.log('Slack notification sent');
   } catch (error) {
     console.error('Slack notification failed:', error);
   }
 }
 
-async function trackConversion(orderData: OrderData, leadId: string | undefined) {
-  // This could send conversion data to analytics platforms
-  // Google Analytics, Meta Pixel, etc.
-  console.log(`Conversion tracked: ${orderData.orderNumber}, lead: ${leadId || 'none'}`);
+async function trackConversion(_orderData: OrderData, _leadId: string | undefined) {
+  // Send conversion data to analytics platforms (Google Analytics, Meta Pixel, etc.)
+  // See: ezcr-35g
 }
 
 // ============================================
@@ -588,8 +572,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log(`Received Stripe event: ${event.type}`);
-
     // Handle different event types
     switch (event.type) {
       case 'checkout.session.completed':
@@ -605,7 +587,8 @@ export async function POST(req: NextRequest) {
         break;
 
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        // Unhandled event type - silently ignore
+        break;
     }
 
     return NextResponse.json({ received: true });
