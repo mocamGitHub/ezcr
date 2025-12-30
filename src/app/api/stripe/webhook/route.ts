@@ -5,10 +5,39 @@ import { sendOrderEmail } from '@/lib/comms/order-emails'
 import Stripe from 'stripe'
 
 // ============================================
+// TYPES
+// ============================================
+
+interface OrderRecord {
+  id: string
+  order_number: string
+  customer_email: string
+  customer_name: string | null
+  customer_phone: string | null
+  product_sku: string | null
+  product_name: string | null
+  delivery_method: 'shipping' | 'pickup'
+  shipping_address: Record<string, unknown> | null
+  total_amount: number
+  grand_total?: number
+  subtotal: number
+  shipping_amount: number
+  tax_amount: number
+}
+
+interface OrderItem {
+  product_name: string | null
+  product_sku: string | null
+  quantity: number
+  unit_price: number
+  total_price: number
+}
+
+// ============================================
 // SHIPPING INTEGRATION HELPERS
 // ============================================
 
-async function triggerN8NWorkflow(order: any, orderNumber: string) {
+async function triggerN8NWorkflow(order: OrderRecord, orderNumber: string) {
   const webhookUrl = process.env.N8N_ORDER_WEBHOOK_URL
   if (!webhookUrl) return { skipped: true }
 
@@ -37,7 +66,7 @@ async function triggerN8NWorkflow(order: any, orderNumber: string) {
   }
 }
 
-async function sendSlackNotification(order: any, orderNumber: string) {
+async function sendSlackNotification(order: OrderRecord, orderNumber: string) {
   const webhookUrl = process.env.SLACK_WEBHOOK_URL
   if (!webhookUrl) return { skipped: true }
 
@@ -182,7 +211,7 @@ export async function POST(request: NextRequest) {
                 customerPhone: order.customer_phone,
                 productName: orderItems[0]?.product_name || 'EZ Cycle Ramp',
                 productSku: orderItems[0]?.product_sku,
-                items: orderItems.map((item: any) => ({
+                items: orderItems.map((item: OrderItem) => ({
                   product_name: item.product_name || 'Product',
                   quantity: item.quantity,
                   unit_price: item.unit_price,

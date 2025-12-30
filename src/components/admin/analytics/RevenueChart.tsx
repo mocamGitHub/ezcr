@@ -10,18 +10,10 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import type { RevenueDataPoint } from '@/actions/analytics'
+import { formatCurrencyCompact } from '@/lib/utils'
 
 interface RevenueChartProps {
   data: RevenueDataPoint[]
-}
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value)
 }
 
 export function RevenueChart({ data }: RevenueChartProps) {
@@ -47,7 +39,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
             className="text-muted-foreground"
           />
           <YAxis
-            tickFormatter={(value) => formatCurrency(value)}
+            tickFormatter={(value) => formatCurrencyCompact(value)}
             tick={{ fontSize: 12 }}
             tickLine={false}
             axisLine={false}
@@ -60,7 +52,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
                   <div className="bg-popover border rounded-lg shadow-lg p-3">
                     <p className="text-sm font-medium">{label}</p>
                     <p className="text-sm text-green-600">
-                      Revenue: {formatCurrency(payload[0].value as number)}
+                      Revenue: {formatCurrencyCompact(payload[0].value as number)}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       Orders: {payload[0].payload.orders}

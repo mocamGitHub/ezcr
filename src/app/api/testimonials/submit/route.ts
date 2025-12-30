@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 import { sendNewTestimonialNotification } from '@/lib/email/admin-notifications';
 import { withRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { sanitizeMultilineText } from '@/lib/utils/sanitize';
 
 // =====================================================
 // VALIDATION SCHEMA
@@ -84,8 +85,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { rating, review_text, product_id, customer_avatar_url } =
-      validation.data;
+    const { rating, product_id, customer_avatar_url } = validation.data;
+    // Sanitize user-generated content to prevent XSS
+    const review_text = sanitizeMultilineText(validation.data.review_text);
 
     // -------------------- Validate Product (if provided) --------------------
     if (product_id) {

@@ -2,7 +2,7 @@
 
 import { AdminErrorBoundary } from '@/components/admin/AdminErrorBoundary'
 
-export default function CustomerDetailError({
+export default function CRMError({
   error,
   reset,
 }: {
@@ -13,9 +13,9 @@ export default function CustomerDetailError({
     <AdminErrorBoundary
       error={error}
       reset={reset}
-      title="Failed to load customer profile"
-      backHref="/admin/crm"
-      backLabel="Back to Customers"
+      title="Failed to load customers"
+      backHref="/admin/dashboard"
+      backLabel="Back to Dashboard"
     />
   )
 }

@@ -13,7 +13,7 @@
 //   SUPABASE_SERVICE_KEY=your_service_role_key
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 
 // ============================================
@@ -128,7 +128,7 @@ function determineProductFromMetadata(metadata: Record<string, string>): {
 
 async function handleCheckoutSessionCompleted(
   stripe: Stripe,
-  supabase: any,
+  supabase: SupabaseClient,
   session: Stripe.Checkout.Session
 ) {
 
@@ -207,7 +207,7 @@ async function handleCheckoutSessionCompleted(
 
 async function handlePaymentIntentSucceeded(
   stripe: Stripe,
-  supabase: any,
+  supabase: SupabaseClient,
   paymentIntent: Stripe.PaymentIntent
 ) {
   // Check if order already exists (might have been created by checkout.session.completed)
@@ -278,7 +278,7 @@ async function handlePaymentIntentSucceeded(
 }
 
 async function handlePaymentFailed(
-  supabase: any,
+  supabase: SupabaseClient,
   paymentIntent: Stripe.PaymentIntent
 ) {
   const metadata = paymentIntent.metadata || {};
@@ -302,7 +302,7 @@ async function handlePaymentFailed(
 // ORDER CREATION
 // ============================================
 
-async function createOrder(supabase: any, orderData: OrderData) {
+async function createOrder(supabase: SupabaseClient, orderData: OrderData) {
 
   // 1. Find and update lead if exists
   let leadId = orderData.leadId;

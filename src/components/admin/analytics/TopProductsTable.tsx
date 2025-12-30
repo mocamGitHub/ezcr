@@ -1,18 +1,10 @@
 'use client'
 
 import type { TopProduct } from '@/actions/analytics'
+import { formatCurrencyCompact } from '@/lib/utils'
 
 interface TopProductsTableProps {
   products: TopProduct[]
-}
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value)
 }
 
 export function TopProductsTable({ products }: TopProductsTableProps) {
@@ -37,7 +29,7 @@ export function TopProductsTable({ products }: TopProductsTableProps) {
             <div className="flex items-center justify-between mb-1">
               <span className="font-medium truncate">{product.name}</span>
               <span className="text-sm font-medium ml-2">
-                {formatCurrency(product.revenue)}
+                {formatCurrencyCompact(product.revenue)}
               </span>
             </div>
             <div className="flex items-center gap-2">
