@@ -1,7 +1,10 @@
 /**
- * Centralized contact information for EZ Cycle Ramp
+ * Centralized site and contact information for EZ Cycle Ramp
  * Use these values across the application for consistent contact info
  */
+
+// Site URL - use for image paths and canonical URLs
+export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ezcycleramp.com'
 
 export const CONTACT_INFO = {
   // Main support phone

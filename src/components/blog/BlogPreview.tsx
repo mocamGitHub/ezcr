@@ -2,9 +2,10 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { getFeaturedBlogPosts, getBlogPosts } from '@/lib/supabase/queries'
+import { SITE_URL } from '@/config/contact'
 
 // Base URL for images from live site (fallback)
-const LIVE_SITE = 'https://ezcycleramp.com'
+const LIVE_SITE = SITE_URL
 
 // Fallback blog posts if database is empty
 const FALLBACK_POSTS = [

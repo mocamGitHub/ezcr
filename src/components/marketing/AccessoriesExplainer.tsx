@@ -5,8 +5,9 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, HelpCircle, Wrench, Link2 } from 'lucide-react'
+import { SITE_URL } from '@/config/contact'
 
-const LIVE_SITE = 'https://ezcycleramp.com'
+const LIVE_SITE = SITE_URL
 
 // Accessory data
 const accessories = [

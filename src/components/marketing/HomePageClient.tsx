@@ -8,9 +8,10 @@ import { AnimatedCTAButton } from '@/components/ui/animated-cta-button'
 import { TestimonialShowcase } from '@/components/testimonials/TestimonialShowcase'
 import { ChatCTA } from '@/components/chat/ChatCTA'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { SITE_URL } from '@/config/contact'
 
-// Base URL for images from live site
-const LIVE_SITE = 'https://ezcycleramp.com'
+// Alias for backwards compatibility
+const LIVE_SITE = SITE_URL
 
 // ============================================
 // Hero Section (Variant A - Rotating Slider with Crossfade)

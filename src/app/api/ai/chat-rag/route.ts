@@ -3,6 +3,7 @@ import { getCurrentTenant } from '@/lib/tenant'
 import { NextResponse } from 'next/server'
 import { withRateLimit, RATE_LIMITS } from '@/lib/rate-limit'
 import { aiChatRagSchema, validateRequest } from '@/lib/validations/api-schemas'
+import { CONTACT_PROMPT, CONVERSATIONAL_TIPS } from '@/lib/ai/constants'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
@@ -683,17 +684,13 @@ ${knowledgeContext}
 
 Important guidelines:
 - Always base your answers on the knowledge base information provided above
-- If the knowledge base doesn't have the answer, say "I don't have that specific information, but I can connect you with our team at 800-687-4410"
-- Be concise but thorough - aim for 2-4 sentences unless more detail is needed
-- Use natural, conversational language
+- If the knowledge base doesn't have the answer, offer to connect them with our team
+${CONVERSATIONAL_TIPS}
 - Include specific product details (model numbers, prices, dimensions) when relevant
 - Proactively suggest related products or services when helpful
 - For safety-critical questions, always recommend calling for personalized advice
 
-Key contact information:
-- Phone: 800-687-4410
-- Email: support@ezcycleramp.com
-- Business hours: Monday-Friday 8 AM - 6 PM EST, Saturday 9 AM - 2 PM EST
+${CONTACT_PROMPT}
 
 Remember: You represent EZ Cycle Ramp. Be helpful, accurate, and always prioritize customer safety and satisfaction.`
 }

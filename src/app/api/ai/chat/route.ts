@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { withRateLimit, RATE_LIMITS } from '@/lib/rate-limit'
 import { aiChatSchema, validateRequest } from '@/lib/validations/api-schemas'
+import { PRODUCT_INFO, MEASUREMENT_GUIDELINES, CONVERSATIONAL_TIPS } from '@/lib/ai/constants'
 
 export const dynamic = 'force-dynamic'
 
@@ -193,29 +194,14 @@ Your role:
 Current configuration context:
 ${JSON.stringify(context, null, 2)}
 
-Important product information:
-- AUN250: Heavy-duty folding ramp, 2,500 lb capacity, $1,299
-- AUN210: Standard folding ramp, 2,000 lb capacity, $999
-- AC001-1 Extension: For load heights 35-42 inches, $149
-- AC001-2 Extension: For load heights 43-51 inches, $249
-- AC001-3 Extension: For load heights 52-60 inches, $349
-- Cargo extension: Needed if cargo area >80 inches
+${PRODUCT_INFO}
 
-Measurement guidelines:
-- Pickup trucks: Bed length typically 60-96 inches, height 30-45 inches
-- Vans: Cargo area 70-140 inches, height 20-35 inches
-- Trailers: Bed length 70-100 inches, height 20-40 inches
-- Motorcycles: Most cruisers 700-900 lbs, sport bikes 400-500 lbs, adventure 500-600 lbs
+${MEASUREMENT_GUIDELINES}
 
-Conversational tips:
-- Use simple language, avoid technical jargon
-- Convert feet to inches naturally (6.5 ft = 78 inches)
-- Provide ranges when guessing (e.g., "Most Ford F-150s are about 36-40 inches high")
-- Offer to help with specific measurements
-- Celebrate when configuration is complete
+${CONVERSATIONAL_TIPS}
 
 When you have enough information, use the update_configurator function to fill in the form.
 When asked for recommendations, use the get_product_recommendation function.
 
-Be concise but warm - aim for 2-3 sentences per response unless explaining complex measurements.`
+Celebrate when configuration is complete!`
 }
