@@ -1,19 +1,34 @@
 // src/app/(marketing)/page.tsx
 import { Suspense } from 'react'
+import dynamic from 'next/dynamic'
 import {
   HeroSlider,
   ProductShowcase,
   WhyRidersTrust,
-  TestimonialsSection,
-  GalleryPreview,
-  CTASection,
 } from '@/components/marketing/HomePageClient'
 import { FeaturedProducts } from '@/components/products/FeaturedProducts'
 import { FeaturedProductsSkeleton } from '@/components/products/FeaturedProductsSkeleton'
 import { ComparisonTable } from '@/components/marketing/ComparisonTable'
 import { QuickConfigurator } from '@/components/marketing/QuickConfigurator'
-import { BlogPreview } from '@/components/blog/BlogPreview'
 import { AccessoriesExplainer } from '@/components/marketing/AccessoriesExplainer'
+
+// Dynamic imports for below-the-fold components (reduces initial bundle)
+const TestimonialsSection = dynamic(
+  () => import('@/components/marketing/HomePageClient').then((mod) => ({ default: mod.TestimonialsSection })),
+  { ssr: true }
+)
+const GalleryPreview = dynamic(
+  () => import('@/components/marketing/HomePageClient').then((mod) => ({ default: mod.GalleryPreview })),
+  { ssr: true }
+)
+const CTASection = dynamic(
+  () => import('@/components/marketing/HomePageClient').then((mod) => ({ default: mod.CTASection })),
+  { ssr: true }
+)
+const BlogPreview = dynamic(
+  () => import('@/components/blog/BlogPreview').then((mod) => ({ default: mod.BlogPreview })),
+  { ssr: true }
+)
 
 export default function HomePage() {
   return (

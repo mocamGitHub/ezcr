@@ -1,6 +1,7 @@
 // src/app/layout.tsx
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import { Suspense } from 'react'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { CartProvider } from '@/contexts/CartContext'
@@ -18,9 +19,9 @@ import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
 
-// Force dynamic rendering globally due to widespread useSearchParams() usage
-// To optimize: wrap useSearchParams calls in Suspense boundaries at each call site
-// Performance improvements: framer-motion removed, chat widget lazy-loaded
+// Force dynamic rendering due to auth/session requirements
+// Note: Header and order-confirmation pages have Suspense boundaries for useSearchParams
+// Performance improvements: framer-motion removed, chat widget lazy-loaded, below-fold components dynamic
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
@@ -121,7 +122,9 @@ export default function RootLayout({
               <WishlistProvider>
               <ToastProvider>
                 <FOMOBanner />
-                <Header />
+                <Suspense fallback={<div className="h-16 bg-background border-b" />}>
+                  <Header />
+                </Suspense>
                 <main className="min-h-[calc(100vh-4rem)]">
                   <PageTransition>
                     {children}
