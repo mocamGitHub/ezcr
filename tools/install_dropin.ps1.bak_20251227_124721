@@ -1,0 +1,443 @@
+﻿<# =====================================================================
+NexCyte Drop-In Compat Wrapper â€” FINAL STABLE (v7)
+File: tools/install_dropin.ps1
+
+Compat accepted:
+- ZipPath / ZIP_PATH
+- Scratch / ScratchDir
+- LogPath / LogFile / TranscriptPath
+- RepoRoot / ProjectRoot
+
+Behavior:
+- Extract bundle
+- Find installer: ZeroTouch_Install.ps1
+- Patch installer header if needed
+- Run installer once (correct working dir)
+- Capture stdout/stderr
+- Always write:
+  - docs/_dropin/install_<ts>.md
+  - docs/_dropin/install_latest.md
+  - docs/_dropin/logs/wrapper_<ts>.log
+  - docs/_dropin/logs/installer_stdout_<ts>.log
+  - docs/_dropin/logs/installer_stderr_<ts>.log
+
+NOTE:
+- If -LogPath is passed by the runner, it may be locked. We never create/overwrite it.
+  We only best-effort append to it.
+
+===================================================================== #>
+
+[CmdletBinding()]
+param(
+  [Parameter(Mandatory=$false)]
+  [Alias('ZIP_PATH')]
+  [string]$ZipPath,
+
+  [Parameter(Mandatory=$false)]
+  [Alias('ScratchDir')]
+  [string]$Scratch,
+
+  [Parameter(Mandatory=$false)]
+  [Alias('LogFile','TranscriptPath')]
+  [string]$LogPath,
+
+  [Parameter(Mandatory=$false)]
+  [Alias('ProjectRoot')]
+  [string]$RepoRoot,
+
+  [Parameter(Mandatory=$false)]
+  [switch]$SkipGitCheckpoint,
+
+  [Parameter(Mandatory=$false)]
+  [switch]$WhatIf
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
+
+function Ensure-Dir {
+  param([string]$Path)
+  if ($Path -and -not (Test-Path -LiteralPath $Path)) {
+    New-Item -ItemType Directory -Path $Path -Force | Out-Null
+  }
+}
+
+function Resolve-FirstNonEmpty {
+  param([string[]]$Values)
+  foreach ($v in $Values) {
+    if ($v -and $v.Trim().Length -gt 0) { return $v }
+  }
+  return $null
+}
+
+# Logs:
+# - WrapperLogFile: always our own scratch log file (never locked by runner)
+# - ParentLogPath: optional runner-provided log (may be locked; best-effort append)
+$script:WrapperLogFile = $null
+$script:ParentLogPath  = $null
+
+function Write-Log {
+  param([string]$Message)
+
+  $tsl = Get-Date -Format "yyyy-MM-dd HH:mm:ss.fff"
+  $line = "[$tsl] $Message"
+  Write-Host $line
+
+  if ($script:WrapperLogFile) {
+    try { Add-Content -LiteralPath $script:WrapperLogFile -Value $line -ErrorAction SilentlyContinue } catch {}
+  }
+  if ($script:ParentLogPath) {
+    try { Add-Content -LiteralPath $script:ParentLogPath -Value $line -ErrorAction SilentlyContinue } catch {}
+  }
+}
+
+function Get-ParamNamesFromScript {
+  param([string]$ScriptPath)
+
+  $tokens = $null; $errors = $null
+  $ast = [System.Management.Automation.Language.Parser]::ParseFile($ScriptPath, [ref]$tokens, [ref]$errors)
+
+  if ($errors -and $errors.Count -gt 0) {
+    Write-Log "WARNING: AST parse errors found in installer script:"
+    foreach ($e in $errors) { Write-Log ("  - " + $e.Message) }
+  }
+
+  if (-not $ast.ParamBlock) { return @() }
+
+  $names = @()
+  foreach ($p in $ast.ParamBlock.Parameters) {
+    if ($p -and $p.Name -and $p.Name.VariablePath) { $names += $p.Name.VariablePath.UserPath }
+  }
+  return $names
+}
+
+function Import-DotEnvToChildEnv {
+  param([string]$RepoRootPath, [hashtable]$ChildEnv)
+
+  foreach ($rel in @(".env",".env.local",".env.development",".env.production")) {
+    $p = Join-Path $RepoRootPath $rel
+    if (-not (Test-Path -LiteralPath $p)) { continue }
+
+    Write-Log "Loading env file into child process: $p"
+    foreach ($line in (Get-Content -LiteralPath $p -ErrorAction SilentlyContinue)) {
+      $t = $line.Trim()
+      if (-not $t) { continue }
+      if ($t.StartsWith("#")) { continue }
+
+      $idx = $t.IndexOf("=")
+      if ($idx -lt 1) { continue }
+
+      $key = $t.Substring(0,$idx).Trim()
+      $val = $t.Substring($idx+1).Trim()
+
+      if (($val.StartsWith('"') -and $val.EndsWith('"')) -or ($val.StartsWith("'") -and $val.EndsWith("'"))) {
+        $val = $val.Substring(1,$val.Length-2)
+      }
+      if ($key) { $ChildEnv[$key] = $val }
+    }
+  }
+}
+
+function Patch-InstallerHeaderIfNeeded {
+  param([string]$InstallerPath, [string]$OutDir)
+
+  $raw = Get-Content -LiteralPath $InstallerPath -Raw
+  if (-not $raw) { return $null }
+
+  $tokens = $null; $errors = $null
+  [void][System.Management.Automation.Language.Parser]::ParseInput($raw, [ref]$tokens, [ref]$errors)
+
+  $needsPatch = $false
+  if ($errors -and $errors.Count -gt 0) { $needsPatch = $true }
+
+  $lines = $raw -split "`r?`n"
+  $cmdletIdx = -1
+  for ($i=0; $i -lt $lines.Count; $i++) {
+    if ($lines[$i] -match "^\s*\[CmdletBinding\(\)\]") { $cmdletIdx = $i; break }
+  }
+
+  # If CmdletBinding isn't the first meaningful executable thing, we patch.
+  if ($cmdletIdx -gt 0) {
+    for ($j=0; $j -lt $cmdletIdx; $j++) {
+      $ln = $lines[$j].Trim()
+      if (-not $ln) { continue }
+      if ($ln.StartsWith("#")) { continue }
+      if ($ln -match "^\s*<#") { continue }
+      if ($ln -match "^\s*#requires") { continue }
+      $needsPatch = $true
+      break
+    }
+  }
+
+  Ensure-Dir $OutDir
+  $patchedPath = Join-Path $OutDir ((Split-Path $InstallerPath -Leaf) + ".patched.ps1")
+
+  if (-not $needsPatch) {
+    Copy-Item -LiteralPath $InstallerPath -Destination $patchedPath -Force
+    return $patchedPath
+  }
+
+  Write-Log "Patching installer header (CmdletBinding/param must be first executable elements)."
+
+  if ($cmdletIdx -lt 0) {
+    Copy-Item -LiteralPath $InstallerPath -Destination $patchedPath -Force
+    return $patchedPath
+  }
+
+  $paramIdx = -1
+  for ($i=$cmdletIdx; $i -lt $lines.Count; $i++) {
+    if ($lines[$i] -match "^\s*param\s*\(") { $paramIdx = $i; break }
+  }
+
+  $paramEndIdx = $cmdletIdx
+  if ($paramIdx -ge 0) {
+    $depth = 0
+    $paramEndIdx = -1
+    for ($i=$paramIdx; $i -lt $lines.Count; $i++) {
+      $depth += ([regex]::Matches($lines[$i], "\(")).Count
+      $depth -= ([regex]::Matches($lines[$i], "\)")).Count
+      if ($depth -le 0) { $paramEndIdx = $i; break }
+    }
+    if ($paramEndIdx -lt 0) { $paramEndIdx = $paramIdx }
+  }
+
+  $leadingKeep = New-Object System.Collections.Generic.List[string]
+  $moved = New-Object System.Collections.Generic.List[string]
+
+  for ($i=0; $i -lt $cmdletIdx; $i++) {
+    $lnRaw = $lines[$i]
+    $ln = $lnRaw.Trim()
+    if (-not $ln) { $leadingKeep.Add($lnRaw); continue }
+    if ($ln.StartsWith("#")) { $leadingKeep.Add($lnRaw); continue }
+    if ($ln -match "^\s*#requires") { $leadingKeep.Add($lnRaw); continue }
+    $moved.Add($lnRaw)
+  }
+
+  $out = New-Object System.Collections.Generic.List[string]
+  foreach ($k in $leadingKeep) { $out.Add($k) }
+
+  for ($i=$cmdletIdx; $i -lt $lines.Count; $i++) {
+    $out.Add($lines[$i])
+    if ($i -eq $paramEndIdx -and $moved.Count -gt 0) {
+      $out.Add("")
+      $out.Add("# ---- moved preface lines (auto-patch) ----")
+      foreach ($m in $moved) { $out.Add($m) }
+      $out.Add("# ---- end moved preface lines ----")
+      $out.Add("")
+    }
+  }
+
+  Set-Content -LiteralPath $patchedPath -Value ($out -join "`r`n") -Encoding UTF8
+  return $patchedPath
+}
+
+# ------------------------------
+# Normalize inputs
+# ------------------------------
+$zip = Resolve-FirstNonEmpty @($ZipPath, $env:ZIP_PATH)
+if (-not $zip) { throw "ZipPath not provided (ZipPath and env:ZIP_PATH empty)." }
+if (-not (Test-Path -LiteralPath $zip)) { throw "ZipPath not found: $zip" }
+
+$repo = Resolve-FirstNonEmpty @($RepoRoot, $env:REPO_ROOT, $env:PROJECT_ROOT)
+if (-not $repo) { $repo = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path }
+if (-not (Test-Path -LiteralPath $repo)) { throw "Repo root not found: $repo" }
+
+$scratchRoot = Resolve-FirstNonEmpty @($Scratch, "C:\Temp\dropin_bundle_inspect")
+Ensure-Dir $scratchRoot
+
+$ts = Get-Date -Format "yyyyMMdd_HHmmss"
+$extractDir = Join-Path $scratchRoot ("extract_" + $ts)
+Ensure-Dir $extractDir
+
+# Logs: always create our own wrapper log in scratch
+$script:ParentLogPath  = $LogPath
+$script:WrapperLogFile = (Join-Path $scratchRoot ("dropin_install_" + $ts + ".log"))
+try {
+  New-Item -ItemType File -Path $script:WrapperLogFile -Force | Out-Null
+} catch {
+  $script:WrapperLogFile = (Join-Path $scratchRoot ("dropin_install_" + $ts + "_" + [Guid]::NewGuid().ToString("N") + ".log"))
+  New-Item -ItemType File -Path $script:WrapperLogFile -Force | Out-Null
+}
+
+# Repo-persisted artifacts
+$docsDir     = Join-Path $repo "docs\_dropin"
+$repoLogsDir = Join-Path $docsDir "logs"
+Ensure-Dir $docsDir
+Ensure-Dir $repoLogsDir
+
+$repoWrapper = Join-Path $repoLogsDir ("wrapper_" + $ts + ".log")
+$repoStdout  = Join-Path $repoLogsDir ("installer_stdout_" + $ts + ".log")
+$repoStderr  = Join-Path $repoLogsDir ("installer_stderr_" + $ts + ".log")
+
+$mdPath     = Join-Path $docsDir ("install_" + $ts + ".md")
+$latestPath = Join-Path $docsDir "install_latest.md"
+
+$stdoutLog = Join-Path $scratchRoot ("installer_stdout_" + $ts + ".log")
+$stderrLog = Join-Path $scratchRoot ("installer_stderr_" + $ts + ".log")
+
+# Lock
+$lockPath = Join-Path $scratchRoot ".install_lock"
+$lockCleanup = {
+  if (Test-Path -LiteralPath $lockPath) {
+    Remove-Item -LiteralPath $lockPath -Force -ErrorAction SilentlyContinue
+  }
+}
+
+if (Test-Path -LiteralPath $lockPath) {
+  $lockAge = (Get-Date) - (Get-Item -LiteralPath $lockPath).LastWriteTime
+  if ($lockAge.TotalMinutes -lt 30) {
+    throw "Install lock exists ($lockPath) and is recent ($([int]$lockAge.TotalMinutes)m). Preventing duplicate run."
+  } else {
+    Remove-Item -LiteralPath $lockPath -Force -ErrorAction SilentlyContinue
+  }
+}
+Set-Content -LiteralPath $lockPath -Value ("locked at " + (Get-Date)) -Encoding UTF8
+
+$status = "failed"
+$exitCode = 1
+$installer = $null
+$patchedInstaller = $null
+$failure = $null
+
+try {
+  Write-Log "============================================================"
+  Write-Log "Drop-In install wrapper v7 starting"
+  Write-Log "RepoRoot: $repo"
+  Write-Log "ZipPath:  $zip"
+  Write-Log "Scratch:  $scratchRoot"
+  Write-Log "Extract:  $extractDir"
+  Write-Log "WrapperLog(scratch): $script:WrapperLogFile"
+  Write-Log "RepoLogs: $repoLogsDir"
+  Write-Log "============================================================"
+
+  Write-Log "Extracting ZIP to: $extractDir"
+  Expand-Archive -LiteralPath $zip -DestinationPath $extractDir -Force
+
+  $installer = Get-ChildItem -LiteralPath $extractDir -Recurse -File -Filter "ZeroTouch_Install.ps1" -ErrorAction SilentlyContinue |
+    Select-Object -First 1 -ExpandProperty FullName
+  if (-not $installer) { throw "ZeroTouch_Install.ps1 not found under: $extractDir" }
+
+  Write-Log "Installer raw: $installer"
+
+  $patchedOutDir = Join-Path $scratchRoot ("patched_" + $ts)
+  $patchedInstaller = Patch-InstallerHeaderIfNeeded -InstallerPath $installer -OutDir $patchedOutDir
+  if (-not $patchedInstaller) { throw "Failed to produce patched installer." }
+
+  Write-Log "Installer patched: $patchedInstaller"
+
+  $paramNames = Get-ParamNamesFromScript -ScriptPath $patchedInstaller
+  Write-Log ("Installer params detected: " + ($paramNames -join ", "))
+
+  $rootParam = $null
+  if ($paramNames -contains "RepoRoot") { $rootParam = "RepoRoot" }
+  elseif ($paramNames -contains "ProjectRoot") { $rootParam = "ProjectRoot" }
+  elseif ($paramNames -contains "Root") { $rootParam = "Root" }
+
+  $installerDir = Split-Path $patchedInstaller -Parent
+  Write-Log "Working directory for installer: $installerDir"
+
+  $childEnv = @{}
+  foreach ($k in [System.Environment]::GetEnvironmentVariables().Keys) {
+    $childEnv[$k] = [System.Environment]::GetEnvironmentVariable($k)
+  }
+  Import-DotEnvToChildEnv -RepoRootPath $repo -ChildEnv $childEnv
+
+  $pwsh = (Get-Command pwsh -ErrorAction SilentlyContinue).Source
+  if (-not $pwsh) { throw "pwsh not found in PATH." }
+
+  $argList = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $patchedInstaller)
+  if ($rootParam) { $argList += @("-$rootParam", $repo) }
+
+  Write-Log "Launching installer: $pwsh $($argList -join ' ')"
+  Write-Log "Installer stdout (scratch): $stdoutLog"
+  Write-Log "Installer stderr (scratch): $stderrLog"
+
+  if ($WhatIf) {
+    Write-Log "WHATIF set: skipping installer execution."
+    $exitCode = 0
+    $status = "success"
+  }
+  else {
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName = $pwsh
+    $psi.WorkingDirectory = $installerDir
+    $psi.UseShellExecute = $false
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError  = $true
+    $psi.CreateNoWindow = $true
+    $psi.Arguments = ($argList | ForEach-Object {
+    $s = [string]$_
+    if ($s -match '[\s"]') { '"' + ($s -replace '"','\"') + '"' } else { $s }
+  }) -join ' '
+
+    foreach ($k in $childEnv.Keys) {
+      try { $psi.Environment[$k] = [string]$childEnv[$k] } catch {}
+    }
+
+    $p = New-Object System.Diagnostics.Process
+    $p.StartInfo = $psi
+
+    $outWriter = New-Object System.IO.StreamWriter($stdoutLog, $false, [System.Text.Encoding]::UTF8)
+    $errWriter = New-Object System.IO.StreamWriter($stderrLog, $false, [System.Text.Encoding]::UTF8)
+
+    $p.add_OutputDataReceived({ param($s,$e) if ($e.Data -ne $null) { $outWriter.WriteLine($e.Data) } })
+    $p.add_ErrorDataReceived({ param($s,$e) if ($e.Data -ne $null) { $errWriter.WriteLine($e.Data) } })
+
+    [void]$p.Start()
+    $p.BeginOutputReadLine()
+    $p.BeginErrorReadLine()
+    $p.WaitForExit()
+
+    $outWriter.Flush(); $outWriter.Close()
+    $errWriter.Flush(); $errWriter.Close()
+
+    $exitCode = $p.ExitCode
+    if ($exitCode -eq 0) { $status = "success" } else { $status = "failed" }
+    Write-Log "Installer exit code: $exitCode"
+  }
+}
+catch {
+  $failure = $_.Exception.Message
+  $status = "failed"
+  $exitCode = 1
+  Write-Log "ERROR: $failure"
+}
+finally {
+  # Always copy wrapper log into repo
+  try { if (Test-Path -LiteralPath $script:WrapperLogFile) { Copy-Item -LiteralPath $script:WrapperLogFile -Destination $repoWrapper -Force } } catch {}
+
+  # Always copy installer logs into repo (if any)
+  try { if (Test-Path -LiteralPath $stdoutLog) { Copy-Item -LiteralPath $stdoutLog -Destination $repoStdout -Force } } catch {}
+  try { if (Test-Path -LiteralPath $stderrLog) { Copy-Item -LiteralPath $stderrLog -Destination $repoStderr -Force } } catch {}
+
+  # Always write report + update latest
+  $md = @()
+  $md += "# Drop-in install record"
+  $md += ""
+  $md += "- Timestamp: $ts"
+  $md += "- Status: $status"
+  $md += "- ExitCode: $exitCode"
+  if ($failure) { $md += "- Error: $failure" }
+  $md += "- RepoRoot: $repo"
+  $md += "- PayloadZip: $zip"
+  $md += "- ExtractDir: $extractDir"
+  if ($installer)        { $md += "- InstallerRaw: $installer" }
+  if ($patchedInstaller) { $md += "- InstallerPatched: $patchedInstaller" }
+  $md += "- WrapperLogRepo: $repoWrapper"
+  $md += "- InstallerStdoutRepo: $repoStdout"
+  $md += "- InstallerStderrRepo: $repoStderr"
+
+  ($md -join "`r`n") | Set-Content -LiteralPath $mdPath -Encoding UTF8
+  Copy-Item -LiteralPath $mdPath -Destination $latestPath -Force
+
+  Write-Log "Wrote report: $mdPath"
+  Write-Log "Updated latest: $latestPath"
+  Write-Log "Repo logs dir: $repoLogsDir"
+
+  & $lockCleanup
+}
+
+if ($exitCode -ne 0) { exit $exitCode }
+exit 0
+
+
