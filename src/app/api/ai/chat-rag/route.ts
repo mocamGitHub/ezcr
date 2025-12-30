@@ -2,8 +2,57 @@ import { createClient } from '@/lib/supabase/server'
 import { getCurrentTenant } from '@/lib/tenant'
 import { NextResponse } from 'next/server'
 import { withRateLimit, RATE_LIMITS } from '@/lib/rate-limit'
+import { aiChatRagSchema, validateRequest } from '@/lib/validations/api-schemas'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
+
+// Types for function arguments
+interface OrderStatusArgs {
+  order_number: string
+  email: string
+}
+
+interface AppointmentArgs {
+  order_number: string
+  email: string
+  action: 'schedule' | 'modify' | 'cancel'
+  preferred_date?: string
+  preferred_time?: string
+}
+
+interface OrderStatusResult {
+  success: boolean
+  message?: string
+  order?: {
+    order_number: string
+    status: string
+    order_date: string
+    total: number
+    items: unknown[]
+    shipping_address: unknown
+    expected_delivery: string | null
+    appointment_date: string | null
+    tracking_number: string | null
+  }
+}
+
+interface AppointmentResult {
+  success: boolean
+  message: string
+  appointment?: {
+    date?: string
+    time_slot?: string
+  }
+}
+
+// Page context type
+interface PageContext {
+  page?: string
+  product?: string
+  category?: string
+  [key: string]: unknown
+}
 
 /**
  * POST /api/ai/chat-rag
@@ -18,15 +67,15 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { messages, sessionId, context } = await request.json()
+    const body = await request.json()
 
-    // Validate input
-    if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      return NextResponse.json(
-        { error: 'Invalid messages format' },
-        { status: 400 }
-      )
+    // Validate input using Zod schema
+    const validation = validateRequest(aiChatRagSchema, body)
+    if (!validation.success) {
+      return NextResponse.json(validation.error, { status: 400 })
     }
+
+    const { messages, sessionId, context } = validation.data
 
     const openAIKey = process.env.OPENAI_API_KEY
 
@@ -66,7 +115,8 @@ export async function POST(request: Request) {
       )
     }
 
-    // Generate embedding for the user's question
+    // Generate embedding for the user's question with configurable model
+    const embeddingModel = process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-ada-002'
     const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
       method: 'POST',
       headers: {
@@ -74,7 +124,7 @@ export async function POST(request: Request) {
         'Authorization': `Bearer ${openAIKey}`,
       },
       body: JSON.stringify({
-        model: 'text-embedding-ada-002',
+        model: embeddingModel,
         input: lastUserMessage.content,
       }),
     })
@@ -171,6 +221,7 @@ export async function POST(request: Request) {
     ]
 
     // Call OpenAI API with RAG context and function calling
+    const chatModel = process.env.OPENAI_CHAT_MODEL || 'gpt-4'
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -178,7 +229,7 @@ export async function POST(request: Request) {
         'Authorization': `Bearer ${openAIKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4',
+        model: chatModel,
         messages: [
           { role: 'system', content: systemPrompt },
           ...messages,
@@ -235,7 +286,7 @@ export async function POST(request: Request) {
         })
       }
 
-      // Call GPT-4 again with function results
+      // Call model again with function results (reuse chatModel from above)
       const secondResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -243,7 +294,7 @@ export async function POST(request: Request) {
           'Authorization': `Bearer ${openAIKey}`,
         },
         body: JSON.stringify({
-          model: 'gpt-4',
+          model: chatModel,
           messages: [
             { role: 'system', content: systemPrompt },
             ...messages,
@@ -354,7 +405,7 @@ export async function POST(request: Request) {
 /**
  * Get order status from database
  */
-async function getOrderStatus(supabase: any, tenantId: string, args: { order_number: string; email: string }) {
+async function getOrderStatus(supabase: SupabaseClient, tenantId: string, args: OrderStatusArgs): Promise<OrderStatusResult> {
   try {
     const { data: order, error } = await supabase
       .from('orders')
@@ -407,16 +458,10 @@ async function getOrderStatus(supabase: any, tenantId: string, args: { order_num
  * Schedule or modify appointment
  */
 async function scheduleAppointment(
-  supabase: any,
+  supabase: SupabaseClient,
   tenantId: string,
-  args: {
-    order_number: string
-    email: string
-    action: 'schedule' | 'modify' | 'cancel'
-    preferred_date?: string
-    preferred_time?: string
-  }
-) {
+  args: AppointmentArgs
+): Promise<AppointmentResult> {
   try {
     // First verify the order exists
     const { data: order, error: orderError } = await supabase
@@ -492,7 +537,7 @@ async function scheduleAppointment(
 /**
  * Trigger n8n appointment automation webhook (non-blocking)
  */
-async function triggerAppointmentWebhook(args: any, functionResult: any) {
+async function triggerAppointmentWebhook(args: AppointmentArgs, functionResult: AppointmentResult) {
   try {
     const webhookUrl = process.env.N8N_APPOINTMENT_WEBHOOK
     if (!webhookUrl) {
@@ -521,7 +566,7 @@ async function triggerAppointmentWebhook(args: any, functionResult: any) {
 /**
  * Trigger n8n order inquiry handler webhook (non-blocking)
  */
-async function triggerOrderInquiryWebhook(args: any, functionResult: any) {
+async function triggerOrderInquiryWebhook(args: OrderStatusArgs, functionResult: OrderStatusResult) {
   try {
     const webhookUrl = process.env.N8N_ORDER_INQUIRY_WEBHOOK
     if (!webhookUrl) {
@@ -617,7 +662,7 @@ function generateSuggestedQuestions(userQuestion: string, assistantResponse: str
 /**
  * Build system prompt with business context and RAG knowledge
  */
-function buildSystemPrompt(pageContext: any, knowledgeContext: string) {
+function buildSystemPrompt(pageContext: PageContext | undefined, knowledgeContext: string) {
   return `You are a helpful and knowledgeable customer service assistant for EZ Cycle Ramp, a company that manufactures premium motorcycle loading ramps.
 
 Your role:

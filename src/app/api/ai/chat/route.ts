@@ -1,7 +1,22 @@
 import { NextResponse } from 'next/server'
 import { withRateLimit, RATE_LIMITS } from '@/lib/rate-limit'
+import { aiChatSchema, validateRequest } from '@/lib/validations/api-schemas'
 
 export const dynamic = 'force-dynamic'
+
+// Configuration context type for chat
+interface ConfigurationContext {
+  vehicleType?: string
+  cargoLength?: number
+  totalLength?: number
+  loadHeight?: number
+  motorcycleType?: string
+  motorcycleWeight?: number
+  wheelbase?: number
+  motorcycleLength?: number
+  selectedModel?: string
+  accessories?: string[]
+}
 
 /**
  * POST /api/ai/chat
@@ -16,15 +31,15 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { messages, configurationContext } = await request.json()
+    const body = await request.json()
 
-    // Validate input
-    if (!messages || !Array.isArray(messages)) {
-      return NextResponse.json(
-        { error: 'Invalid messages format' },
-        { status: 400 }
-      )
+    // Validate input using Zod schema
+    const validation = validateRequest(aiChatSchema, body)
+    if (!validation.success) {
+      return NextResponse.json(validation.error, { status: 400 })
     }
+
+    const { messages, configurationContext } = validation.data
 
     // Get OpenAI API key
     const openAIKey = process.env.OPENAI_API_KEY
@@ -39,7 +54,8 @@ export async function POST(request: Request) {
     // Build system prompt with context
     const systemPrompt = buildSystemPrompt(configurationContext)
 
-    // Call OpenAI API
+    // Call OpenAI API with configurable model
+    const aiModel = process.env.OPENAI_CHAT_MODEL || 'gpt-4'
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -47,7 +63,7 @@ export async function POST(request: Request) {
         'Authorization': `Bearer ${openAIKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4',
+        model: aiModel,
         messages: [
           { role: 'system', content: systemPrompt },
           ...messages,
@@ -163,7 +179,7 @@ export async function POST(request: Request) {
 /**
  * Build system prompt with current configuration context
  */
-function buildSystemPrompt(context: any) {
+function buildSystemPrompt(context: ConfigurationContext | undefined) {
   return `You are a friendly and knowledgeable assistant for EZ Cycle Ramp, helping customers configure the perfect motorcycle loading ramp.
 
 Your role:

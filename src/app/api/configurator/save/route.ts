@@ -1,16 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { getTenantId } from '@/lib/tenant'
-import type { ConfigData } from '@/types/configurator-v2'
+import { configurationSaveSchema, validateRequest } from '@/lib/validations/api-schemas'
+import { z } from 'zod'
+
+// Query parameter schema for GET requests
+const configurationQuerySchema = z.object({
+  userId: z.string().uuid().optional(),
+  sessionId: z.string().min(1).max(100).optional(),
+})
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { configuration, total, userId } = body as {
-      configuration: ConfigData
-      total: number
-      userId?: string
+
+    // Validate request body
+    const validation = validateRequest(configurationSaveSchema, body)
+    if (!validation.success) {
+      return NextResponse.json(validation.error, { status: 400 })
     }
+
+    const { configuration, total, userId } = validation.data
 
     const supabase = createServiceClient()
     const tenantId = await getTenantId()
@@ -18,10 +28,15 @@ export async function POST(request: NextRequest) {
     // Generate a unique session ID
     const sessionId = `config-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 
-    // Build configuration name
-    const configName = `${configuration.selectedModel.name} - ${configuration.vehicle || 'Unknown'} - ${
-      configuration.contact.firstName || 'Guest'
-    } ${configuration.contact.lastName || ''}`
+    // Build configuration name with safe property access
+    const config = configuration as Record<string, unknown>
+    const selectedModel = config.selectedModel as Record<string, unknown> | undefined
+    const contact = config.contact as Record<string, unknown> | undefined
+    const modelName = selectedModel?.name || 'Custom'
+    const vehicle = config.vehicle || 'Unknown'
+    const firstName = contact?.firstName || 'Guest'
+    const lastName = contact?.lastName || ''
+    const configName = `${modelName} - ${vehicle} - ${firstName} ${lastName}`
 
     // Save configuration to database
     const { data: savedConfig, error: configError } = await supabase
@@ -62,8 +77,21 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const userId = searchParams.get('userId')
-    const sessionId = searchParams.get('sessionId')
+
+    // Validate query parameters
+    const queryValidation = configurationQuerySchema.safeParse({
+      userId: searchParams.get('userId') || undefined,
+      sessionId: searchParams.get('sessionId') || undefined,
+    })
+
+    if (!queryValidation.success) {
+      return NextResponse.json(
+        { error: 'Invalid query parameters', details: queryValidation.error.issues },
+        { status: 400 }
+      )
+    }
+
+    const { userId, sessionId } = queryValidation.data
 
     const supabase = createServiceClient()
     const tenantId = await getTenantId()

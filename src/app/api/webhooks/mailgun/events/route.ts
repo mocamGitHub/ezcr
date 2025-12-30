@@ -15,6 +15,58 @@ import { mustGetMailgunSignatureFromJson, verifyMailgunWebhookSignature, isMailg
  * - MAILGUN_WEBHOOK_SIGNING_KEY=...
  */
 
+// Mailgun webhook types
+interface MailgunUserVariables {
+  nc_message_id?: string;
+  nc_token?: string;
+  [key: string]: string | undefined;
+}
+
+interface MailgunMessageHeaders {
+  "message-id"?: string;
+  "Message-Id"?: string;
+  message_id?: string;
+}
+
+interface MailgunEventData {
+  event?: string;
+  id?: string;
+  timestamp?: number;
+  recipient?: string;
+  message?: {
+    headers?: MailgunMessageHeaders;
+  };
+  "user-variables"?: MailgunUserVariables;
+  user_variables?: MailgunUserVariables;
+  userVariables?: MailgunUserVariables;
+  user_vars?: MailgunUserVariables;
+}
+
+interface MailgunWebhookPayload {
+  signature?: {
+    timestamp: string;
+    token: string;
+    signature: string;
+  };
+  "event-data"?: MailgunEventData;
+  event_data?: MailgunEventData;
+  eventData?: MailgunEventData;
+}
+
+interface MessageMetadata {
+  nc_token?: string;
+  [key: string]: unknown;
+}
+
+interface MessageStatusPatch {
+  status: string;
+  provider_status: string;
+  delivered_at?: string;
+  sent_at?: string;
+  failed_at?: string;
+  provider_message_id?: string;
+}
+
 function mapMailgunEventToStatus(evt: string): string | null {
   switch ((evt || "").toLowerCase()) {
     case "accepted":
@@ -31,12 +83,13 @@ function mapMailgunEventToStatus(evt: string): string | null {
   }
 }
 
-function getUserVars(eventData: any): Record<string, any> | null {
+function getUserVars(eventData: MailgunEventData | undefined): MailgunUserVariables | null {
+  if (!eventData) return null;
   return (
-    eventData?.["user-variables"] ??
-    eventData?.["user_variables"] ??
-    eventData?.["userVariables"] ??
-    eventData?.["user_vars"] ??
+    eventData["user-variables"] ??
+    eventData.user_variables ??
+    eventData.userVariables ??
+    eventData.user_vars ??
     null
   );
 }
@@ -44,9 +97,9 @@ function getUserVars(eventData: any): Record<string, any> | null {
 export async function POST(req: Request) {
   const raw = await req.text();
 
-  let body: any;
+  let body: MailgunWebhookPayload;
   try {
-    body = JSON.parse(raw);
+    body = JSON.parse(raw) as MailgunWebhookPayload;
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
@@ -92,7 +145,8 @@ export async function POST(req: Request) {
   const tenantId = msg.tenant_id as string;
 
   // Optional token check (only if stored)
-  const expectedToken = (msg.metadata as any)?.nc_token ?? null;
+  const metadata = msg.metadata as MessageMetadata | null;
+  const expectedToken = metadata?.nc_token ?? null;
   const gotToken = uv.nc_token ?? null;
   if (expectedToken && gotToken && String(expectedToken) !== String(gotToken)) {
     return NextResponse.json({ error: "Invalid nc_token" }, { status: 403 });
@@ -110,7 +164,7 @@ export async function POST(req: Request) {
   // Patch message status if relevant
   const mapped = mapMailgunEventToStatus(evt);
   if (mapped) {
-    const patch: Record<string, any> = { status: mapped, provider_status: evt };
+    const patch: MessageStatusPatch = { status: mapped, provider_status: evt };
     if (mapped === "delivered") patch.delivered_at = new Date().toISOString();
     if (mapped === "sent") patch.sent_at = new Date().toISOString();
     if (mapped === "failed") patch.failed_at = new Date().toISOString();
