@@ -198,6 +198,19 @@ export const shortcutsRescheduleSchema = z.object({
   reason: z.string().max(500).optional(),
 })
 
+// --- Shipping Quote Schema ---
+export const shippingQuoteSchema = z.object({
+  destinationZip: z.string().min(5, 'ZIP code is required').regex(/^\d{5}(-\d{4})?$/, 'Invalid ZIP code format'),
+  destinationCity: z.string().max(100).optional(),
+  destinationState: z.string().max(50).optional(),
+  productSku: z.enum(['AUN200', 'AUN250'], { message: 'Invalid product SKU' }),
+  isResidential: z.boolean().default(false),
+  source: z.enum(['configurator', 'checkout']),
+  leadId: z.string().uuid().optional(),
+  sessionId: z.string().optional(),
+  userEmail: z.string().email().optional(),
+})
+
 // --- Post Purchase Email Schema ---
 export const postPurchaseEmailSchema = z.object({
   type: z.enum(['order_confirmation', 'shipping_update', 'delivery_confirmation', 'review_request']),

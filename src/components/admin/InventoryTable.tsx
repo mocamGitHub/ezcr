@@ -13,7 +13,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { InventoryTableSkeleton } from '@/components/ui/table-skeleton'
-import { Edit, History, PackagePlus, PackageMinus, AlertTriangle } from 'lucide-react'
+import { Edit, History, PackagePlus, PackageMinus, AlertTriangle, RefreshCw } from 'lucide-react'
 import { InventoryAdjustmentDialog } from './InventoryAdjustmentDialog'
 
 interface Product {
@@ -33,10 +33,11 @@ interface Product {
 interface InventoryTableProps {
   products: Product[]
   loading: boolean
+  error?: string | null
   onRefresh: () => void
 }
 
-export function InventoryTable({ products, loading, onRefresh }: InventoryTableProps) {
+export function InventoryTable({ products, loading, error, onRefresh }: InventoryTableProps) {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [adjustmentType, setAdjustmentType] = useState<'increase' | 'decrease'>('increase')
 
@@ -53,6 +54,22 @@ export function InventoryTable({ products, loading, onRefresh }: InventoryTableP
       return { label: 'Low Stock', variant: 'secondary' as const, icon: AlertTriangle, className: 'bg-yellow-100 text-yellow-800 border-yellow-200' }
     }
     return { label: 'In Stock', variant: 'default' as const, icon: null, className: '' }
+  }
+
+  if (error) {
+    return (
+      <div className="border border-destructive/50 rounded-lg p-12 text-center bg-destructive/5">
+        <div className="mx-auto w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+          <AlertTriangle className="h-6 w-6 text-destructive" />
+        </div>
+        <h3 className="font-medium text-lg mb-1 text-destructive">Failed to load inventory</h3>
+        <p className="text-muted-foreground text-sm mb-4">{error}</p>
+        <Button variant="outline" onClick={onRefresh} className="gap-2">
+          <RefreshCw className="h-4 w-4" />
+          Try Again
+        </Button>
+      </div>
+    )
   }
 
   if (loading) {

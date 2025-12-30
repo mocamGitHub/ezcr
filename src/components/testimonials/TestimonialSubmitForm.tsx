@@ -117,9 +117,14 @@ export function TestimonialSubmitForm({
         onSuccess();
       }
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
-      console.error('Error submitting testimonial:', err);
-      setError(errorMessage);
+      // Differentiate error types for better user messaging
+      if (err instanceof TypeError && err.message.includes('fetch')) {
+        setError('Unable to connect. Please check your internet connection and try again.');
+      } else if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }

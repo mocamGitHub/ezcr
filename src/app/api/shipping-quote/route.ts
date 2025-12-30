@@ -22,6 +22,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { withRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { shippingQuoteSchema, validateRequest } from '@/lib/validations/api-schemas';
 
 // ============================================
 // CONFIGURATION
@@ -646,50 +647,26 @@ export async function POST(req: NextRequest) {
   const supabase = getSupabaseClient();
 
   try {
-    const request: ShippingQuoteRequest = await req.json();
+    const body = await req.json();
 
-    // Validate request
-    if (!request.destinationZip) {
+    // Validate request with Zod schema
+    const validation = validateRequest(shippingQuoteSchema, body);
+    if (!validation.success) {
+      const firstError = validation.error.details[0];
       return NextResponse.json(
         {
           success: false,
           error: {
             type: 'VALIDATION_ERROR',
-            message: 'Destination ZIP code is required',
-            userMessage: 'Please enter your ZIP code to get a shipping quote.',
+            message: validation.error.message,
+            userMessage: firstError?.message || 'Please check your input and try again.',
           },
         },
         { status: 400 }
       );
     }
 
-    if (!validateZipCode(request.destinationZip)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            type: 'INVALID_ZIP',
-            message: 'Invalid ZIP code format',
-            userMessage: 'Please enter a valid US ZIP code (e.g., 90210 or 90210-1234).',
-          },
-        },
-        { status: 400 }
-      );
-    }
-
-    if (!request.productSku || !PRODUCT_FREIGHT[request.productSku]) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            type: 'INVALID_PRODUCT',
-            message: 'Invalid product SKU',
-            userMessage: 'Please select a valid product.',
-          },
-        },
-        { status: 400 }
-      );
-    }
+    const request = validation.data;
 
     // Check cache first
     const cachedQuote = await getCachedQuote(
