@@ -10,6 +10,7 @@
 import React, { useState, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import { ConfiguratorHeader } from './ConfiguratorHeader'
+import { ConfiguratorWrapper } from './ConfiguratorWrapper'
 import { ConfiguratorProvider } from './ConfiguratorProvider'
 import { ArrowRight, CheckCircle, Info, Ruler, FileText, Clock, Phone, Calendar, X, AlertTriangle } from 'lucide-react'
 import { CallScheduler } from '@/components/contact/CallScheduler'
@@ -536,8 +537,10 @@ function QuickConfiguratorContent() {
 
 export default function QuickConfiguratorUFE() {
   return (
-    <ConfiguratorProvider>
-      <QuickConfiguratorContent />
-    </ConfiguratorProvider>
+    <ConfiguratorWrapper>
+      <ConfiguratorProvider>
+        <QuickConfiguratorContent />
+      </ConfiguratorProvider>
+    </ConfiguratorWrapper>
   )
 }

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { ConfiguratorProvider, useConfigurator } from './ConfiguratorProvider'
-import { ConfiguratorSettingsProvider } from './ConfiguratorSettingsProvider'
+import { ConfiguratorWrapper } from './ConfiguratorWrapper'
 import { ConfiguratorHeader } from './ConfiguratorHeader'
 import { Step1VehicleType } from './Step1VehicleType'
 import { Step2Measurements } from './Step2Measurements'
@@ -254,10 +254,10 @@ function ConfiguratorContent() {
 
 export default function ConfiguratorSmooth() {
   return (
-    <ConfiguratorSettingsProvider>
+    <ConfiguratorWrapper>
       <ConfiguratorProvider>
         <ConfiguratorContent />
       </ConfiguratorProvider>
-    </ConfiguratorSettingsProvider>
+    </ConfiguratorWrapper>
   )
 }
