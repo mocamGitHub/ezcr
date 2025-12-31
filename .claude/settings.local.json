@@ -197,7 +197,8 @@
       "Bash(\"src/app/\\(marketing\\)/faq/error.tsx\" )",
       "Bash(\"src/app/\\(marketing\\)/gallery/error.tsx\" )",
       "Bash(bd show:*)",
-      "Bash(powershell -Command:*)"
+      "Bash(powershell -Command:*)",
+      "Bash(PricingProvider\" errors.\n\n- QuickConfiguratorUFE: Added ConfiguratorWrapper around ConfiguratorProvider\n- ConfiguratorSmooth: Replaced ConfiguratorSettingsProvider with ConfiguratorWrapper\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
     ],
     "deny": [],
     "ask": []

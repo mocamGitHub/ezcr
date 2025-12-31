@@ -185,10 +185,10 @@ export function RuleEditorDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-background border-2 border-border shadow-2xl">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-semibold">{isEdit ? 'Edit Rule' : 'Create Rule'}</DialogTitle>
-          <DialogDescription className="text-muted-foreground">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-card border-2 border-border shadow-2xl">
+        <DialogHeader className="border-b border-border pb-4">
+          <DialogTitle className="text-xl font-semibold text-foreground">{isEdit ? 'Edit Rule' : 'Create Rule'}</DialogTitle>
+          <DialogDescription className="text-muted-foreground mt-1">
             {isEdit
               ? 'Modify the configurator rule settings.'
               : 'Create a new configurator business rule for a product.'}
@@ -262,7 +262,7 @@ export function RuleEditorDialog({
             </div>
             <Textarea
               id="condition"
-              className="font-mono text-sm min-h-[100px] bg-muted/30 border-input focus:ring-2 focus:ring-ring"
+              className="font-mono text-sm min-h-[100px] bg-muted/50 border-2 border-input focus:border-primary focus:ring-2 focus:ring-ring"
               placeholder={CONDITION_SCHEMAS[ruleType] || '{ }'}
               value={conditionJson}
               onChange={(e) => handleConditionChange(e.target.value)}
@@ -293,7 +293,7 @@ export function RuleEditorDialog({
             </div>
             <Textarea
               id="action"
-              className="font-mono text-sm min-h-[100px] bg-muted/30 border-input focus:ring-2 focus:ring-ring"
+              className="font-mono text-sm min-h-[100px] bg-muted/50 border-2 border-input focus:border-primary focus:ring-2 focus:ring-ring"
               placeholder={ACTION_SCHEMAS[ruleType] || '{ }'}
               value={actionJson}
               onChange={(e) => handleActionChange(e.target.value)}
