@@ -76,21 +76,23 @@ export const CONVERSIONS = {
   kgToLbs: 2.20462,
 } as const
 
-// Product pricing
+// DEPRECATED: Product and service pricing now comes from the database.
+// These constants are kept for legacy code compatibility but should not be used.
+// Use PricingContext instead: src/contexts/PricingContext.tsx
+// TODO: Remove these once ConfiguratorContext.tsx is deleted
 export const PRODUCT_PRICES = {
-  AUN250: 1299.0,
-  AUN210: 999.0,
-  AUN200: 799.0,
-  AUN150: 899.0,
-  'AC001-1': 149.0,
-  'AC001-2': 179.0,
-  'AC001-3': 209.0,
-  'AC004': 199.0,
-  '4-BEAM': 249.0,
+  AUN250: 0, // Use PricingContext
+  AUN210: 0,
+  AUN200: 0,
+  AUN150: 0,
+  'AC001-1': 0,
+  'AC001-2': 0,
+  'AC001-3': 0,
+  'AC004': 0,
+  '4-BEAM': 0,
 } as const
 
-// Service pricing
 export const SERVICE_PRICES = {
-  demo: 50.0,
-  installation: 150.0,
+  demo: 0, // Use PricingContext
+  installation: 0,
 } as const

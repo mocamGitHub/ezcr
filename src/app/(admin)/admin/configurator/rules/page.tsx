@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { usePageTitle } from '@/hooks/usePageTitle'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   Select,
@@ -23,13 +22,14 @@ import {
 } from 'lucide-react'
 import { RulesTable } from '@/components/admin/configurator/RulesTable'
 import { RuleEditorDialog } from '@/components/admin/configurator/RuleEditorDialog'
+import { RuleAnalyzer } from '@/components/admin/configurator/RuleAnalyzer'
 import type {
   ConfiguratorRule,
   RuleType,
   CreateRuleRequest,
   UpdateRuleRequest,
 } from '@/types/configurator-rules'
-import { RULE_TYPE_INFO } from '@/types/configurator-rules'
+import { RULE_TYPE_INFO, RULE_TYPE_CATEGORIES } from '@/types/configurator-rules'
 import { toast } from 'sonner'
 
 interface PaginationMeta {
@@ -41,14 +41,26 @@ interface PaginationMeta {
   has_prev_page: boolean
 }
 
-const RULE_TYPES: RuleType[] = ['ac001_extension', 'cargo_extension', 'incompatibility', 'recommendation']
+// Product-centric rule types
+const RULE_TYPES: RuleType[] = [
+  // Models
+  ...RULE_TYPE_CATEGORIES.models,
+  // Accessories
+  ...RULE_TYPE_CATEGORIES.accessories,
+  // Tiedowns
+  ...RULE_TYPE_CATEGORIES.tiedowns,
+  // Services
+  ...RULE_TYPE_CATEGORIES.services,
+  // Delivery
+  ...RULE_TYPE_CATEGORIES.delivery,
+]
 
 export default function ConfiguratorRulesPage() {
   usePageTitle('Configurator Rules')
 
   // Data state
   const [rules, setRules] = useState<ConfiguratorRule[]>([])
-  const [pagination, setPagination] = useState<PaginationMeta | null>(null)
+  const [_pagination, setPagination] = useState<PaginationMeta | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -148,8 +160,15 @@ export default function ConfiguratorRulesPage() {
     fetchRules()
   }
 
-  // Handle toggle active
+  // Handle toggle active (optimistic update)
   const handleToggleActive = async (rule: ConfiguratorRule, isActive: boolean) => {
+    // Optimistically update the UI immediately
+    setRules((prevRules) =>
+      prevRules.map((r) =>
+        r.id === rule.id ? { ...r, is_active: isActive } : r
+      )
+    )
+
     try {
       const response = await fetch(`/api/admin/configurator/rules/${rule.id}`, {
         method: 'PATCH',
@@ -163,8 +182,13 @@ export default function ConfiguratorRulesPage() {
       }
 
       toast.success(`Rule ${isActive ? 'activated' : 'deactivated'}`)
-      fetchRules()
     } catch (err) {
+      // Revert on error
+      setRules((prevRules) =>
+        prevRules.map((r) =>
+          r.id === rule.id ? { ...r, is_active: !isActive } : r
+        )
+      )
       toast.error(err instanceof Error ? err.message : 'Failed to update rule')
     }
   }
@@ -200,18 +224,19 @@ export default function ConfiguratorRulesPage() {
     setEditorOpen(true)
   }
 
-  // Calculate stats
-  const stats = {
-    total: rules.length,
-    active: rules.filter((r) => r.is_active).length,
-    inactive: rules.filter((r) => !r.is_active).length,
-    byType: RULE_TYPES.reduce(
-      (acc, type) => {
-        acc[type] = rules.filter((r) => r.rule_type === type).length
-        return acc
-      },
-      {} as Record<RuleType, number>
-    ),
+  // Handle duplicate rule
+  const handleDuplicate = (rule: ConfiguratorRule) => {
+    // Create a copy with modified key
+    const duplicatedRule: ConfiguratorRule = {
+      ...rule,
+      id: '', // Clear ID so it creates a new one
+      rule_key: `${rule.rule_key}_copy`,
+      is_active: false, // Start as inactive
+      created_at: '',
+      updated_at: '',
+    }
+    setSelectedRule(duplicatedRule)
+    setEditorOpen(true)
   }
 
   return (
@@ -250,23 +275,18 @@ export default function ConfiguratorRulesPage() {
         </Alert>
       )}
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
-        <div className="bg-card rounded-lg border p-4">
-          <div className="text-2xl font-bold">{stats.total}</div>
-          <div className="text-sm text-muted-foreground">Total Rules</div>
+      {/* Rule Analysis - Conflict/Gap Detection */}
+      {!isLoading && rules.length > 0 && (
+        <div className="mb-6">
+          <RuleAnalyzer
+            rules={rules}
+            onRuleClick={(ruleId) => {
+              const rule = rules.find(r => r.id === ruleId)
+              if (rule) handleEdit(rule)
+            }}
+          />
         </div>
-        <div className="bg-card rounded-lg border p-4">
-          <div className="text-2xl font-bold text-green-600">{stats.active}</div>
-          <div className="text-sm text-muted-foreground">Active</div>
-        </div>
-        {RULE_TYPES.map((type) => (
-          <div key={type} className="bg-card rounded-lg border p-4">
-            <div className="text-2xl font-bold">{stats.byType[type]}</div>
-            <div className="text-sm text-muted-foreground">{RULE_TYPE_INFO[type].label}</div>
-          </div>
-        ))}
-      </div>
+      )}
 
       {/* Filters */}
       <div className="bg-card rounded-lg border p-4 mb-6">
@@ -323,6 +343,7 @@ export default function ConfiguratorRulesPage() {
         onEdit={handleEdit}
         onToggleActive={handleToggleActive}
         onDelete={handleDelete}
+        onDuplicate={handleDuplicate}
       />
 
       {/* Editor Dialog */}

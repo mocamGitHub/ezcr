@@ -21,6 +21,7 @@ interface Product {
   category_id: string | null
   base_price: number
   is_active: boolean
+  has_configurator_rules?: boolean
   suppress_low_stock_alert?: boolean
   suppress_out_of_stock_alert?: boolean
   product_categories?: {
@@ -55,6 +56,7 @@ export default function InventoryDashboardPage() {
           category_id,
           base_price,
           is_active,
+          has_configurator_rules,
           suppress_low_stock_alert,
           suppress_out_of_stock_alert,
           product_categories (
@@ -138,6 +140,36 @@ export default function InventoryDashboardPage() {
     } catch (err) {
       console.error('Error toggling alert suppression:', err)
       toast.error(err instanceof Error ? err.message : 'Failed to update alert settings')
+    }
+  }
+
+  const handleToggleConfiguratorRules = async (productId: string, hasRules: boolean) => {
+    // Optimistic update
+    setProducts((prev) =>
+      prev.map((p) =>
+        p.id === productId ? { ...p, has_configurator_rules: hasRules } : p
+      )
+    )
+
+    try {
+      const supabase = createClient()
+      const { error } = await supabase
+        .from('products')
+        .update({ has_configurator_rules: hasRules })
+        .eq('id', productId)
+
+      if (error) throw error
+
+      toast.success(hasRules ? 'Product marked for configurator rules' : 'Configurator rules disabled for product')
+    } catch (err) {
+      // Revert on error
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.id === productId ? { ...p, has_configurator_rules: !hasRules } : p
+        )
+      )
+      console.error('Error toggling configurator rules:', err)
+      toast.error('Failed to update configurator rules setting')
     }
   }
 
@@ -260,6 +292,7 @@ export default function InventoryDashboardPage() {
         products={filteredProducts}
         loading={loading}
         onRefresh={fetchProducts}
+        onToggleConfiguratorRules={handleToggleConfiguratorRules}
       />
 
       {/* Empty State */}

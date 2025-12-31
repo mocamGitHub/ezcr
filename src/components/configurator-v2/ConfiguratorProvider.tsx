@@ -8,11 +8,10 @@ import {
   UnitSystem,
   AC001Extension,
   CONVERSION_FACTORS,
-  PRICING,
-  PRODUCT_NAMES,
   MEASUREMENT_RANGES,
   FEES,
 } from '@/types/configurator-v2'
+import { usePricing, type PricingData } from '@/contexts/PricingContext'
 import { generateQuotePDF } from '@/lib/utils/pdf-quote'
 import {
   getSharedConfiguratorData,
@@ -118,17 +117,39 @@ export function useConfigurator() {
   return context
 }
 
+// Helper to get price from pricing data with category mapping
+// Maps boltlessKit -> boltless_kit for API compatibility
+function getPrice(pricing: PricingData | null, category: keyof PricingData | 'boltlessKit', key: string): number {
+  if (!pricing) return 0
+  // Map camelCase to snake_case for boltless_kit
+  const apiCategory = category === 'boltlessKit' ? 'boltless_kit' : category
+  return pricing[apiCategory as keyof PricingData]?.[key]?.price ?? 0
+}
+
+function getName(pricing: PricingData | null, category: keyof PricingData | 'boltlessKit', key: string): string {
+  if (!pricing) return key
+  const apiCategory = category === 'boltlessKit' ? 'boltless_kit' : category
+  return pricing[apiCategory as keyof PricingData]?.[key]?.name ?? key
+}
+
+// Shipping handling fee - this is a fixed operational cost
+const SHIPPING_HANDLING_FEE = 62
+
 interface ConfiguratorProviderProps {
   children: ReactNode
 }
 
 export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
+  // Get pricing from context (ConfiguratorWrapper ensures this is loaded)
+  const { pricing } = usePricing()
+
   const [currentStep, setCurrentStep] = useState(1)
   const [completedSteps, setCompletedSteps] = useState<number[]>([])
   const [units, setUnits] = useState<UnitSystem>('imperial')
   const [showContactModal, setShowContactModal] = useState(false)
   const [pendingAction, setPendingAction] = useState<'cart' | 'email' | 'print' | null>(null)
   const [savedConfigId, setSavedConfigId] = useState<string | null>(null)
+  const [isInitialized, setIsInitialized] = useState(false)
 
   // UFE State
   const [ufeResult, setUfeResult] = useState<UFEResult | null>(null)
@@ -138,7 +159,8 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
   const [isResidential, setIsResidential] = useState(true)
   const { quote: shippingQuote, isLoading: isLoadingShipping, error: shippingError, fetchQuote, clearQuote } = useShippingQuote()
 
-
+  // Initialize configData with placeholder values
+  // Will be updated with real pricing once loaded
   const [configData, setConfigData] = useState<ConfigData>({
     vehicle: null,
     contact: {
@@ -160,37 +182,78 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
       length: 0,
     },
     // Defaults: AUN250 + Extension 1 (as RECOMMENDED)
+    // Prices will be updated from API in useEffect below
     selectedModel: {
       id: 'AUN250',
-      name: PRODUCT_NAMES.models.AUN250,
-      price: PRICING.models.AUN250,
+      name: 'AUN250',
+      price: 0,
     },
     extension: {
       id: 'ext1',
-      name: PRODUCT_NAMES.extensions.ext1,
-      price: PRICING.extensions.ext1,
+      name: 'Extension 1 (12")',
+      price: 0,
     },
     boltlessKit: {
       id: 'no-kit',
-      name: PRODUCT_NAMES.boltlessKit['no-kit'],
-      price: PRICING.boltlessKit['no-kit'],
+      name: 'No Boltless Tiedown Kit',
+      price: 0,
     },
     tiedown: {
       id: 'no-tiedown',
-      name: PRODUCT_NAMES.tiedown['no-tiedown'],
-      price: PRICING.tiedown['no-tiedown'],
+      name: 'No Tiedown Accessory',
+      price: 0,
     },
     service: {
       id: 'not-assembled',
-      name: PRODUCT_NAMES.services['not-assembled'],
-      price: PRICING.services['not-assembled'],
+      name: 'Not Assembled',
+      price: 0,
     },
     delivery: {
       id: 'pickup',
-      name: PRODUCT_NAMES.delivery.pickup,
-      price: PRICING.delivery.pickup,
+      name: 'Pickup',
+      price: 0,
     },
   })
+
+  // Initialize configData with real pricing when pricing becomes available
+  useEffect(() => {
+    if (pricing && !isInitialized) {
+      setConfigData((prev) => ({
+        ...prev,
+        selectedModel: {
+          id: 'AUN250',
+          name: getName(pricing, 'models', 'AUN250'),
+          price: getPrice(pricing, 'models', 'AUN250'),
+        },
+        extension: {
+          id: 'ext1',
+          name: getName(pricing, 'extensions', 'ext1'),
+          price: getPrice(pricing, 'extensions', 'ext1'),
+        },
+        boltlessKit: {
+          id: 'no-kit',
+          name: getName(pricing, 'boltlessKit', 'no-kit'),
+          price: getPrice(pricing, 'boltlessKit', 'no-kit'),
+        },
+        tiedown: {
+          id: 'no-tiedown',
+          name: getName(pricing, 'tiedown', 'no-tiedown'),
+          price: getPrice(pricing, 'tiedown', 'no-tiedown'),
+        },
+        service: {
+          id: 'not-assembled',
+          name: getName(pricing, 'services', 'not-assembled'),
+          price: getPrice(pricing, 'services', 'not-assembled'),
+        },
+        delivery: {
+          id: 'pickup',
+          name: getName(pricing, 'delivery', 'pickup'),
+          price: getPrice(pricing, 'delivery', 'pickup'),
+        },
+      }))
+      setIsInitialized(true)
+    }
+  }, [pricing, isInitialized])
 
   // Computed UFE recommended model
   const ufeRecommendedModel = useMemo<RampModelId | null>(() => {
@@ -202,6 +265,8 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
 
   // Load shared data from Quick Configurator on mount
   useEffect(() => {
+    if (!pricing) return // Wait for pricing to be available
+
     const sharedData = getSharedConfiguratorData()
     if (sharedData && sharedData.source === 'quick') {
       // Pre-populate based on Quick Configurator answers
@@ -240,8 +305,8 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
           const modelId = sharedData.recommendation
           updated.selectedModel = {
             id: modelId,
-            name: PRODUCT_NAMES.models[modelId as keyof typeof PRODUCT_NAMES.models],
-            price: PRICING.models[modelId as keyof typeof PRICING.models],
+            name: getName(pricing, 'models', modelId),
+            price: getPrice(pricing, 'models', modelId),
           }
         }
 
@@ -253,7 +318,7 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
         setCompletedSteps([1])
       }
     }
-  }, [])
+  }, [pricing])
 
   // Run UFE Evaluation based on current config data
   const runUFEEvaluation = useCallback(() => {
@@ -330,13 +395,13 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
       if (result.success && result.primaryRecommendation) {
         const rampId = result.primaryRecommendation.rampId
         const rampModel = getRampModel(rampId)
-        if (rampModel) {
+        if (rampModel && pricing) {
           setConfigData((prev) => ({
             ...prev,
             selectedModel: {
               id: rampId,
-              name: PRODUCT_NAMES.models[rampId as keyof typeof PRODUCT_NAMES.models] || rampModel.name,
-              price: PRICING.models[rampId as keyof typeof PRICING.models] || rampModel.price,
+              name: getName(pricing, 'models', rampId) || rampModel.name,
+              price: getPrice(pricing, 'models', rampId) || rampModel.price,
             },
           }))
         }
@@ -345,7 +410,7 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
       console.error('UFE evaluation error:', error)
       setUfeResult(null)
     }
-  }, [configData, units])
+  }, [configData, units, pricing])
 
   // Auto-run UFE when entering step 4
   useEffect(() => {
@@ -548,8 +613,8 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
         service: { id, name, price },
         delivery: {
           id: 'pickup',
-          name: PRODUCT_NAMES.delivery.pickup,
-          price: PRICING.delivery.pickup,
+          name: getName(pricing, 'delivery', 'pickup'),
+          price: getPrice(pricing, 'delivery', 'pickup'),
         },
       }))
       return
@@ -572,8 +637,8 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
       if (id === 'kit') {
         updated.tiedown = {
           id: 'turnbuckle-2',
-          name: PRODUCT_NAMES.tiedown['turnbuckle-2'],
-          price: PRICING.tiedown['turnbuckle-2'],
+          name: getName(pricing, 'tiedown', 'turnbuckle-2'),
+          price: getPrice(pricing, 'tiedown', 'turnbuckle-2'),
         }
       }
 
@@ -606,9 +671,8 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
     })
 
     // If successful, update the delivery price with the actual shipping rate + handling fee
-    // Handling fee is configurable in PRICING.shippingHandlingFee
     if (result?.success && result.totalRate) {
-      const totalShippingCost = result.totalRate + PRICING.shippingHandlingFee
+      const totalShippingCost = result.totalRate + SHIPPING_HANDLING_FEE
       setConfigData((prev) => ({
         ...prev,
         delivery: {
@@ -627,11 +691,11 @@ export function ConfiguratorProvider({ children }: ConfiguratorProviderProps) {
       ...prev,
       delivery: {
         id: 'pickup',
-        name: PRODUCT_NAMES.delivery.pickup,
-        price: PRICING.delivery.pickup,
+        name: getName(pricing, 'delivery', 'pickup'),
+        price: getPrice(pricing, 'delivery', 'pickup'),
       },
     }))
-  }, [clearQuote])
+  }, [clearQuote, pricing])
 
   // Validation
   const canProceedFromStep = (step: number): boolean => {

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { Search, X, Calendar, FileText, Loader2, Clock } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -9,6 +9,13 @@ import { getSearchIndex, type SearchResult, type SearchableItem } from '@/lib/se
 import { syncSearchIndex, isSyncNeeded } from '@/lib/search/syncService'
 import { useAuth } from '@/contexts/AuthContext'
 import { cn } from '@/lib/utils'
+
+// Pages where GlobalSearch should be visible
+const SCHEDULER_PATHS = [
+  '/admin/scheduler',
+  '/admin/notifications',
+  '/admin/comms',
+]
 
 interface GlobalSearchProps {
   onSelect?: (item: SearchableItem) => void
@@ -30,6 +37,7 @@ const typeLabels = {
 
 export function GlobalSearch({ onSelect }: GlobalSearchProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const { profile } = useAuth()
   const tenantId = profile?.tenant_id
   const [open, setOpen] = useState(false)
@@ -39,8 +47,13 @@ export function GlobalSearch({ onSelect }: GlobalSearchProps) {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Keyboard shortcut to open search
+  // Only show on scheduler-related pages
+  const isSchedulerPage = SCHEDULER_PATHS.some(path => pathname?.startsWith(path))
+
+  // Keyboard shortcut to open search (only on scheduler pages)
   useEffect(() => {
+    if (!isSchedulerPage) return
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
@@ -50,7 +63,7 @@ export function GlobalSearch({ onSelect }: GlobalSearchProps) {
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [])
+  }, [isSchedulerPage])
 
   // Focus input when dialog opens
   useEffect(() => {
@@ -142,6 +155,11 @@ export function GlobalSearch({ onSelect }: GlobalSearchProps) {
     } else if (e.key === 'Escape') {
       setOpen(false)
     }
+  }
+
+  // Don't render on non-scheduler pages
+  if (!isSchedulerPage) {
+    return null
   }
 
   return (

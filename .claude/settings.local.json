@@ -195,7 +195,9 @@
       "Bash(\"src/app/\\(marketing\\)/blog/error.tsx\" )",
       "Bash(\"src/app/\\(marketing\\)/contact/error.tsx\" )",
       "Bash(\"src/app/\\(marketing\\)/faq/error.tsx\" )",
-      "Bash(\"src/app/\\(marketing\\)/gallery/error.tsx\" )"
+      "Bash(\"src/app/\\(marketing\\)/gallery/error.tsx\" )",
+      "Bash(bd show:*)",
+      "Bash(powershell -Command:*)"
     ],
     "deny": [],
     "ask": []

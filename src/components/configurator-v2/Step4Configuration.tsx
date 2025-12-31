@@ -1,12 +1,25 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useConfigurator } from './ConfiguratorProvider'
 import { Button } from '@/components/ui/button'
-import { PRICING, PRODUCT_NAMES } from '@/types/configurator-v2'
+import { usePricing, type PricingData } from '@/contexts/PricingContext'
 import { Badge } from '@/components/ui/badge'
 import { Info, Loader2, Truck, MapPin, Home, Building2, Check, Phone } from 'lucide-react'
 import { CONTACT_INFO, TFORCE_INFO, getPhoneLink } from '@/config/contact'
+
+// Helper to get price from pricing data with category mapping
+function getPrice(pricing: PricingData | null, category: keyof PricingData | 'boltlessKit', key: string): number {
+  if (!pricing) return 0
+  const apiCategory = category === 'boltlessKit' ? 'boltless_kit' : category
+  return pricing[apiCategory as keyof PricingData]?.[key]?.price ?? 0
+}
+
+function getName(pricing: PricingData | null, category: keyof PricingData | 'boltlessKit', key: string): string {
+  if (!pricing) return key
+  const apiCategory = category === 'boltlessKit' ? 'boltless_kit' : category
+  return pricing[apiCategory as keyof PricingData]?.[key]?.name ?? key
+}
 
 export function Step4Configuration() {
   const {
@@ -35,6 +48,43 @@ export function Step4Configuration() {
     ufeRecommendedModel,
   } = useConfigurator()
 
+  // Get pricing from context
+  const { pricing } = usePricing()
+
+  // Build product options from dynamic pricing
+  const modelOptions = useMemo(() => [
+    { id: 'AUN250', name: getName(pricing, 'models', 'AUN250'), price: getPrice(pricing, 'models', 'AUN250') },
+    { id: 'AUN210', name: getName(pricing, 'models', 'AUN210'), price: getPrice(pricing, 'models', 'AUN210') },
+  ], [pricing])
+
+  const extensionOptions = useMemo(() => [
+    { id: 'no-ext', name: getName(pricing, 'extensions', 'no-ext'), price: getPrice(pricing, 'extensions', 'no-ext'), recommended: false },
+    { id: 'ext1', name: getName(pricing, 'extensions', 'ext1'), price: getPrice(pricing, 'extensions', 'ext1'), recommended: true },
+    { id: 'ext2', name: getName(pricing, 'extensions', 'ext2'), price: getPrice(pricing, 'extensions', 'ext2'), recommended: false },
+    { id: 'ext3', name: getName(pricing, 'extensions', 'ext3'), price: getPrice(pricing, 'extensions', 'ext3'), recommended: false },
+  ], [pricing])
+
+  const serviceOptions = useMemo(() => [
+    { id: 'not-assembled', name: getName(pricing, 'services', 'not-assembled'), price: getPrice(pricing, 'services', 'not-assembled') },
+    { id: 'assembly', name: getName(pricing, 'services', 'assembly'), price: getPrice(pricing, 'services', 'assembly') },
+    { id: 'demo', name: getName(pricing, 'services', 'demo'), price: getPrice(pricing, 'services', 'demo') },
+  ], [pricing])
+
+  const boltlessKitOptions = useMemo(() => [
+    { id: 'no-kit', name: getName(pricing, 'boltlessKit', 'no-kit'), price: getPrice(pricing, 'boltlessKit', 'no-kit') },
+    { id: 'kit', name: getName(pricing, 'boltlessKit', 'kit'), price: getPrice(pricing, 'boltlessKit', 'kit') },
+  ], [pricing])
+
+  // Boltless kit selected - Turnbuckles (2 pairs) should be recommended
+  const boltlessKitSelected = configData.boltlessKit.id === 'kit'
+
+  const tiedownOptions = useMemo(() => [
+    { id: 'no-tiedown', name: getName(pricing, 'tiedown', 'no-tiedown'), price: getPrice(pricing, 'tiedown', 'no-tiedown'), recommended: false },
+    { id: 'turnbuckle-1', name: getName(pricing, 'tiedown', 'turnbuckle-1'), price: getPrice(pricing, 'tiedown', 'turnbuckle-1'), recommended: false },
+    { id: 'turnbuckle-2', name: getName(pricing, 'tiedown', 'turnbuckle-2'), price: getPrice(pricing, 'tiedown', 'turnbuckle-2'), recommended: boltlessKitSelected },
+    { id: 'straps', name: getName(pricing, 'tiedown', 'straps'), price: getPrice(pricing, 'tiedown', 'straps'), recommended: false },
+  ], [pricing, boltlessKitSelected])
+
   // Local state for ZIP input
   const [zipInput, setZipInput] = useState(shippingZip)
 
@@ -48,9 +98,6 @@ export function Step4Configuration() {
 
   // Show delivery warning when Demo + Ship conflict
   const showDeliveryWarning = configData.service.id === 'demo'
-
-  // Boltless kit selected - Turnbuckles (2 pairs) should be recommended
-  const boltlessKitSelected = configData.boltlessKit.id === 'kit'
 
   // Handle ZIP code submission
   const handleGetShippingQuote = async () => {
@@ -66,7 +113,7 @@ export function Step4Configuration() {
   // Handle picking up (clear shipping quote)
   const handleSelectPickup = () => {
     clearShippingQuote()
-    selectDelivery('pickup', PRODUCT_NAMES.delivery.pickup, PRICING.delivery.pickup)
+    selectDelivery('pickup', getName(pricing, 'delivery', 'pickup'), getPrice(pricing, 'delivery', 'pickup'))
   }
 
   // Check if shipping is selected (has a valid quote)
@@ -136,7 +183,7 @@ export function Step4Configuration() {
             {/* AUN250 */}
             <button
               type="button"
-              onClick={() => selectModel('AUN250', PRODUCT_NAMES.models.AUN250, PRICING.models.AUN250)}
+              onClick={() => selectModel('AUN250', modelOptions[0].name, modelOptions[0].price)}
               className={`
                 relative p-6 rounded-xl border-2 transition-all duration-300 text-left
                 hover:shadow-lg
@@ -160,7 +207,7 @@ export function Step4Configuration() {
               )}
               <div className="flex justify-between items-start mb-3">
                 <h4 className="text-xl font-bold">AUN250</h4>
-                <p className="text-2xl font-bold">${PRICING.models.AUN250.toFixed(0)}</p>
+                <p className="text-2xl font-bold">${modelOptions[0].price.toFixed(0)}</p>
               </div>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li className="flex items-center gap-2">
@@ -181,7 +228,7 @@ export function Step4Configuration() {
             {/* AUN210 */}
             <button
               type="button"
-              onClick={() => selectModel('AUN210', PRODUCT_NAMES.models.AUN210, PRICING.models.AUN210)}
+              onClick={() => selectModel('AUN210', modelOptions[1].name, modelOptions[1].price)}
               className={`
                 relative p-6 rounded-xl border-2 transition-all duration-300 text-left
                 hover:shadow-lg
@@ -203,7 +250,7 @@ export function Step4Configuration() {
               )}
               <div className="flex justify-between items-start mb-3">
                 <h4 className="text-xl font-bold">AUN210</h4>
-                <p className="text-2xl font-bold">${PRICING.models.AUN210.toFixed(0)}</p>
+                <p className="text-2xl font-bold">${modelOptions[1].price.toFixed(0)}</p>
               </div>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li className="flex items-center gap-2">
@@ -245,12 +292,7 @@ export function Step4Configuration() {
         <div className="pt-6">
           <h3 className="text-xl font-bold mb-2 pb-2 border-b border-[#F78309]/30">Ramp <span className="text-[#F78309]">Extensions</span></h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              { id: 'no-ext', name: PRODUCT_NAMES.extensions['no-ext'], price: PRICING.extensions['no-ext'], recommended: false },
-              { id: 'ext1', name: PRODUCT_NAMES.extensions.ext1, price: PRICING.extensions.ext1, recommended: true },
-              { id: 'ext2', name: PRODUCT_NAMES.extensions.ext2, price: PRICING.extensions.ext2, recommended: false },
-              { id: 'ext3', name: PRODUCT_NAMES.extensions.ext3, price: PRICING.extensions.ext3, recommended: false },
-            ].map((ext) => (
+            {extensionOptions.map((ext) => (
               <button
                 key={ext.id}
                 type="button"
@@ -517,11 +559,7 @@ export function Step4Configuration() {
           <div>
             <h3 className="text-xl font-bold mb-2 pb-2 border-b border-[#0B5394]/30"><span className="text-[#0B5394]">Services</span></h3>
             <div className="space-y-3">
-              {[
-                { id: 'not-assembled', name: PRODUCT_NAMES.services['not-assembled'], price: PRICING.services['not-assembled'] },
-                { id: 'assembly', name: PRODUCT_NAMES.services.assembly, price: PRICING.services.assembly },
-                { id: 'demo', name: PRODUCT_NAMES.services.demo, price: PRICING.services.demo },
-              ].map((service) => (
+              {serviceOptions.map((service) => (
                 <button
                   key={service.id}
                   type="button"
@@ -558,10 +596,7 @@ export function Step4Configuration() {
           <div>
             <h3 className="text-xl font-bold mb-2 pb-2 border-b border-[#F78309]/30"><span className="text-[#F78309]">Boltless</span> Tiedown Kit</h3>
             <div className="space-y-3">
-              {[
-                { id: 'no-kit', name: PRODUCT_NAMES.boltlessKit['no-kit'], price: PRICING.boltlessKit['no-kit'] },
-                { id: 'kit', name: PRODUCT_NAMES.boltlessKit.kit, price: PRICING.boltlessKit.kit },
-              ].map((kit) => (
+              {boltlessKitOptions.map((kit) => (
                 <button
                   key={kit.id}
                   type="button"
@@ -595,12 +630,7 @@ export function Step4Configuration() {
           <div>
             <h3 className="text-xl font-bold mb-2 pb-2 border-b border-[#F78309]/30"><span className="text-[#F78309]">Tie-Down</span> Accessories</h3>
             <div className="space-y-3">
-              {[
-                { id: 'no-tiedown', name: PRODUCT_NAMES.tiedown['no-tiedown'], price: PRICING.tiedown['no-tiedown'], recommended: false },
-                { id: 'turnbuckle-1', name: PRODUCT_NAMES.tiedown['turnbuckle-1'], price: PRICING.tiedown['turnbuckle-1'], recommended: false },
-                { id: 'turnbuckle-2', name: PRODUCT_NAMES.tiedown['turnbuckle-2'], price: PRICING.tiedown['turnbuckle-2'], recommended: boltlessKitSelected },
-                { id: 'straps', name: PRODUCT_NAMES.tiedown.straps, price: PRICING.tiedown.straps, recommended: false },
-              ].map((tiedown) => (
+              {tiedownOptions.map((tiedown) => (
                 <button
                   key={tiedown.id}
                   type="button"

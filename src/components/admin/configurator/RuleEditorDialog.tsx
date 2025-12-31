@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/select'
 import { Loader2, AlertCircle } from 'lucide-react'
 import type { ConfiguratorRule, RuleType, CreateRuleRequest, UpdateRuleRequest } from '@/types/configurator-rules'
-import { RULE_TYPE_INFO, CONDITION_SCHEMAS, ACTION_SCHEMAS } from '@/types/configurator-rules'
+import { RULE_TYPE_INFO, RULE_TYPE_CATEGORIES, CONDITION_SCHEMAS, ACTION_SCHEMAS } from '@/types/configurator-rules'
 
 interface RuleEditorDialogProps {
   open: boolean
@@ -32,7 +32,14 @@ interface RuleEditorDialogProps {
   onSave: (data: CreateRuleRequest | UpdateRuleRequest, isEdit: boolean, ruleId?: string) => Promise<void>
 }
 
-const RULE_TYPES: RuleType[] = ['ac001_extension', 'cargo_extension', 'incompatibility', 'recommendation']
+// Product-centric rule types grouped by category
+const RULE_TYPES_BY_CATEGORY = {
+  Models: RULE_TYPE_CATEGORIES.models,
+  Accessories: RULE_TYPE_CATEGORIES.accessories,
+  Tiedowns: RULE_TYPE_CATEGORIES.tiedowns,
+  Services: RULE_TYPE_CATEGORIES.services,
+  Delivery: RULE_TYPE_CATEGORIES.delivery,
+}
 
 function validateJson(str: string): { valid: boolean; error?: string; parsed?: Record<string, unknown> } {
   if (!str.trim()) {
@@ -44,7 +51,7 @@ function validateJson(str: string): { valid: boolean; error?: string; parsed?: R
       return { valid: false, error: 'Must be a JSON object (not array or primitive)' }
     }
     return { valid: true, parsed }
-  } catch (e) {
+  } catch {
     return { valid: false, error: 'Invalid JSON syntax' }
   }
 }
@@ -55,10 +62,10 @@ export function RuleEditorDialog({
   rule,
   onSave,
 }: RuleEditorDialogProps) {
-  const isEdit = !!rule
+  const isEdit = !!(rule && rule.id)
 
   // Form state
-  const [ruleType, setRuleType] = useState<RuleType>('ac001_extension')
+  const [ruleType, setRuleType] = useState<RuleType>('AUN250')
   const [ruleKey, setRuleKey] = useState('')
   const [conditionJson, setConditionJson] = useState('')
   const [actionJson, setActionJson] = useState('')
@@ -86,7 +93,7 @@ export function RuleEditorDialog({
       setIsActive(rule.is_active)
     } else {
       // Reset to defaults for new rule
-      setRuleType('ac001_extension')
+      setRuleType('AUN250')
       setRuleKey('')
       setConditionJson('{\n  \n}')
       setActionJson('{\n  \n}')
@@ -134,13 +141,11 @@ export function RuleEditorDialog({
   const handleSave = async () => {
     setError(null)
 
-    // Validate required fields
     if (!ruleKey.trim()) {
       setError('Rule key is required')
       return
     }
 
-    // Validate JSON fields
     const conditionResult = validateJson(conditionJson)
     const actionResult = validateJson(actionJson)
 
@@ -176,39 +181,56 @@ export function RuleEditorDialog({
     }
   }
 
+  const typeInfo = RULE_TYPE_INFO[ruleType]
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-background border-2 border-border shadow-2xl">
         <DialogHeader>
-          <DialogTitle>{isEdit ? 'Edit Rule' : 'Create Rule'}</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-xl font-semibold">{isEdit ? 'Edit Rule' : 'Create Rule'}</DialogTitle>
+          <DialogDescription className="text-muted-foreground">
             {isEdit
               ? 'Modify the configurator rule settings.'
-              : 'Create a new configurator business rule.'}
+              : 'Create a new configurator business rule for a product.'}
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
-          {/* Rule Type */}
+          {/* Product/Rule Type - Grouped by Category */}
           <div className="grid gap-2">
-            <Label htmlFor="rule-type">Rule Type</Label>
+            <Label htmlFor="rule-type">Product / Rule Type</Label>
             <Select value={ruleType} onValueChange={(v) => setRuleType(v as RuleType)}>
               <SelectTrigger id="rule-type">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {RULE_TYPES.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    <div className="flex flex-col">
-                      <span>{RULE_TYPE_INFO[type].label}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {RULE_TYPE_INFO[type].description}
-                      </span>
+                {Object.entries(RULE_TYPES_BY_CATEGORY).map(([category, types]) => (
+                  <div key={category}>
+                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50">
+                      {category}
                     </div>
-                  </SelectItem>
+                    {types.map((type) => {
+                      const info = RULE_TYPE_INFO[type]
+                      return (
+                        <SelectItem key={type} value={type}>
+                          <div className="flex flex-col">
+                            <span>{info.label}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {info.description}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      )
+                    })}
+                  </div>
                 ))}
               </SelectContent>
             </Select>
+            {typeInfo && (
+              <p className="text-xs text-muted-foreground">
+                Category: {typeInfo.category}
+              </p>
+            )}
           </div>
 
           {/* Rule Key */}
@@ -216,19 +238,19 @@ export function RuleEditorDialog({
             <Label htmlFor="rule-key">Rule Key</Label>
             <Input
               id="rule-key"
-              placeholder="e.g., height_35_42"
+              placeholder="e.g., height_35_42, long_bed_recommended"
               value={ruleKey}
               onChange={(e) => setRuleKey(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              Unique identifier for this rule within its type. Use snake_case.
+              Unique identifier for this rule. Use snake_case.
             </p>
           </div>
 
           {/* Condition JSON */}
           <div className="grid gap-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="condition">Condition (JSON)</Label>
+              <Label htmlFor="condition" className="font-medium">Condition (JSON)</Label>
               <Button
                 type="button"
                 variant="ghost"
@@ -240,8 +262,8 @@ export function RuleEditorDialog({
             </div>
             <Textarea
               id="condition"
-              className="font-mono text-sm min-h-[100px]"
-              placeholder={CONDITION_SCHEMAS[ruleType]}
+              className="font-mono text-sm min-h-[100px] bg-muted/30 border-input focus:ring-2 focus:ring-ring"
+              placeholder={CONDITION_SCHEMAS[ruleType] || '{ }'}
               value={conditionJson}
               onChange={(e) => handleConditionChange(e.target.value)}
             />
@@ -259,7 +281,7 @@ export function RuleEditorDialog({
           {/* Action JSON */}
           <div className="grid gap-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="action">Action (JSON)</Label>
+              <Label htmlFor="action" className="font-medium">Action (JSON)</Label>
               <Button
                 type="button"
                 variant="ghost"
@@ -271,8 +293,8 @@ export function RuleEditorDialog({
             </div>
             <Textarea
               id="action"
-              className="font-mono text-sm min-h-[100px]"
-              placeholder={ACTION_SCHEMAS[ruleType]}
+              className="font-mono text-sm min-h-[100px] bg-muted/30 border-input focus:ring-2 focus:ring-ring"
+              placeholder={ACTION_SCHEMAS[ruleType] || '{ }'}
               value={actionJson}
               onChange={(e) => handleActionChange(e.target.value)}
             />

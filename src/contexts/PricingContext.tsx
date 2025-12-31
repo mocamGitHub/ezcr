@@ -54,22 +54,33 @@ export function PricingProvider({ children }: PricingProviderProps) {
       const response = await fetch('/api/configurator/settings')
 
       if (!response.ok) {
-        throw new Error('Failed to load configurator settings')
+        const errorText = await response.text()
+        console.error('Pricing API error response:', response.status, errorText)
+        throw new Error(`Failed to load configurator settings: ${response.status}`)
       }
 
       const data: ConfiguratorSettings = await response.json()
+      console.log('Pricing data received:', {
+        hasSettings: !!data,
+        hasPricing: !!data?.pricing,
+        categories: data?.pricing ? Object.keys(data.pricing) : [],
+        models: data?.pricing?.models ? Object.keys(data.pricing.models) : [],
+      })
 
       // Validate that pricing data exists
       if (!data.pricing || Object.keys(data.pricing).length === 0) {
+        console.error('No pricing data in response:', data)
         throw new Error('No pricing data available')
       }
 
       // Validate required pricing categories
       const requiredCategories = ['models', 'extensions', 'delivery', 'services']
-      for (const category of requiredCategories) {
-        if (!data.pricing[category as keyof PricingData]) {
-          throw new Error(`Missing required pricing category: ${category}`)
-        }
+      const missingCategories = requiredCategories.filter(
+        category => !data.pricing[category as keyof PricingData]
+      )
+      if (missingCategories.length > 0) {
+        console.error('Missing pricing categories:', missingCategories)
+        throw new Error(`Missing required pricing categories: ${missingCategories.join(', ')}`)
       }
 
       setSettings(data)

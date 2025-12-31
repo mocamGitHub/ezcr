@@ -279,6 +279,7 @@ export function generateBreadcrumbs(pathname: string): BreadcrumbItem[] {
   for (let i = 1; i < segments.length; i++) {
     const segment = segments[i]
     const href = '/' + segments.slice(0, i + 1).join('/')
+    const isLastSegment = i === segments.length - 1
 
     // Skip if it's dashboard (already added)
     if (segment === 'dashboard') continue
@@ -295,17 +296,34 @@ export function generateBreadcrumbs(pathname: string): BreadcrumbItem[] {
     } else {
       // Find the nav item for this segment
       const navItem = adminNavItems.find((item) => item.href === href)
+      // Check if there's a nav item that uses this path as a prefix (parent path)
+      const childNavItem = adminNavItems.find(
+        (item) => item.href.startsWith(href + '/') && item.href !== href
+      )
 
       if (navItem) {
+        // For the last segment, use the segment name (formatted) for clarity
+        // e.g., "Rules" for /admin/configurator/rules instead of nav item title "Configurator"
+        const title = isLastSegment
+          ? segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' ')
+          : navItem.title
+
         breadcrumbs.push({
-          title: navItem.title,
-          href: i === segments.length - 1 ? undefined : href,
+          title,
+          href: isLastSegment ? undefined : href,
+        })
+      } else if (childNavItem) {
+        // This is a parent path with no dedicated page (e.g., /admin/configurator)
+        // Link it to the child nav item's page
+        breadcrumbs.push({
+          title: segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' '),
+          href: isLastSegment ? undefined : childNavItem.href,
         })
       } else {
         // Capitalize first letter for unknown segments
         breadcrumbs.push({
-          title: segment.charAt(0).toUpperCase() + segment.slice(1),
-          href: i === segments.length - 1 ? undefined : href,
+          title: segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' '),
+          href: isLastSegment ? undefined : href,
         })
       }
     }

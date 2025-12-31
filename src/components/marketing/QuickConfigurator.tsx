@@ -40,6 +40,7 @@ interface Result {
 interface ConfiguratorPricing {
   models?: {
     AUN200?: { name: string; price: number }
+    AUN210?: { name: string; price: number }
     AUN250?: { name: string; price: number }
   }
 }
@@ -140,13 +141,7 @@ function buildQuestionFlow(answers: Record<string, string>): Question[] {
   return questions
 }
 
-// Default fallback prices if API fails
-const DEFAULT_PRICES = {
-  AUN200: 2495,
-  AUN250: 2795,
-}
-
-function calculateRecommendation(answers: Record<string, string>, pricing?: ConfiguratorPricing): Result {
+function calculateRecommendation(answers: Record<string, string>, pricing: ConfiguratorPricing): Result {
   const issues: string[] = []
   const notes: string[] = []
 
@@ -172,9 +167,13 @@ function calculateRecommendation(answers: Record<string, string>, pricing?: Conf
     }
   }
 
-  // Get prices from API or use defaults
-  const aun250Price = pricing?.models?.AUN250?.price ?? DEFAULT_PRICES.AUN250
-  const aun200Price = pricing?.models?.AUN200?.price ?? DEFAULT_PRICES.AUN200
+  // Get prices from API (required - no fallback)
+  // Support both AUN200 (legacy) and AUN210 (current) as the base model
+  const aun250Price = pricing?.models?.AUN250?.price ?? 0
+  const baseModel = pricing?.models?.AUN200 || pricing?.models?.AUN210
+  const baseModelPrice = baseModel?.price ?? 0
+  const baseModelName = pricing?.models?.AUN200 ? 'AUN200' : 'AUN210'
+  const baseModelDisplayName = pricing?.models?.AUN200 ? 'AUN 200' : 'AUN 210'
 
   // Recommendation logic
   const needsAUN250 =
@@ -196,10 +195,10 @@ function calculateRecommendation(answers: Record<string, string>, pricing?: Conf
   }
 
   return {
-    recommendation: 'AUN200',
-    message: 'Based on your answers, the AUN 200 Standard Ramp is recommended for your truck.',
-    price: aun200Price,
-    productUrl: '/products/aun-200-basic-ramp',
+    recommendation: baseModelName,
+    message: `Based on your answers, the ${baseModelDisplayName} Standard Ramp is recommended for your truck.`,
+    price: baseModelPrice,
+    productUrl: `/products/${baseModelName.toLowerCase()}-standard-ramp`,
     issues,
     notes,
     tonneauCompatible: true,
@@ -447,28 +446,42 @@ export function QuickConfigurator() {
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [showResult, setShowResult] = useState(false)
-  const [pricing, setPricing] = useState<ConfiguratorPricing | undefined>(undefined)
+  const [pricing, setPricing] = useState<ConfiguratorPricing | null>(null)
+  const [pricingLoading, setPricingLoading] = useState(true)
+  const [pricingError, setPricingError] = useState<string | null>(null)
 
   const questions = buildQuestionFlow(answers)
   const currentQuestion = questions[step]
   const isComplete = step >= questions.length
 
   // Fetch pricing from API on mount
-  useEffect(() => {
-    async function fetchPricing() {
-      try {
-        const response = await fetch('/api/configurator/settings')
-        if (response.ok) {
-          const data = await response.json()
-          setPricing(data.pricing)
-        }
-      } catch (error) {
-        console.error('Failed to fetch pricing:', error)
-        // Will use default prices as fallback
+  const fetchPricing = useCallback(async () => {
+    setPricingLoading(true)
+    setPricingError(null)
+    try {
+      const response = await fetch('/api/configurator/settings')
+      if (!response.ok) {
+        throw new Error('Failed to load pricing')
       }
+      const data = await response.json()
+      // Validate that we have at least one ramp model - check for AUN250 (primary) and AUN200 or AUN210
+      const models = data.pricing?.models
+      if (!models || !models.AUN250 || (!models.AUN200 && !models.AUN210)) {
+        console.error('Missing pricing data. Got models:', models)
+        throw new Error('Invalid pricing data: missing required ramp models')
+      }
+      setPricing(data.pricing)
+    } catch (error) {
+      console.error('Failed to fetch pricing:', error)
+      setPricingError(error instanceof Error ? error.message : 'Failed to load pricing')
+    } finally {
+      setPricingLoading(false)
     }
-    fetchPricing()
   }, [])
+
+  useEffect(() => {
+    fetchPricing()
+  }, [fetchPricing])
 
   // Load any existing shared data on mount
   useEffect(() => {
@@ -505,7 +518,7 @@ export function QuickConfigurator() {
 
   // Save answers when complete
   useEffect(() => {
-    if (isComplete && !result) {
+    if (isComplete && !result && pricing) {
       const calculatedResult = calculateRecommendation(answers, pricing)
       setResult(calculatedResult)
 
@@ -573,6 +586,64 @@ export function QuickConfigurator() {
       // Clear shared data when starting over
       clearSharedConfiguratorData()
     }, 300)
+  }
+
+  // Show loading state
+  if (pricingLoading) {
+    return (
+      <section id="configurator" className="py-16 bg-amber-50/50 dark:bg-zinc-950 border-y border-amber-200/50 dark:border-amber-800/30">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl md:text-4xl font-bold text-zinc-900 dark:text-white mb-4">
+              Find Your <span className="text-[#F78309]">Perfect Ramp</span>
+            </h2>
+          </div>
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <div className="w-12 h-12 border-4 border-[#F78309] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+              <p className="text-zinc-600 dark:text-zinc-400">Loading configurator...</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  // Show error state
+  if (pricingError) {
+    return (
+      <section id="configurator" className="py-16 bg-amber-50/50 dark:bg-zinc-950 border-y border-amber-200/50 dark:border-amber-800/30">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl md:text-4xl font-bold text-zinc-900 dark:text-white mb-4">
+              Find Your <span className="text-[#F78309]">Perfect Ramp</span>
+            </h2>
+          </div>
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center max-w-md">
+              <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Info className="w-8 h-8 text-amber-600 dark:text-amber-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-zinc-900 dark:text-white mb-2">
+                Unable to Load Configurator
+              </h3>
+              <p className="text-zinc-600 dark:text-zinc-400 mb-4">
+                We couldn&apos;t load the current pricing. This may be due to a temporary connection issue.
+              </p>
+              <button
+                onClick={fetchPricing}
+                className="px-6 py-3 bg-[#F78309] hover:bg-[#e07308] text-white font-medium rounded-lg transition-colors"
+              >
+                Try Again
+              </button>
+              <p className="text-zinc-500 text-sm mt-4">
+                Or call us at <a href="tel:18006874410" className="text-[#0B5394] hover:underline">1-800-687-4410</a>
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    )
   }
 
   return (
@@ -699,7 +770,7 @@ export function QuickConfigurator() {
                           transition: 'all 0.5s ease-out 0.2s',
                         }}
                       >
-                        We recommend the {result?.recommendation === 'AUN200' ? 'AUN 200' : 'AUN 250'}
+                        We recommend the {result?.recommendation === 'AUN250' ? 'AUN 250' : result?.recommendation === 'AUN210' ? 'AUN 210' : 'AUN 200'}
                       </h3>
                       <p
                         className="text-zinc-600 dark:text-zinc-400 mb-4"
@@ -776,7 +847,7 @@ export function QuickConfigurator() {
                           transition: 'all 0.5s ease-out 0.5s',
                         }}
                       >
-                        View {result?.recommendation === 'AUN200' ? 'AUN 200' : 'AUN 250'}
+                        View {result?.recommendation === 'AUN250' ? 'AUN 250' : result?.recommendation === 'AUN210' ? 'AUN 210' : 'AUN 200'}
                         <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                         </svg>

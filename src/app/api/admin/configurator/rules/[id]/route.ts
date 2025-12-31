@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateAdmin } from '@/lib/auth/api-auth'
 import type { RuleType, UpdateRuleRequest } from '@/types/configurator-rules'
+import { RULE_TYPE_CATEGORIES } from '@/types/configurator-rules'
 
 // =====================================================
 // GET: Fetch Single Configurator Rule (Admin Only)
@@ -85,7 +86,13 @@ export async function PATCH(
 
     // Validate rule_type if provided
     if (body.rule_type) {
-      const validRuleTypes: RuleType[] = ['ac001_extension', 'cargo_extension', 'incompatibility', 'recommendation']
+      const validRuleTypes: RuleType[] = [
+        ...RULE_TYPE_CATEGORIES.models,
+        ...RULE_TYPE_CATEGORIES.accessories,
+        ...RULE_TYPE_CATEGORIES.tiedowns,
+        ...RULE_TYPE_CATEGORIES.services,
+        ...RULE_TYPE_CATEGORIES.delivery,
+      ]
       if (!validRuleTypes.includes(body.rule_type)) {
         return NextResponse.json(
           { error: `Invalid rule_type. Must be one of: ${validRuleTypes.join(', ')}` },

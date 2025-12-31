@@ -110,74 +110,9 @@ export const CONTACT = {
   exitUrl: '/',
 } as const
 
-// Product Pricing
-export const PRICING = {
-  models: {
-    AUN250: 1299.0,
-    AUN210: 999.0,
-  },
-  extensions: {
-    'no-ext': 0,
-    ext1: 149.0,
-    ext2: 249.0,
-    ext3: 349.0,
-  },
-  delivery: {
-    pickup: 0,
-    ship: 185.0,
-  },
-  services: {
-    'not-assembled': 0,
-    assembly: 99.0,
-    demo: 149.0,
-  },
-  boltlessKit: {
-    'no-kit': 0,
-    kit: 89.0,
-  },
-  tiedown: {
-    'no-tiedown': 0,
-    'turnbuckle-1': 89.0,
-    'turnbuckle-2': 159.0,
-    straps: 29.0,
-  },
-  // Local shipping preparation fee (palletizing, handling, pickup from warehouse)
-  // This is added on top of the TForce freight quote
-  shippingHandlingFee: 62,
-} as const
-
-// Product Names
-export const PRODUCT_NAMES = {
-  models: {
-    AUN250: 'AUN250',
-    AUN210: 'AUN210',
-  },
-  extensions: {
-    'no-ext': 'No Extension',
-    ext1: 'Extension 1 (12")',
-    ext2: 'Extension 2 (24")',
-    ext3: 'Extension 3 (36")',
-  },
-  delivery: {
-    pickup: 'Pickup',
-    ship: 'Ship',
-  },
-  services: {
-    'not-assembled': 'Not Assembled',
-    assembly: 'Assembly Service',
-    demo: 'Demo (includes assembly)',
-  },
-  boltlessKit: {
-    'no-kit': 'No Boltless Tiedown Kit',
-    kit: 'Boltless Tiedown Kit',
-  },
-  tiedown: {
-    'no-tiedown': 'No Tiedown Accessory',
-    'turnbuckle-1': 'Turnbuckles (1 pair)',
-    'turnbuckle-2': 'Turnbuckles (2 pairs)',
-    straps: 'Tiedown Straps',
-  },
-} as const
+// PRICING and PRODUCT_NAMES have been removed.
+// All pricing now comes from the database via PricingContext.
+// See: src/contexts/PricingContext.tsx for dynamic pricing data.
 
 // Color Scheme
 export const COLORS = {

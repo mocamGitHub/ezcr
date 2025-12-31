@@ -1,4 +1,7 @@
 // src/components/seo/StructuredData.tsx
+// Uses next/script to avoid SSR hydration issues with JSON-LD structured data
+
+import Script from 'next/script'
 
 interface OrganizationSchemaProps {
   name?: string
@@ -65,8 +68,10 @@ export function OrganizationSchema({
   }
 
   return (
-    <script
+    <Script
+      id="organization-schema"
       type="application/ld+json"
+      strategy="afterInteractive"
       dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
     />
   )
@@ -104,8 +109,10 @@ export function LocalBusinessSchema() {
   }
 
   return (
-    <script
+    <Script
+      id="local-business-schema"
       type="application/ld+json"
+      strategy="afterInteractive"
       dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
     />
   )
@@ -174,8 +181,10 @@ export function ProductSchema({
   }
 
   return (
-    <script
+    <Script
+      id={`product-schema-${sku}`}
       type="application/ld+json"
+      strategy="afterInteractive"
       dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
     />
   )
@@ -197,8 +206,10 @@ export function FAQSchema({ questions }: FAQSchemaProps) {
   }
 
   return (
-    <script
+    <Script
+      id="faq-schema"
       type="application/ld+json"
+      strategy="afterInteractive"
       dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
     />
   )
@@ -218,8 +229,10 @@ export function BreadcrumbSchema({ items }: BreadcrumbSchemaProps) {
   }
 
   return (
-    <script
+    <Script
+      id="breadcrumb-schema"
       type="application/ld+json"
+      strategy="afterInteractive"
       dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
     />
   )
@@ -243,8 +256,10 @@ export function WebsiteSchema() {
   }
 
   return (
-    <script
+    <Script
+      id="website-schema"
       type="application/ld+json"
+      strategy="afterInteractive"
       dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
     />
   )

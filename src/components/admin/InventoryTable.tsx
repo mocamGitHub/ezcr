@@ -12,8 +12,9 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Switch } from '@/components/ui/switch'
 import { InventoryTableSkeleton } from '@/components/ui/table-skeleton'
-import { Edit, History, PackagePlus, PackageMinus, AlertTriangle, RefreshCw } from 'lucide-react'
+import { Edit, History, PackagePlus, PackageMinus, AlertTriangle, RefreshCw, SlidersHorizontal } from 'lucide-react'
 import { InventoryAdjustmentDialog } from './InventoryAdjustmentDialog'
 
 interface Product {
@@ -25,6 +26,7 @@ interface Product {
   category_id: string | null
   base_price: number
   is_active: boolean
+  has_configurator_rules?: boolean
   product_categories?: {
     name: string
   } | null
@@ -35,9 +37,10 @@ interface InventoryTableProps {
   loading: boolean
   error?: string | null
   onRefresh: () => void
+  onToggleConfiguratorRules?: (productId: string, hasRules: boolean) => void
 }
 
-export function InventoryTable({ products, loading, error, onRefresh }: InventoryTableProps) {
+export function InventoryTable({ products, loading, error, onRefresh, onToggleConfiguratorRules }: InventoryTableProps) {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [adjustmentType, setAdjustmentType] = useState<'increase' | 'decrease'>('increase')
 
@@ -103,6 +106,12 @@ export function InventoryTable({ products, loading, error, onRefresh }: Inventor
               <TableHead className="text-right">Stock</TableHead>
               <TableHead className="text-right hidden md:table-cell">Threshold</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead className="text-center hidden md:table-cell" title="Has Configurator Rules">
+                <div className="flex items-center justify-center gap-1">
+                  <SlidersHorizontal className="h-4 w-4" />
+                  <span className="hidden lg:inline">Rules</span>
+                </div>
+              </TableHead>
               <TableHead className="text-right hidden lg:table-cell">Unit Price</TableHead>
               <TableHead className="text-right hidden md:table-cell">Total Value</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -158,6 +167,18 @@ export function InventoryTable({ products, loading, error, onRefresh }: Inventor
                       {/* Short label on mobile */}
                       <span className="sm:hidden">{status.label === 'Out of Stock' ? 'OOS' : status.label === 'Low Stock' ? 'Low' : 'OK'}</span>
                     </Badge>
+                  </TableCell>
+                  <TableCell className="text-center hidden md:table-cell">
+                    {onToggleConfiguratorRules && (
+                      <Switch
+                        checked={product.has_configurator_rules || false}
+                        onCheckedChange={(checked) => onToggleConfiguratorRules(product.id, checked)}
+                        className={product.has_configurator_rules
+                          ? 'data-[state=checked]:bg-green-600'
+                          : 'data-[state=unchecked]:bg-muted'
+                        }
+                      />
+                    )}
                   </TableCell>
                   <TableCell className="text-right hidden lg:table-cell">
                     ${product.base_price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}

@@ -28,10 +28,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { MoreHorizontal, Pencil, Trash2, RefreshCw, AlertTriangle, SlidersHorizontal } from 'lucide-react'
+import { MoreHorizontal, Pencil, Trash2, RefreshCw, AlertTriangle, SlidersHorizontal, Copy } from 'lucide-react'
 import type { ConfiguratorRule, RuleType } from '@/types/configurator-rules'
 import { RULE_TYPE_INFO } from '@/types/configurator-rules'
-import { toast } from 'sonner'
 
 interface RulesTableProps {
   rules: ConfiguratorRule[]
@@ -41,20 +40,27 @@ interface RulesTableProps {
   onEdit: (rule: ConfiguratorRule) => void
   onToggleActive: (rule: ConfiguratorRule, isActive: boolean) => Promise<void>
   onDelete: (rule: ConfiguratorRule) => Promise<void>
+  onDuplicate?: (rule: ConfiguratorRule) => void
 }
 
-function getRuleTypeBadgeVariant(ruleType: RuleType): 'default' | 'secondary' | 'destructive' | 'outline' {
-  switch (ruleType) {
-    case 'incompatibility':
-      return 'destructive'
-    case 'recommendation':
-      return 'secondary'
-    case 'ac001_extension':
-      return 'default'
-    case 'cargo_extension':
-      return 'outline'
+function getRuleTypeBadgeStyle(ruleType: RuleType): { variant: 'default' | 'secondary' | 'outline'; className?: string } {
+  const info = RULE_TYPE_INFO[ruleType]
+  if (!info) return { variant: 'outline' }
+
+  // Use category to determine badge variant and style
+  switch (info.category) {
+    case 'Models':
+      return { variant: 'default' }
+    case 'Accessories':
+      return { variant: 'secondary' }
+    case 'Tiedowns':
+      return { variant: 'outline' }
+    case 'Services':
+      return { variant: 'default', className: 'bg-blue-600 hover:bg-blue-700 text-white' }
+    case 'Delivery':
+      return { variant: 'outline' }
     default:
-      return 'outline'
+      return { variant: 'outline' }
   }
 }
 
@@ -84,6 +90,7 @@ export function RulesTable({
   onEdit,
   onToggleActive,
   onDelete,
+  onDuplicate,
 }: RulesTableProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [ruleToDelete, setRuleToDelete] = useState<ConfiguratorRule | null>(null)
@@ -182,13 +189,22 @@ export function RulesTable({
               return (
                 <TableRow
                   key={rule.id}
-                  className="cursor-pointer hover:bg-muted/50"
+                  className={`cursor-pointer hover:bg-muted/50 transition-colors ${
+                    rule.is_active
+                      ? ''
+                      : 'opacity-60 bg-muted/30'
+                  }`}
                   onClick={() => onEdit(rule)}
                 >
                   <TableCell onClick={(e) => e.stopPropagation()}>
-                    <Badge variant={getRuleTypeBadgeVariant(rule.rule_type)}>
-                      {typeInfo.label}
-                    </Badge>
+                    {(() => {
+                      const badgeStyle = getRuleTypeBadgeStyle(rule.rule_type)
+                      return (
+                        <Badge variant={badgeStyle.variant} className={badgeStyle.className}>
+                          {typeInfo.label}
+                        </Badge>
+                      )
+                    })()}
                   </TableCell>
                   <TableCell className="font-mono text-sm">
                     {rule.rule_key}
@@ -216,6 +232,10 @@ export function RulesTable({
                       checked={rule.is_active}
                       disabled={togglingIds.has(rule.id)}
                       onCheckedChange={(checked) => handleToggleActive(rule, checked)}
+                      className={rule.is_active
+                        ? 'data-[state=checked]:bg-green-600'
+                        : 'data-[state=unchecked]:bg-red-500'
+                      }
                     />
                   </TableCell>
                   <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
@@ -231,6 +251,12 @@ export function RulesTable({
                           <Pencil className="mr-2 h-4 w-4" />
                           Edit
                         </DropdownMenuItem>
+                        {onDuplicate && (
+                          <DropdownMenuItem onClick={() => onDuplicate(rule)}>
+                            <Copy className="mr-2 h-4 w-4" />
+                            Duplicate
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem
                           onClick={() => handleDeleteClick(rule)}
                           className="text-destructive focus:text-destructive"
