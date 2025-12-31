@@ -284,6 +284,12 @@ export function generateBreadcrumbs(pathname: string): BreadcrumbItem[] {
     // Skip if it's dashboard (already added)
     if (segment === 'dashboard') continue
 
+    // Special case: /admin/configurator is a parent path, skip it and let the child handle it
+    // This prevents "Configurator > Configurator" breadcrumb
+    if (href === '/admin/configurator' && !isLastSegment) {
+      continue
+    }
+
     // Check if this is a dynamic segment (like [productId] or [email])
     const isDynamic = !adminNavItems.some((item) => item.href === href) && i > 1
 
