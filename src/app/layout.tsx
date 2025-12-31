@@ -110,12 +110,12 @@ export default function RootLayout({
             `,
           }}
         />
-        {/* Structured Data */}
+      </head>
+      <body className={inter.className} suppressHydrationWarning>
+        {/* Structured Data - must be in body for next/script */}
         <OrganizationSchema />
         <LocalBusinessSchema />
         <WebsiteSchema />
-      </head>
-      <body className={inter.className} suppressHydrationWarning>
         <ThemeProvider>
           <AuthProvider>
             <CartProvider>
