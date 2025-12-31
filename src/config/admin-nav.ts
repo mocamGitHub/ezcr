@@ -15,6 +15,7 @@ import {
   BookOpen,
   Settings,
   User,
+  SlidersHorizontal,
   type LucideIcon,
 } from 'lucide-react'
 import { type UserRole, hasPermission } from '@/lib/permissions'
@@ -119,6 +120,13 @@ export const adminNavSections: AdminNavSection[] = [
     title: 'Admin',
     color: 'text-purple-600 dark:text-purple-400',
     items: [
+      {
+        title: 'Configurator',
+        href: '/admin/configurator/rules',
+        icon: SlidersHorizontal,
+        description: 'Manage configurator rules',
+        minRole: 'admin',
+      },
       {
         title: 'Team',
         href: '/admin/team',
