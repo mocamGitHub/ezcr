@@ -40,8 +40,10 @@ import {
   CalendarDays,
   ExternalLink,
   BadgeCheck,
+  Download,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { exportToCSV, testimonialColumns, getExportFilename } from '@/lib/utils/export'
 import { cn } from '@/lib/utils'
 import {
   AdminDataTable,
@@ -55,6 +57,7 @@ import {
 } from '@/components/admin'
 import {
   getTestimonialsPaginated,
+  getTestimonialsForExport,
   approveTestimonial,
   rejectTestimonial,
   respondToTestimonial,
@@ -200,6 +203,25 @@ export default function AdminTestimonialsPage() {
     if (applyPreset) {
       applyPreset(preset as Partial<TestimonialFilters>)
       setPage(1)
+    }
+  }
+
+  const handleExport = async () => {
+    try {
+      const exportData = await getTestimonialsForExport({
+        search,
+        status: statusFilter,
+        featured: featuredFilter,
+        rating: ratingFilter,
+        startDate: dateRange?.from?.toISOString(),
+        endDate: dateRange?.to?.toISOString(),
+      })
+      exportToCSV(exportData, testimonialColumns, getExportFilename('testimonials'))
+      const filterNote = hasActiveFilters ? ' (filtered)' : ''
+      toast.success(`Exported ${exportData.length} testimonials${filterNote} to CSV`)
+    } catch (err) {
+      console.error('Error exporting testimonials:', err)
+      toast.error('Failed to export testimonials')
     }
   }
 
@@ -557,6 +579,12 @@ export default function AdminTestimonialsPage() {
       <PageHeader
         title="Testimonials"
         description="Approve, reject, and respond to customer testimonials"
+        primaryAction={
+          <Button variant="outline" onClick={handleExport}>
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
+        }
       />
 
       <div className="flex flex-wrap items-center gap-3 mb-4">

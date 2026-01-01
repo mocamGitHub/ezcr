@@ -225,9 +225,14 @@ export default function InventoryDashboardPage() {
 
   const handleExport = async () => {
     try {
-      const allProducts = await getProductsForExport()
-      exportToCSV(allProducts, inventoryColumns, getExportFilename('inventory'))
-      toast.success(`Exported ${allProducts.length} products to CSV`)
+      const exportProducts = await getProductsForExport({
+        search,
+        showLowStockOnly,
+        categoryId: categoryId !== 'all' ? categoryId : undefined,
+      })
+      exportToCSV(exportProducts, inventoryColumns, getExportFilename('inventory'))
+      const filterNote = hasActiveFilters ? ' (filtered)' : ''
+      toast.success(`Exported ${exportProducts.length} products${filterNote} to CSV`)
     } catch (err) {
       toast.error('Failed to export inventory')
     }

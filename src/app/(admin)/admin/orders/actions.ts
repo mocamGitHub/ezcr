@@ -389,22 +389,60 @@ export async function saveTrackingData(
 }
 
 // =====================================================
-// GET ORDERS FOR EXPORT
+// GET ORDERS FOR EXPORT (with filters)
 // =====================================================
 
+export interface GetOrdersForExportParams {
+  search?: string
+  statusFilter?: string
+  paymentFilter?: string
+  startDate?: string
+  endDate?: string
+}
+
 export async function getOrdersForExport(
-  statusFilter: string = 'all'
+  params: GetOrdersForExportParams = {}
 ): Promise<Order[]> {
   await requireStaffMember()
   const supabase = createServiceClient()
+
+  const {
+    search = '',
+    statusFilter = 'all',
+    paymentFilter = 'all',
+    startDate,
+    endDate,
+  } = params
 
   let query = supabase
     .from('orders')
     .select('*')
     .order('created_at', { ascending: false })
 
+  // Apply status filter
   if (statusFilter && statusFilter !== 'all') {
     query = query.eq('status', statusFilter)
+  }
+
+  // Apply payment status filter
+  if (paymentFilter && paymentFilter !== 'all') {
+    query = query.eq('payment_status', paymentFilter)
+  }
+
+  // Apply date range filter
+  if (startDate) {
+    query = query.gte('created_at', startDate)
+  }
+  if (endDate) {
+    query = query.lte('created_at', endDate)
+  }
+
+  // Apply search filter
+  if (search.trim()) {
+    const searchTerm = `%${search.trim()}%`
+    query = query.or(
+      `order_number.ilike.${searchTerm},customer_name.ilike.${searchTerm},customer_email.ilike.${searchTerm}`
+    )
   }
 
   const { data, error } = await query

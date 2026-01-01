@@ -122,6 +122,40 @@ export const customerColumns: ExportColumn[] = [
   },
 ]
 
+export const testimonialColumns: ExportColumn[] = [
+  { key: 'customer_name', header: 'Customer Name' },
+  { key: 'customer_email', header: 'Email' },
+  { key: 'rating', header: 'Rating' },
+  { key: 'status', header: 'Status' },
+  {
+    key: 'is_featured',
+    header: 'Featured',
+    formatter: (v) => v ? 'Yes' : 'No'
+  },
+  { key: 'review_text', header: 'Review' },
+  {
+    key: 'created_at',
+    header: 'Date',
+    formatter: (v) => v ? new Date(v as string).toLocaleDateString() : ''
+  },
+]
+
+export const contactColumns: ExportColumn[] = [
+  { key: 'company_name', header: 'Company' },
+  { key: 'contact_name', header: 'Contact Name' },
+  { key: 'email', header: 'Email' },
+  { key: 'phone', header: 'Phone' },
+  { key: 'contact_type', header: 'Type' },
+  { key: 'status', header: 'Status' },
+  { key: 'city', header: 'City' },
+  { key: 'state', header: 'State' },
+  {
+    key: 'created_at',
+    header: 'Created',
+    formatter: (v) => v ? new Date(v as string).toLocaleDateString() : ''
+  },
+]
+
 /**
  * Format current date for export filename
  */

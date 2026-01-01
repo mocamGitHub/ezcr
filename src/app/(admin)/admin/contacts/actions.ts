@@ -386,3 +386,71 @@ export async function getContactStats(): Promise<{
     byStatus,
   }
 }
+
+// ============================================
+// GET CONTACTS FOR EXPORT (with filters)
+// ============================================
+
+export interface GetContactsForExportParams {
+  search?: string
+  type?: ContactType | 'all'
+  status?: ContactStatus | 'all'
+  startDate?: string
+  endDate?: string
+}
+
+export async function getContactsForExport(
+  params: GetContactsForExportParams = {}
+): Promise<Contact[]> {
+  const supabase = getAdminClient()
+  const tenantId = getTenantId()
+
+  const {
+    search = '',
+    type = 'all',
+    status = 'all',
+    startDate,
+    endDate,
+  } = params
+
+  let query = supabase
+    .from('tenant_contacts')
+    .select('*')
+    .eq('tenant_id', tenantId)
+    .is('archived_at', null)
+    .order('company_name', { ascending: true })
+
+  // Apply search filter
+  if (search.trim()) {
+    query = query.or(
+      `company_name.ilike.%${search.trim()}%,contact_name.ilike.%${search.trim()}%,email.ilike.%${search.trim()}%`
+    )
+  }
+
+  // Apply type filter
+  if (type && type !== 'all') {
+    query = query.eq('contact_type', type)
+  }
+
+  // Apply status filter
+  if (status && status !== 'all') {
+    query = query.eq('status', status)
+  }
+
+  // Apply date range filter
+  if (startDate) {
+    query = query.gte('created_at', startDate)
+  }
+  if (endDate) {
+    query = query.lte('created_at', endDate)
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    console.error('Error fetching contacts for export:', error)
+    throw new Error('Failed to fetch contacts for export')
+  }
+
+  return (data || []) as Contact[]
+}

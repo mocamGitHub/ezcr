@@ -337,3 +337,78 @@ export async function getCustomerOrders(email: string): Promise<CustomerOrder[]>
 
   return data || []
 }
+
+// =====================================================
+// GET TESTIMONIALS FOR EXPORT (with filters)
+// =====================================================
+
+export interface GetTestimonialsForExportParams {
+  search?: string
+  status?: 'all' | 'pending' | 'approved' | 'rejected'
+  featured?: 'all' | 'featured' | 'not_featured'
+  rating?: 'all' | '1' | '2' | '3' | '4' | '5'
+  startDate?: string
+  endDate?: string
+}
+
+export async function getTestimonialsForExport(
+  params: GetTestimonialsForExportParams = {}
+): Promise<Testimonial[]> {
+  await requireStaffMember()
+  const supabase = createServiceClient()
+
+  const {
+    search = '',
+    status = 'all',
+    featured = 'all',
+    rating = 'all',
+    startDate,
+    endDate,
+  } = params
+
+  let query = supabase
+    .from('testimonials')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  // Apply status filter
+  if (status !== 'all') {
+    query = query.eq('status', status)
+  }
+
+  // Apply featured filter
+  if (featured === 'featured') {
+    query = query.eq('is_featured', true)
+  } else if (featured === 'not_featured') {
+    query = query.eq('is_featured', false)
+  }
+
+  // Apply rating filter
+  if (rating !== 'all') {
+    query = query.eq('rating', parseInt(rating, 10))
+  }
+
+  // Apply date range filter
+  if (startDate) {
+    query = query.gte('created_at', startDate)
+  }
+  if (endDate) {
+    query = query.lte('created_at', endDate)
+  }
+
+  // Apply search filter
+  if (search.trim()) {
+    query = query.or(
+      `customer_name.ilike.%${search.trim()}%,customer_email.ilike.%${search.trim()}%,review_text.ilike.%${search.trim()}%`
+    )
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    console.error('Error fetching testimonials for export:', error)
+    throw new Error('Failed to fetch testimonials for export')
+  }
+
+  return (data || []) as Testimonial[]
+}

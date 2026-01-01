@@ -314,15 +314,25 @@ export async function toggleAlertSuppression(
 }
 
 // =====================================================
-// GET ALL PRODUCTS FOR EXPORT
+// GET PRODUCTS FOR EXPORT (with optional filters)
 // =====================================================
 
-export async function getProductsForExport(): Promise<Product[]> {
+export interface GetProductsForExportParams {
+  search?: string
+  showLowStockOnly?: boolean
+  categoryId?: string
+}
+
+export async function getProductsForExport(
+  params: GetProductsForExportParams = {}
+): Promise<Product[]> {
   await requireStaffMember()
   const tenantId = await getTenantId()
   const supabase = createServiceClient()
 
-  const { data, error } = await supabase
+  const { search = '', showLowStockOnly = false, categoryId } = params
+
+  let query = supabase
     .from('products')
     .select(
       `
@@ -343,7 +353,29 @@ export async function getProductsForExport(): Promise<Product[]> {
     `
     )
     .eq('tenant_id', tenantId)
-    .order('name', { ascending: true })
+
+  // Apply category filter
+  if (categoryId && categoryId !== 'all') {
+    if (categoryId === 'uncategorized') {
+      query = query.is('category_id', null)
+    } else {
+      query = query.eq('category_id', categoryId)
+    }
+  }
+
+  // Apply search filter
+  if (search.trim()) {
+    query = query.or(`name.ilike.%${search.trim()}%,sku.ilike.%${search.trim()}%`)
+  }
+
+  // Apply low stock filter
+  if (showLowStockOnly) {
+    query = query.filter('inventory_count', 'lte', 'low_stock_threshold')
+  }
+
+  query = query.order('name', { ascending: true })
+
+  const { data, error } = await query
 
   if (error) {
     console.error('Error fetching products for export:', error)

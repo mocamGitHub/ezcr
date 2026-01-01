@@ -518,13 +518,22 @@ export default function AdminOrdersPage() {
       let dataToExport: Order[]
 
       if (selectedKeys.size > 0) {
+        // Export selected rows only
         dataToExport = orders.filter((o) => selectedKeys.has(o.id))
       } else {
-        dataToExport = await getOrdersForExport(statusFilter)
+        // Export all rows matching current filters
+        dataToExport = await getOrdersForExport({
+          search,
+          statusFilter,
+          paymentFilter,
+          startDate: dateRange?.from?.toISOString(),
+          endDate: dateRange?.to?.toISOString(),
+        })
       }
 
       exportToCSV(dataToExport, orderColumns, getExportFilename('orders'))
-      toast.success(`Exported ${dataToExport.length} orders to CSV`)
+      const filterNote = hasActiveFilters && selectedKeys.size === 0 ? ' (filtered)' : ''
+      toast.success(`Exported ${dataToExport.length} orders${filterNote} to CSV`)
     } catch (err) {
       console.error('Error exporting orders:', err)
       toast.error('Failed to export orders')

@@ -40,10 +40,13 @@ import {
   MapPin,
   Loader2,
   ExternalLink,
+  Download,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { exportToCSV, contactColumns, getExportFilename } from '@/lib/utils/export'
 import {
   getContactsPaginated,
+  getContactsForExport,
   createContact,
   updateContact,
   deleteContact,
@@ -188,6 +191,24 @@ export default function ContactsPage() {
     if (applyPreset) {
       applyPreset(preset as Partial<ContactFilters>)
       setPage(1)
+    }
+  }
+
+  const handleExport = async () => {
+    try {
+      const exportData = await getContactsForExport({
+        search,
+        type: typeFilter,
+        status: statusFilter,
+        startDate: dateRange?.from?.toISOString(),
+        endDate: dateRange?.to?.toISOString(),
+      })
+      exportToCSV(exportData, contactColumns, getExportFilename('contacts'))
+      const filterNote = hasActiveFilters ? ' (filtered)' : ''
+      toast.success(`Exported ${exportData.length} contacts${filterNote} to CSV`)
+    } catch (err) {
+      console.error('Error exporting contacts:', err)
+      toast.error('Failed to export contacts')
     }
   }
 
@@ -506,10 +527,16 @@ export default function ContactsPage() {
         title="Business Contacts"
         description="Manage vendors, suppliers, partners, and service providers"
         primaryAction={
-          <Button onClick={handleCreate}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Contact
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleExport}>
+              <Download className="h-4 w-4 mr-2" />
+              Export CSV
+            </Button>
+            <Button onClick={handleCreate}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Contact
+            </Button>
+          </div>
         }
       />
 
