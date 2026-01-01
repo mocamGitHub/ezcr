@@ -99,6 +99,9 @@ export async function getTestimonialsPaginated(
     sortDirection = 'desc',
     search = '',
     status = 'all',
+    featured = 'all',
+    startDate,
+    endDate,
   } = params
 
   const supabase = createServiceClient()
@@ -111,6 +114,21 @@ export async function getTestimonialsPaginated(
   // Apply status filter
   if (status !== 'all') {
     query = query.eq('status', status)
+  }
+
+  // Apply featured filter
+  if (featured === 'featured') {
+    query = query.eq('is_featured', true)
+  } else if (featured === 'not_featured') {
+    query = query.eq('is_featured', false)
+  }
+
+  // Apply date range filter
+  if (startDate) {
+    query = query.gte('created_at', startDate)
+  }
+  if (endDate) {
+    query = query.lte('created_at', endDate)
   }
 
   // Apply search filter

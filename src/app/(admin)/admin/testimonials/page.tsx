@@ -1,6 +1,7 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useTransition } from 'react'
+import React, { useState, useEffect, useCallback, useTransition, useMemo } from 'react'
+import type { DateRange } from 'react-day-picker'
 import { usePageTitle } from '@/hooks/usePageTitle'
 import { StaticStarRating } from '@/components/ui/star-rating'
 import { Button } from '@/components/ui/button'
@@ -14,13 +15,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,7 +43,14 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-import { AdminDataTable, PageHeader, type ColumnDef, type RowAction } from '@/components/admin'
+import {
+  AdminDataTable,
+  AdminFilterBar,
+  PageHeader,
+  type ColumnDef,
+  type RowAction,
+  type FilterConfig,
+} from '@/components/admin'
 import {
   getTestimonialsPaginated,
   approveTestimonial,
@@ -78,6 +79,8 @@ export default function AdminTestimonialsPage() {
 
   // Filters
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all')
+  const [featuredFilter, setFeaturedFilter] = useState<'all' | 'featured' | 'not_featured'>('all')
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
 
   // Dialog states
   const [selectedTestimonial, setSelectedTestimonial] = useState<Testimonial | null>(null)
@@ -108,6 +111,9 @@ export default function AdminTestimonialsPage() {
         sortDirection,
         search,
         status: statusFilter,
+        featured: featuredFilter,
+        startDate: dateRange?.from?.toISOString(),
+        endDate: dateRange?.to?.toISOString(),
       })
       setTestimonials(result.data)
       setTotalCount(result.totalCount)
@@ -118,7 +124,7 @@ export default function AdminTestimonialsPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, pageSize, sortColumn, sortDirection, search, statusFilter])
+  }, [page, pageSize, sortColumn, sortDirection, search, statusFilter, featuredFilter, dateRange])
 
   useEffect(() => {
     loadData()
@@ -143,6 +149,61 @@ export default function AdminTestimonialsPage() {
     setStatusFilter(value)
     setPage(1)
   }
+
+  const handleFeaturedFilterChange = (value: 'all' | 'featured' | 'not_featured') => {
+    setFeaturedFilter(value)
+    setPage(1)
+  }
+
+  const handleDateRangeChange = (range: DateRange | undefined) => {
+    setDateRange(range)
+    setPage(1)
+  }
+
+  const handleClearFilters = () => {
+    setStatusFilter('all')
+    setFeaturedFilter('all')
+    setDateRange(undefined)
+    setPage(1)
+  }
+
+  // Filter configuration for AdminFilterBar
+  const filterConfig: FilterConfig[] = useMemo(() => [
+    {
+      type: 'select' as const,
+      key: 'status',
+      label: 'Status',
+      value: statusFilter,
+      onChange: (v: string) => handleStatusFilterChange(v as 'all' | 'pending' | 'approved' | 'rejected'),
+      allLabel: 'All Statuses',
+      options: [
+        { value: 'pending', label: 'Pending' },
+        { value: 'approved', label: 'Approved' },
+        { value: 'rejected', label: 'Rejected' },
+      ],
+    },
+    {
+      type: 'select' as const,
+      key: 'featured',
+      label: 'Featured',
+      value: featuredFilter,
+      onChange: (v: string) => handleFeaturedFilterChange(v as 'all' | 'featured' | 'not_featured'),
+      allLabel: 'All',
+      options: [
+        { value: 'featured', label: 'Featured' },
+        { value: 'not_featured', label: 'Not Featured' },
+      ],
+    },
+    {
+      type: 'daterange' as const,
+      key: 'dateRange',
+      label: 'Created Date',
+      value: dateRange,
+      onChange: handleDateRangeChange,
+      placeholder: 'Filter by date',
+      presets: true,
+    },
+  ], [statusFilter, featuredFilter, dateRange])
 
   // Open detail dialog
   const openDetailDialog = async (testimonial: Testimonial) => {
@@ -440,27 +501,20 @@ export default function AdminTestimonialsPage() {
     return actions
   }
 
-  // Toolbar with status filter
-  const toolbar = (
-    <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
-      <SelectTrigger className="w-[150px]">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="all">All Statuses</SelectItem>
-        <SelectItem value="pending">Pending</SelectItem>
-        <SelectItem value="approved">Approved</SelectItem>
-        <SelectItem value="rejected">Rejected</SelectItem>
-      </SelectContent>
-    </Select>
-  )
-
   return (
     <div className="p-8">
       <PageHeader
         title="Testimonials"
         description="Approve, reject, and respond to customer testimonials"
       />
+
+      <div className="mb-4">
+        <AdminFilterBar
+          filters={filterConfig}
+          onClearAll={handleClearFilters}
+          showFilterIcon
+        />
+      </div>
 
       <AdminDataTable
         data={testimonials}
@@ -483,7 +537,6 @@ export default function AdminTestimonialsPage() {
         emptyDescription="Customer testimonials will appear here once submitted."
         rowActions={getRowActions}
         onRowClick={openDetailDialog}
-        toolbar={toolbar}
       />
 
       {/* Detail Dialog */}

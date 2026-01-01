@@ -58,7 +58,9 @@ import { CONTACT_TYPE_LABELS } from '@/types/contacts-tools'
 import {
   AdminDataTable,
   AdminFilterBar,
+  FilterPresetDropdown,
   PageHeader,
+  useFilters,
   type ColumnDef,
   type RowAction,
   type FilterConfig,
@@ -76,10 +78,31 @@ export default function ContactsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Filters
-  const [typeFilter, setTypeFilter] = useState<ContactType | 'all'>('all')
-  const [statusFilter, setStatusFilter] = useState<ContactStatus | 'all'>('all')
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
+  // URL-synced filters with presets
+  type ContactFilters = {
+    type: ContactType | 'all'
+    status: ContactStatus | 'all'
+    dateRange: DateRange | undefined
+    [key: string]: unknown
+  }
+
+  const {
+    filters,
+    updateFilter,
+    resetFilters,
+    hasActiveFilters,
+    applyPreset,
+  } = useFilters<ContactFilters>({
+    initialState: {
+      type: 'all',
+      status: 'all',
+      dateRange: undefined,
+    },
+    syncToUrl: true,
+    urlPrefix: 'f_',
+  })
+
+  const { type: typeFilter, status: statusFilter, dateRange } = filters
 
   // Dialog states
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false)
@@ -142,25 +165,30 @@ export default function ContactsPage() {
   }
 
   const handleTypeFilterChange = (value: ContactType | 'all') => {
-    setTypeFilter(value)
+    updateFilter('type', value)
     setPage(1)
   }
 
   const handleStatusFilterChange = (value: ContactStatus | 'all') => {
-    setStatusFilter(value)
+    updateFilter('status', value)
     setPage(1)
   }
 
   const handleDateRangeChange = (range: DateRange | undefined) => {
-    setDateRange(range)
+    updateFilter('dateRange', range)
     setPage(1)
   }
 
   const handleClearFilters = () => {
-    setTypeFilter('all')
-    setStatusFilter('all')
-    setDateRange(undefined)
+    resetFilters()
     setPage(1)
+  }
+
+  const handleApplyPreset = (preset: Record<string, unknown>) => {
+    if (applyPreset) {
+      applyPreset(preset as Partial<ContactFilters>)
+      setPage(1)
+    }
   }
 
   // Build filter config for AdminFilterBar
@@ -486,11 +514,19 @@ export default function ContactsPage() {
       />
 
       {/* Filters */}
-      <AdminFilterBar
-        filters={filterConfig}
-        onClearAll={handleClearFilters}
-        showFilterIcon
-      />
+      <div className="flex flex-wrap items-center gap-3">
+        <AdminFilterBar
+          filters={filterConfig}
+          onClearAll={handleClearFilters}
+          showFilterIcon
+        />
+        <FilterPresetDropdown
+          page="contacts"
+          currentFilters={filters}
+          onApplyPreset={handleApplyPreset}
+          hasActiveFilters={hasActiveFilters}
+        />
+      </div>
 
       <AdminDataTable
         data={contacts}

@@ -8,6 +8,8 @@ import {
   AdminDataTable,
   AdminDataTableSkeleton,
   AdminFilterBar,
+  FilterPresetDropdown,
+  useFilters,
   type ColumnDef,
   type RowAction,
   type BulkAction,
@@ -122,8 +124,30 @@ export default function AdminSchedulerBookingsPage() {
   const [sortColumn, setSortColumn] = useState('start_at')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   const [searchValue, setSearchValue] = useState('')
-  const [statusFilter, setStatusFilter] = useState<'all' | 'scheduled' | 'cancelled' | 'rescheduled'>('all')
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
+
+  // URL-synced filters with presets
+  type BookingFilters = {
+    status: 'all' | 'scheduled' | 'cancelled' | 'rescheduled'
+    dateRange: DateRange | undefined
+    [key: string]: unknown
+  }
+
+  const {
+    filters,
+    updateFilter,
+    resetFilters,
+    hasActiveFilters,
+    applyPreset,
+  } = useFilters<BookingFilters>({
+    initialState: {
+      status: 'all',
+      dateRange: undefined,
+    },
+    syncToUrl: true,
+    urlPrefix: 'f_',
+  })
+
+  const { status: statusFilter, dateRange } = filters
 
   // Cancel dialog state
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
@@ -184,19 +208,25 @@ export default function AdminSchedulerBookingsPage() {
   }
 
   const handleStatusFilterChange = (value: string) => {
-    setStatusFilter(value as typeof statusFilter)
+    updateFilter('status', value as BookingFilters['status'])
     setPage(1)
   }
 
   const handleDateRangeChange = (range: DateRange | undefined) => {
-    setDateRange(range)
+    updateFilter('dateRange', range)
     setPage(1)
   }
 
   const handleClearFilters = () => {
-    setStatusFilter('all')
-    setDateRange(undefined)
+    resetFilters()
     setPage(1)
+  }
+
+  const handleApplyPreset = (preset: Record<string, unknown>) => {
+    if (applyPreset) {
+      applyPreset(preset as Partial<BookingFilters>)
+      setPage(1)
+    }
   }
 
   // Build filter config for AdminFilterBar
@@ -318,11 +348,19 @@ export default function AdminSchedulerBookingsPage() {
       />
 
       {/* Filters */}
-      <AdminFilterBar
-        filters={filterConfig}
-        onClearAll={handleClearFilters}
-        showFilterIcon
-      />
+      <div className="flex flex-wrap items-center gap-3">
+        <AdminFilterBar
+          filters={filterConfig}
+          onClearAll={handleClearFilters}
+          showFilterIcon
+        />
+        <FilterPresetDropdown
+          page="scheduler-bookings"
+          currentFilters={filters}
+          onApplyPreset={handleApplyPreset}
+          hasActiveFilters={hasActiveFilters}
+        />
+      </div>
 
       {/* Data Table */}
       {loading && bookings.length === 0 ? (
