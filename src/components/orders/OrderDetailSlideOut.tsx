@@ -1034,6 +1034,95 @@ export function OrderDetailSlideOut({
               )}
             </div>
           )}
+
+          {/* Recent Updates - derived from available timestamps */}
+          <div className="border rounded-lg p-4 space-y-3">
+            <h3 className="font-semibold flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              Recent Updates
+            </h3>
+            <div className="space-y-2 text-sm">
+              {/* Latest status */}
+              <div className="flex items-start gap-3">
+                <div className="w-2 h-2 rounded-full bg-primary mt-1.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">Current Status</span>
+                    <Badge className={`${getStatusColor(order_.status)} text-xs`}>
+                      {order_.status}
+                    </Badge>
+                  </div>
+                  {order_.updated_at && (
+                    <p className="text-xs text-muted-foreground">
+                      Last modified: {format(new Date(order_.updated_at), 'MMM d, yyyy h:mm a')}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Delivery/Shipping events */}
+              {(order_.delivered_at || order_.actual_delivery_date) && (
+                <div className="flex items-start gap-3">
+                  <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <span className="font-medium">Delivered</span>
+                    <p className="text-xs text-muted-foreground">
+                      {format(new Date(order_.delivered_at || order_.actual_delivery_date!), 'MMM d, yyyy h:mm a')}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {order_.shipped_at && (
+                <div className="flex items-start gap-3">
+                  <div className="w-2 h-2 rounded-full bg-purple-500 mt-1.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <span className="font-medium">Shipped</span>
+                    <p className="text-xs text-muted-foreground">
+                      {format(new Date(order_.shipped_at), 'MMM d, yyyy h:mm a')}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Tracking sync */}
+              {order_.tracking_synced_at && (
+                <div className="flex items-start gap-3">
+                  <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <span className="font-medium">Tracking Updated</span>
+                    <p className="text-xs text-muted-foreground">
+                      {format(new Date(order_.tracking_synced_at), 'MMM d, yyyy h:mm a')}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* QBO sync */}
+              {order_.qbo_synced_at && (
+                <div className="flex items-start gap-3">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <span className="font-medium">Imported from QuickBooks</span>
+                    <p className="text-xs text-muted-foreground">
+                      {format(new Date(order_.qbo_synced_at), 'MMM d, yyyy h:mm a')}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Order created */}
+              <div className="flex items-start gap-3">
+                <div className="w-2 h-2 rounded-full bg-gray-400 mt-1.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <span className="font-medium">Order Created</span>
+                  <p className="text-xs text-muted-foreground">
+                    {format(new Date(order_.created_at), 'MMM d, yyyy h:mm a')}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </SheetContent>
     </Sheet>
