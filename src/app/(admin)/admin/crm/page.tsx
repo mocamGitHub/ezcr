@@ -30,13 +30,12 @@ import { CustomerFilters } from '@/components/crm/CustomerFilters'
 import { CRMStats } from '@/components/crm/CRMStats'
 import { EnvironmentBadge } from '@/components/EnvironmentBanner'
 import { DEFAULT_SEGMENTS } from '@/types/crm'
-import type { CustomerListFilters } from '@/types/crm'
+import type { CustomerListFilters, CustomerProfile } from '@/types/crm'
 import {
   getCustomersPaginated,
   getCRMDashboardStats,
   bulkAddTags,
   getCustomersForExport,
-  type CustomerProfile,
 } from './actions'
 
 export default function CRMPage() {

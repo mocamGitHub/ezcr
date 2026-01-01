@@ -13,9 +13,6 @@ import type {
   CustomerListSortOptions,
 } from '@/types/crm'
 
-// Re-export types
-export type { CustomerProfile, CustomerListFilters } from '@/types/crm'
-
 // Re-export existing actions
 export { getCRMDashboardStats, bulkAddTags, bulkRemoveTags }
 
