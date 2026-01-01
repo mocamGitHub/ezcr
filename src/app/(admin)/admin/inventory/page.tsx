@@ -1,107 +1,146 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { InventoryTable } from '@/components/admin/InventoryTable'
+import { useEffect, useState, useCallback } from 'react'
 import { InventoryAlerts } from '@/components/admin/InventoryAlerts'
+import { InventoryAdjustmentDialog } from '@/components/admin/InventoryAdjustmentDialog'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { RefreshCw, Search, AlertTriangle, Download } from 'lucide-react'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
+import { Switch } from '@/components/ui/switch'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  RefreshCw,
+  Download,
+  AlertTriangle,
+  PackagePlus,
+  PackageMinus,
+  History,
+  SlidersHorizontal,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import { exportToCSV, inventoryColumns, getExportFilename } from '@/lib/utils/export'
 import { usePageTitle } from '@/hooks/usePageTitle'
-
-interface Product {
-  id: string
-  name: string
-  sku: string
-  inventory_count: number
-  low_stock_threshold: number
-  category_id: string | null
-  base_price: number
-  is_active: boolean
-  has_configurator_rules?: boolean
-  suppress_low_stock_alert?: boolean
-  suppress_out_of_stock_alert?: boolean
-  product_categories?: {
-    name: string
-  } | null
-}
+import { AdminDataTable, PageHeader, type ColumnDef, type RowAction } from '@/components/admin'
+import {
+  getInventoryPaginated,
+  getInventoryStats,
+  getProductsForAlerts,
+  getProductsForExport,
+  toggleConfiguratorRules,
+  toggleAlertSuppression,
+  type Product,
+  type InventoryStats,
+} from './actions'
 
 export default function InventoryDashboardPage() {
   usePageTitle('Inventory')
+
+  // Table state
   const [products, setProducts] = useState<Product[]>([])
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
+  const [totalCount, setTotalCount] = useState(0)
+  const [page, setPage] = useState(1)
+  const [pageSize] = useState(20)
+  const [sortColumn, setSortColumn] = useState('name')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
+  const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [showLowStockOnly, setShowLowStockOnly] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchProducts = async () => {
-    setLoading(true)
-    setError(null)
+  // Filters
+  const [showLowStockOnly, setShowLowStockOnly] = useState(false)
 
+  // Stats and alerts
+  const [stats, setStats] = useState<InventoryStats | null>(null)
+  const [alertProducts, setAlertProducts] = useState<Product[]>([])
+
+  // Adjustment dialog
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [adjustmentType, setAdjustmentType] = useState<'increase' | 'decrease'>('increase')
+
+  const loadData = useCallback(async () => {
     try {
-      const supabase = createClient()
+      setLoading(true)
+      setError(null)
 
-      const { data, error: fetchError } = await supabase
-        .from('products')
-        .select(`
-          id,
-          name,
-          sku,
-          inventory_count,
-          low_stock_threshold,
-          category_id,
-          base_price,
-          is_active,
-          has_configurator_rules,
-          suppress_low_stock_alert,
-          suppress_out_of_stock_alert,
-          product_categories (
-            name
-          )
-        `)
-        .order('name', { ascending: true })
+      const [inventoryResult, statsResult, alertsResult] = await Promise.all([
+        getInventoryPaginated({
+          page,
+          pageSize,
+          sortColumn,
+          sortDirection,
+          search,
+          showLowStockOnly,
+        }),
+        getInventoryStats(),
+        getProductsForAlerts(),
+      ])
 
-      if (fetchError) {
-        throw fetchError
-      }
-
-      setProducts(data || [])
-      setFilteredProducts(data || [])
-    } catch (err) {
-      console.error('Error fetching products:', err)
-      setError(err instanceof Error ? err.message : 'Failed to fetch products')
+      setProducts(inventoryResult.data)
+      setTotalCount(inventoryResult.totalCount)
+      setStats(statsResult)
+      setAlertProducts(alertsResult)
+    } catch (err: any) {
+      console.error('Error loading inventory:', err)
+      setError(err.message || 'Failed to load inventory')
+      toast.error('Failed to load inventory')
     } finally {
       setLoading(false)
     }
+  }, [page, pageSize, sortColumn, sortDirection, search, showLowStockOnly])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
+
+  const handleSortChange = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortColumn(column)
+      setSortDirection('asc')
+    }
+    setPage(1)
   }
 
-  useEffect(() => {
-    fetchProducts()
-  }, [])
+  const handleSearchChange = (value: string) => {
+    setSearch(value)
+    setPage(1)
+  }
 
-  useEffect(() => {
-    let filtered = products
+  const handleFilterChange = (value: string) => {
+    setShowLowStockOnly(value === 'low_stock')
+    setPage(1)
+  }
 
-    // Filter by search query
-    if (searchQuery) {
-      filtered = filtered.filter(
-        (p) =>
-          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.sku.toLowerCase().includes(searchQuery.toLowerCase())
+  const handleAdjust = (product: Product, type: 'increase' | 'decrease') => {
+    setSelectedProduct(product)
+    setAdjustmentType(type)
+  }
+
+  const handleToggleConfiguratorRules = async (productId: string, hasRules: boolean) => {
+    // Optimistic update
+    setProducts((prev) =>
+      prev.map((p) => (p.id === productId ? { ...p, has_configurator_rules: hasRules } : p))
+    )
+
+    try {
+      await toggleConfiguratorRules(productId, hasRules)
+      toast.success(
+        hasRules ? 'Product marked for configurator rules' : 'Configurator rules disabled'
       )
+    } catch (err) {
+      // Revert on error
+      setProducts((prev) =>
+        prev.map((p) => (p.id === productId ? { ...p, has_configurator_rules: !hasRules } : p))
+      )
+      toast.error('Failed to update configurator rules')
     }
-
-    // Filter by low stock
-    if (showLowStockOnly) {
-      filtered = filtered.filter((p) => p.inventory_count <= p.low_stock_threshold)
-    }
-
-    setFilteredProducts(filtered)
-  }, [searchQuery, showLowStockOnly, products])
+  }
 
   const handleToggleAlertSuppression = async (
     productId: string,
@@ -109,201 +148,310 @@ export default function InventoryDashboardPage() {
     suppress: boolean
   ) => {
     try {
-      const response = await fetch('/api/inventory/suppress-alert', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId, alertType, suppress }),
-      })
+      await toggleAlertSuppression(productId, alertType, suppress)
 
-      const data = await response.json()
+      // Update both products and alertProducts
+      const updateFn = (p: Product) =>
+        p.id === productId
+          ? {
+              ...p,
+              suppress_low_stock_alert:
+                alertType === 'low_stock' ? suppress : p.suppress_low_stock_alert,
+              suppress_out_of_stock_alert:
+                alertType === 'out_of_stock' ? suppress : p.suppress_out_of_stock_alert,
+            }
+          : p
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to update alert settings')
-      }
+      setProducts((prev) => prev.map(updateFn))
+      setAlertProducts((prev) => prev.map(updateFn))
 
-      // Update local state
-      setProducts((prev) =>
-        prev.map((p) =>
-          p.id === productId
-            ? {
-                ...p,
-                suppress_low_stock_alert:
-                  alertType === 'low_stock' ? suppress : p.suppress_low_stock_alert,
-                suppress_out_of_stock_alert:
-                  alertType === 'out_of_stock' ? suppress : p.suppress_out_of_stock_alert,
-              }
-            : p
-        )
-      )
-
-      toast.success(data.message)
+      toast.success(suppress ? 'Alert suppressed' : 'Alert enabled')
     } catch (err) {
-      console.error('Error toggling alert suppression:', err)
-      toast.error(err instanceof Error ? err.message : 'Failed to update alert settings')
+      toast.error('Failed to update alert settings')
     }
   }
 
-  const handleToggleConfiguratorRules = async (productId: string, hasRules: boolean) => {
-    // Optimistic update
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.id === productId ? { ...p, has_configurator_rules: hasRules } : p
-      )
-    )
-
+  const handleExport = async () => {
     try {
-      const supabase = createClient()
-      const { error } = await supabase
-        .from('products')
-        .update({ has_configurator_rules: hasRules })
-        .eq('id', productId)
-
-      if (error) throw error
-
-      toast.success(hasRules ? 'Product marked for configurator rules' : 'Configurator rules disabled for product')
+      const allProducts = await getProductsForExport()
+      exportToCSV(allProducts, inventoryColumns, getExportFilename('inventory'))
+      toast.success(`Exported ${allProducts.length} products to CSV`)
     } catch (err) {
-      // Revert on error
-      setProducts((prev) =>
-        prev.map((p) =>
-          p.id === productId ? { ...p, has_configurator_rules: !hasRules } : p
-        )
-      )
-      console.error('Error toggling configurator rules:', err)
-      toast.error('Failed to update configurator rules setting')
+      toast.error('Failed to export inventory')
     }
   }
 
-  const outOfStockCount = products.filter((p) => p.inventory_count === 0).length
+  const getStockStatus = (product: Product) => {
+    if (product.inventory_count === 0) {
+      return { label: 'Out of Stock', variant: 'destructive' as const, className: '' }
+    }
+    if (product.inventory_count <= product.low_stock_threshold) {
+      return {
+        label: 'Low Stock',
+        variant: 'secondary' as const,
+        className: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      }
+    }
+    return { label: 'In Stock', variant: 'default' as const, className: '' }
+  }
 
-  const lowStockCount = products.filter(
-    (p) => p.inventory_count > 0 && p.inventory_count <= p.low_stock_threshold
-  ).length
+  // Column definitions
+  const columns: ColumnDef<Product>[] = [
+    {
+      key: 'name',
+      header: 'Product',
+      sortable: true,
+      cell: (product) => (
+        <div className="flex flex-col">
+          <span className="font-medium line-clamp-1">{product.name}</span>
+          <span className="text-xs text-muted-foreground font-mono">{product.sku}</span>
+          {!product.is_active && (
+            <Badge variant="outline" className="w-fit mt-1 text-xs">
+              Inactive
+            </Badge>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'product_categories',
+      header: 'Category',
+      cell: (product) => (
+        <span className="text-sm">
+          {product.product_categories?.name || (
+            <span className="text-muted-foreground">Uncategorized</span>
+          )}
+        </span>
+      ),
+    },
+    {
+      key: 'inventory_count',
+      header: 'Stock',
+      sortable: true,
+      cell: (product) => (
+        <span
+          className={`font-semibold ${
+            product.inventory_count === 0
+              ? 'text-red-600'
+              : product.inventory_count <= product.low_stock_threshold
+                ? 'text-yellow-600'
+                : ''
+          }`}
+        >
+          {product.inventory_count}
+        </span>
+      ),
+    },
+    {
+      key: 'low_stock_threshold',
+      header: 'Threshold',
+      sortable: true,
+      cell: (product) => (
+        <span className="text-muted-foreground">{product.low_stock_threshold}</span>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      cell: (product) => {
+        const status = getStockStatus(product)
+        return (
+          <Badge
+            variant={status.variant}
+            className={`flex items-center gap-1 w-fit whitespace-nowrap ${status.className}`}
+          >
+            {(product.inventory_count === 0 ||
+              product.inventory_count <= product.low_stock_threshold) && (
+              <AlertTriangle className="h-3 w-3" />
+            )}
+            {status.label}
+          </Badge>
+        )
+      },
+    },
+    {
+      key: 'has_configurator_rules',
+      header: (
+        <div className="flex items-center gap-1" title="Has Configurator Rules">
+          <SlidersHorizontal className="h-4 w-4" />
+          <span>Rules</span>
+        </div>
+      ),
+      cell: (product) => (
+        <Switch
+          checked={product.has_configurator_rules || false}
+          onCheckedChange={(checked) => handleToggleConfiguratorRules(product.id, checked)}
+          onClick={(e) => e.stopPropagation()}
+          className={
+            product.has_configurator_rules
+              ? 'data-[state=checked]:bg-green-600'
+              : 'data-[state=unchecked]:bg-muted'
+          }
+        />
+      ),
+    },
+    {
+      key: 'base_price',
+      header: 'Unit Price',
+      sortable: true,
+      cell: (product) => (
+        <span>
+          $
+          {product.base_price.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}
+        </span>
+      ),
+    },
+    {
+      key: 'total_value',
+      header: 'Total Value',
+      cell: (product) => {
+        const totalValue = product.base_price * product.inventory_count
+        return (
+          <span className="font-medium">
+            $
+            {totalValue.toLocaleString('en-US', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </span>
+        )
+      },
+    },
+  ]
 
-  const totalValue = products.reduce(
-    (sum, p) => sum + p.base_price * p.inventory_count,
-    0
+  // Row actions
+  const getRowActions = (product: Product): RowAction<Product>[] => [
+    {
+      label: 'Increase Stock',
+      onClick: () => handleAdjust(product, 'increase'),
+      icon: <PackagePlus className="h-4 w-4" />,
+    },
+    {
+      label: 'Decrease Stock',
+      onClick: () => handleAdjust(product, 'decrease'),
+      icon: <PackageMinus className="h-4 w-4" />,
+    },
+    {
+      label: 'View History',
+      href: `/admin/inventory/${product.id}`,
+      icon: <History className="h-4 w-4" />,
+      separator: true,
+    },
+  ]
+
+  // Toolbar with filter
+  const toolbar = (
+    <div className="flex items-center gap-2">
+      <Select value={showLowStockOnly ? 'low_stock' : 'all'} onValueChange={handleFilterChange}>
+        <SelectTrigger className="w-[160px]">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Products</SelectItem>
+          <SelectItem value="low_stock">Low Stock Only</SelectItem>
+        </SelectContent>
+      </Select>
+      {stats && stats.suppressedCount > 0 && !showLowStockOnly && (
+        <span className="text-xs text-muted-foreground">({stats.suppressedCount} suppressed)</span>
+      )}
+    </div>
   )
 
-  // Count suppressed alerts
-  const suppressedCount = products.filter(
-    (p) =>
-      (p.inventory_count <= 0 && p.suppress_out_of_stock_alert) ||
-      (p.inventory_count > 0 &&
-        p.inventory_count <= p.low_stock_threshold &&
-        p.suppress_low_stock_alert)
-  ).length
-
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Inventory Management</h1>
-          <p className="text-muted-foreground mt-1">
-            Manage product stock levels and view inventory history
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => {
-              exportToCSV(filteredProducts, inventoryColumns, getExportFilename('inventory'))
-              toast.success(`Exported ${filteredProducts.length} products to CSV`)
-            }}
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Export CSV
-          </Button>
-          <Button onClick={fetchProducts} disabled={loading}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-        </div>
-      </div>
+    <div className="p-8">
+      <PageHeader
+        title="Inventory Management"
+        description="Manage product stock levels and view inventory history"
+        primaryAction={
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleExport}>
+              <Download className="mr-2 h-4 w-4" />
+              Export CSV
+            </Button>
+            <Button onClick={loadData} disabled={loading}>
+              <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
+        }
+      />
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-card border rounded-lg p-4 text-center">
-          <div className="text-sm text-muted-foreground">Total Products</div>
-          <div className="text-2xl font-bold mt-1">{products.length}</div>
-        </div>
-        <div className="bg-card border rounded-lg p-4 text-center">
-          <div className="text-sm text-muted-foreground">Low Stock</div>
-          <div className="text-2xl font-bold mt-1 text-yellow-600">
-            {lowStockCount}
+      {stats && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-card border rounded-lg p-4 text-center">
+            <div className="text-sm text-muted-foreground">Total Products</div>
+            <div className="text-2xl font-bold mt-1">{stats.totalProducts}</div>
+          </div>
+          <div className="bg-card border rounded-lg p-4 text-center">
+            <div className="text-sm text-muted-foreground">Low Stock</div>
+            <div className="text-2xl font-bold mt-1 text-yellow-600">{stats.lowStockCount}</div>
+          </div>
+          <div className="bg-card border rounded-lg p-4 text-center">
+            <div className="text-sm text-muted-foreground">Out of Stock</div>
+            <div className="text-2xl font-bold mt-1 text-red-600">{stats.outOfStockCount}</div>
+          </div>
+          <div className="bg-card border rounded-lg p-4 text-center">
+            <div className="text-sm text-muted-foreground">Total Inventory Value</div>
+            <div className="text-2xl font-bold mt-1">
+              ${stats.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </div>
           </div>
         </div>
-        <div className="bg-card border rounded-lg p-4 text-center">
-          <div className="text-sm text-muted-foreground">Out of Stock</div>
-          <div className="text-2xl font-bold mt-1 text-red-600">
-            {outOfStockCount}
-          </div>
-        </div>
-        <div className="bg-card border rounded-lg p-4 text-center">
-          <div className="text-sm text-muted-foreground">Total Inventory Value</div>
-          <div className="text-2xl font-bold mt-1">
-            ${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-          </div>
-        </div>
-      </div>
+      )}
 
       {/* Inventory Alerts Panel */}
       <InventoryAlerts
-        products={products}
+        products={alertProducts}
         onFilterLowStock={() => setShowLowStockOnly(!showLowStockOnly)}
         showingLowStock={showLowStockOnly}
         onToggleAlertSuppression={handleToggleAlertSuppression}
         showSuppressed={showLowStockOnly}
       />
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder="Search by product name or SKU..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <Button
-          variant={showLowStockOnly ? 'secondary' : 'outline'}
-          onClick={() => setShowLowStockOnly(!showLowStockOnly)}
-        >
-          {showLowStockOnly ? 'Show All' : 'Show Low Stock Only'}
-          {suppressedCount > 0 && !showLowStockOnly && (
-            <span className="ml-2 text-xs opacity-70">({suppressedCount} suppressed)</span>
-          )}
-        </Button>
-      </div>
-
-      {/* Error Display */}
-      {error && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
       {/* Inventory Table */}
-      <InventoryTable
-        products={filteredProducts}
+      <AdminDataTable
+        data={products}
+        columns={columns}
+        keyField="id"
+        sortColumn={sortColumn}
+        sortDirection={sortDirection}
+        onSortChange={handleSortChange}
+        page={page}
+        pageSize={pageSize}
+        totalCount={totalCount}
+        onPageChange={setPage}
+        searchValue={search}
+        onSearchChange={handleSearchChange}
+        searchPlaceholder="Search by product name or SKU..."
         loading={loading}
-        onRefresh={fetchProducts}
-        onToggleConfiguratorRules={handleToggleConfiguratorRules}
+        error={error}
+        onRetry={loadData}
+        emptyTitle="No products found"
+        emptyDescription={
+          search || showLowStockOnly
+            ? 'No products match your current filters.'
+            : 'No products found in inventory.'
+        }
+        rowActions={getRowActions}
+        toolbar={toolbar}
       />
 
-      {/* Empty State */}
-      {!loading && filteredProducts.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">
-            {searchQuery || showLowStockOnly
-              ? 'No products match your filters.'
-              : 'No products found.'}
-          </p>
-        </div>
+      {/* Adjustment Dialog */}
+      {selectedProduct && (
+        <InventoryAdjustmentDialog
+          product={selectedProduct}
+          open={!!selectedProduct}
+          onClose={() => setSelectedProduct(null)}
+          onSuccess={() => {
+            setSelectedProduct(null)
+            loadData()
+          }}
+          defaultType={adjustmentType}
+        />
       )}
     </div>
   )
