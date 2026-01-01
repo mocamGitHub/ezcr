@@ -46,7 +46,9 @@ import { cn } from '@/lib/utils'
 import {
   AdminDataTable,
   AdminFilterBar,
+  FilterPresetDropdown,
   PageHeader,
+  useFilters,
   type ColumnDef,
   type RowAction,
   type FilterConfig,
@@ -77,10 +79,31 @@ export default function AdminTestimonialsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Filters
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all')
-  const [featuredFilter, setFeaturedFilter] = useState<'all' | 'featured' | 'not_featured'>('all')
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
+  // URL-synced filters with presets
+  type TestimonialFilters = {
+    status: 'all' | 'pending' | 'approved' | 'rejected'
+    featured: 'all' | 'featured' | 'not_featured'
+    dateRange: DateRange | undefined
+    [key: string]: unknown
+  }
+
+  const {
+    filters,
+    updateFilter,
+    resetFilters,
+    hasActiveFilters,
+    applyPreset,
+  } = useFilters<TestimonialFilters>({
+    initialState: {
+      status: 'all',
+      featured: 'all',
+      dateRange: undefined,
+    },
+    syncToUrl: true,
+    urlPrefix: 'f_',
+  })
+
+  const { status: statusFilter, featured: featuredFilter, dateRange } = filters
 
   // Dialog states
   const [selectedTestimonial, setSelectedTestimonial] = useState<Testimonial | null>(null)
@@ -146,25 +169,30 @@ export default function AdminTestimonialsPage() {
   }
 
   const handleStatusFilterChange = (value: 'all' | 'pending' | 'approved' | 'rejected') => {
-    setStatusFilter(value)
+    updateFilter('status', value)
     setPage(1)
   }
 
   const handleFeaturedFilterChange = (value: 'all' | 'featured' | 'not_featured') => {
-    setFeaturedFilter(value)
+    updateFilter('featured', value)
     setPage(1)
   }
 
   const handleDateRangeChange = (range: DateRange | undefined) => {
-    setDateRange(range)
+    updateFilter('dateRange', range)
     setPage(1)
   }
 
   const handleClearFilters = () => {
-    setStatusFilter('all')
-    setFeaturedFilter('all')
-    setDateRange(undefined)
+    resetFilters()
     setPage(1)
+  }
+
+  const handleApplyPreset = (preset: Record<string, unknown>) => {
+    if (applyPreset) {
+      applyPreset(preset as Partial<TestimonialFilters>)
+      setPage(1)
+    }
   }
 
   // Filter configuration for AdminFilterBar
@@ -508,11 +536,17 @@ export default function AdminTestimonialsPage() {
         description="Approve, reject, and respond to customer testimonials"
       />
 
-      <div className="mb-4">
+      <div className="flex flex-wrap items-center gap-3 mb-4">
         <AdminFilterBar
           filters={filterConfig}
           onClearAll={handleClearFilters}
           showFilterIcon
+        />
+        <FilterPresetDropdown
+          page="testimonials"
+          currentFilters={filters}
+          onApplyPreset={handleApplyPreset}
+          hasActiveFilters={hasActiveFilters}
         />
       </div>
 

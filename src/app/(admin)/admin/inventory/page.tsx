@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { InventoryAlerts } from '@/components/admin/InventoryAlerts'
 import { InventoryAdjustmentDialog } from '@/components/admin/InventoryAdjustmentDialog'
 import { Button } from '@/components/ui/button'
@@ -25,7 +25,16 @@ import {
 import { toast } from 'sonner'
 import { exportToCSV, inventoryColumns, getExportFilename } from '@/lib/utils/export'
 import { usePageTitle } from '@/hooks/usePageTitle'
-import { AdminDataTable, PageHeader, type ColumnDef, type RowAction } from '@/components/admin'
+import {
+  AdminDataTable,
+  AdminFilterBar,
+  FilterPresetDropdown,
+  PageHeader,
+  useFilters,
+  type ColumnDef,
+  type RowAction,
+  type FilterConfig,
+} from '@/components/admin'
 import {
   getInventoryPaginated,
   getInventoryStats,
@@ -51,8 +60,27 @@ export default function InventoryDashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Filters
-  const [showLowStockOnly, setShowLowStockOnly] = useState(false)
+  // URL-synced filters with presets
+  type InventoryFilters = {
+    stockFilter: 'all' | 'low_stock'
+    [key: string]: unknown
+  }
+
+  const {
+    filters,
+    updateFilter,
+    resetFilters,
+    hasActiveFilters,
+    applyPreset,
+  } = useFilters<InventoryFilters>({
+    initialState: {
+      stockFilter: 'all',
+    },
+    syncToUrl: true,
+    urlPrefix: 'f_',
+  })
+
+  const showLowStockOnly = filters.stockFilter === 'low_stock'
 
   // Stats and alerts
   const [stats, setStats] = useState<InventoryStats | null>(null)
@@ -113,8 +141,20 @@ export default function InventoryDashboardPage() {
   }
 
   const handleFilterChange = (value: string) => {
-    setShowLowStockOnly(value === 'low_stock')
+    updateFilter('stockFilter', value as InventoryFilters['stockFilter'])
     setPage(1)
+  }
+
+  const handleClearFilters = () => {
+    resetFilters()
+    setPage(1)
+  }
+
+  const handleApplyPreset = (preset: Record<string, unknown>) => {
+    if (applyPreset) {
+      applyPreset(preset as Partial<InventoryFilters>)
+      setPage(1)
+    }
   }
 
   const handleAdjust = (product: Product, type: 'increase' | 'decrease') => {
@@ -342,23 +382,20 @@ export default function InventoryDashboardPage() {
     },
   ]
 
-  // Toolbar with filter
-  const toolbar = (
-    <div className="flex items-center gap-2">
-      <Select value={showLowStockOnly ? 'low_stock' : 'all'} onValueChange={handleFilterChange}>
-        <SelectTrigger className="w-[160px]">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Products</SelectItem>
-          <SelectItem value="low_stock">Low Stock Only</SelectItem>
-        </SelectContent>
-      </Select>
-      {stats && stats.suppressedCount > 0 && !showLowStockOnly && (
-        <span className="text-xs text-muted-foreground">({stats.suppressedCount} suppressed)</span>
-      )}
-    </div>
-  )
+  // Filter configuration for AdminFilterBar
+  const filterConfig: FilterConfig[] = useMemo(() => [
+    {
+      type: 'select' as const,
+      key: 'stockFilter',
+      label: 'Stock',
+      value: filters.stockFilter,
+      onChange: handleFilterChange,
+      allLabel: 'All Products',
+      options: [
+        { value: 'low_stock', label: 'Low Stock Only' },
+      ],
+    },
+  ], [filters.stockFilter])
 
   return (
     <div className="p-8">
