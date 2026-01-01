@@ -13,7 +13,8 @@ import {
   Package,
   AlertCircle,
 } from 'lucide-react'
-import { type Widget, type DateRange, executeWidgetRpc } from '@/app/(admin)/admin/dashboard/dashboard-actions'
+import { executeWidgetRpc } from '@/app/(admin)/admin/dashboard/dashboard-actions'
+import { type Widget, type DateRange } from '@/app/(admin)/admin/dashboard/dashboard-utils'
 
 interface WidgetRendererProps {
   widget: Widget

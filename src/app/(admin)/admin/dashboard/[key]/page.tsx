@@ -28,11 +28,13 @@ import {
   getDashboard,
   getDashboards,
   getWidgets,
+} from '../dashboard-actions'
+import {
   getDatePreset,
   type Dashboard,
   type Widget,
   type DateRange,
-} from '../dashboard-actions'
+} from '../dashboard-utils'
 
 const iconMap: Record<string, React.ReactNode> = {
   BarChart3: <BarChart3 className="h-4 w-4" />,
