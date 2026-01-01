@@ -16,6 +16,7 @@ export { AdminDataTableSkeleton } from './AdminDataTableSkeleton'
 // Filters
 export { AdminFilterBar, useFilters } from './AdminFilterBar'
 export type { FilterConfig, SelectFilterConfig, MultiSelectFilterConfig, DateRangeFilterConfig } from './AdminFilterBar'
+export { FilterPresetDropdown } from './FilterPresetDropdown'
 
 // State components
 export { AdminEmptyState } from './AdminEmptyState'

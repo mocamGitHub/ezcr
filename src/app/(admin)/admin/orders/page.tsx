@@ -39,6 +39,8 @@ import {
   AdminDataTable,
   AdminFilterBar,
   PageHeader,
+  FilterPresetDropdown,
+  useFilters,
   type ColumnDef,
   type RowAction,
   type BulkAction,
@@ -123,10 +125,31 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Filters
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [paymentFilter, setPaymentFilter] = useState('all')
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
+  // Filters with URL sync
+  interface OrderFilters {
+    status: string
+    payment: string
+    dateRange: DateRange | undefined
+  }
+
+  const {
+    filters,
+    updateFilter,
+    resetFilters,
+    hasActiveFilters,
+    applyPreset,
+  } = useFilters<OrderFilters>({
+    initialState: {
+      status: 'all',
+      payment: 'all',
+      dateRange: undefined,
+    },
+    syncToUrl: true,
+    urlPrefix: 'f_',
+  })
+
+  // Destructure for easier access
+  const { status: statusFilter, payment: paymentFilter, dateRange } = filters
 
   // Stats
   const [stats, setStats] = useState<OrderStats | null>(null)
@@ -193,25 +216,30 @@ export default function AdminOrdersPage() {
   }
 
   const handleStatusFilterChange = (value: string) => {
-    setStatusFilter(value)
+    updateFilter('status', value)
     setPage(1)
   }
 
   const handlePaymentFilterChange = (value: string) => {
-    setPaymentFilter(value)
+    updateFilter('payment', value)
     setPage(1)
   }
 
   const handleDateRangeChange = (range: DateRange | undefined) => {
-    setDateRange(range)
+    updateFilter('dateRange', range)
     setPage(1)
   }
 
   const handleClearFilters = () => {
-    setStatusFilter('all')
-    setPaymentFilter('all')
-    setDateRange(undefined)
+    resetFilters()
     setPage(1)
+  }
+
+  const handleApplyPreset = (preset: Record<string, unknown>) => {
+    if (applyPreset) {
+      applyPreset(preset as Partial<OrderFilters>)
+      setPage(1)
+    }
   }
 
   // Build filter config for AdminFilterBar
@@ -661,13 +689,21 @@ export default function AdminOrdersPage() {
     },
   ]
 
-  // Toolbar with AdminFilterBar
+  // Toolbar with AdminFilterBar and Presets
   const toolbar = (
-    <AdminFilterBar
-      filters={filterConfig}
-      onClearAll={handleClearFilters}
-      showFilterIcon
-    />
+    <div className="flex flex-wrap items-center gap-3">
+      <AdminFilterBar
+        filters={filterConfig}
+        onClearAll={handleClearFilters}
+        showFilterIcon
+      />
+      <FilterPresetDropdown
+        page="orders"
+        currentFilters={filters}
+        onApplyPreset={handleApplyPreset}
+        hasActiveFilters={hasActiveFilters}
+      />
+    </div>
   )
 
   return (

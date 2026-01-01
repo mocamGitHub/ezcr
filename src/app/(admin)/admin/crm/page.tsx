@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import type { DateRange } from 'react-day-picker'
 import { usePageTitle } from '@/hooks/usePageTitle'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,9 +17,11 @@ import {
 import { Tags, Download, Users, RefreshCw } from 'lucide-react'
 import {
   AdminDataTable,
+  AdminFilterBar,
   PageHeader,
   type ColumnDef,
   type BulkAction,
+  type FilterConfig,
 } from '@/components/admin'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'sonner'
@@ -60,6 +63,7 @@ export default function CRMPage() {
   // Filters and segments
   const [activeSegment, setActiveSegment] = useState<string>('all')
   const [filters, setFilters] = useState<CustomerListFilters>({})
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
 
   // Stats - type matches return of getCRMDashboardStats
   const [stats, setStats] = useState<{
@@ -83,13 +87,20 @@ export default function CRMPage() {
       setLoading(true)
       setError(null)
 
+      // Merge date range into filters
+      const mergedFilters: CustomerListFilters = {
+        ...filters,
+        ...(dateRange?.from ? { last_order_after: dateRange.from.toISOString().split('T')[0] } : {}),
+        ...(dateRange?.to ? { last_order_before: dateRange.to.toISOString().split('T')[0] } : {}),
+      }
+
       const result = await getCustomersPaginated({
         page,
         pageSize,
         sortColumn,
         sortDirection,
         search,
-        filters,
+        filters: mergedFilters,
       })
 
       setCustomers(result.data)
@@ -102,7 +113,7 @@ export default function CRMPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, pageSize, sortColumn, sortDirection, search, filters])
+  }, [page, pageSize, sortColumn, sortDirection, search, filters, dateRange])
 
   const loadStats = useCallback(async () => {
     try {
@@ -155,6 +166,29 @@ export default function CRMPage() {
     setPage(1)
     setActiveSegment('all') // Reset segment when manually filtering
   }
+
+  const handleDateRangeChange = (range: DateRange | undefined) => {
+    setDateRange(range)
+    setPage(1)
+  }
+
+  const handleClearQuickFilters = () => {
+    setDateRange(undefined)
+    setPage(1)
+  }
+
+  // Build filter config for AdminFilterBar
+  const filterConfig: FilterConfig[] = useMemo(() => [
+    {
+      type: 'daterange' as const,
+      key: 'lastOrderDate',
+      label: 'Last Order Date',
+      value: dateRange,
+      onChange: handleDateRangeChange,
+      placeholder: 'Filter by date',
+      presets: true,
+    },
+  ], [dateRange])
 
   const handleCustomerClick = (customer: CustomerProfile) => {
     router.push(`/admin/crm/${encodeURIComponent(customer.customer_email)}`)
@@ -358,6 +392,13 @@ export default function CRMPage() {
 
       {/* Dashboard Stats */}
       {stats && <CRMStats stats={stats} />}
+
+      {/* Quick Filters */}
+      <AdminFilterBar
+        filters={filterConfig}
+        onClearAll={handleClearQuickFilters}
+        showFilterIcon
+      />
 
       {/* Customers Table */}
       <AdminDataTable

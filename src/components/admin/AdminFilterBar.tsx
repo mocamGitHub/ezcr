@@ -259,23 +259,48 @@ export function AdminFilterBar({
 // Hook for managing filter state
 // ============================================
 
+import { useFilterParams } from '@/hooks/useFilterParams'
+
 interface UseFiltersOptions<T extends Record<string, unknown>> {
   initialState: T
   onFilterChange?: (filters: T) => void
+  /** Enable URL parameter sync */
+  syncToUrl?: boolean
+  /** Prefix for URL params (default: 'f_') */
+  urlPrefix?: string
+}
+
+interface UseFiltersReturn<T extends Record<string, unknown>> {
+  filters: T
+  updateFilter: <K extends keyof T>(key: K, value: T[K]) => void
+  resetFilters: () => void
+  hasActiveFilters: boolean
+  applyPreset?: (preset: Partial<T>) => void
 }
 
 /**
  * Hook for managing filter state with reset functionality.
+ * Optionally syncs to URL parameters when syncToUrl is true.
  */
 export function useFilters<T extends Record<string, unknown>>({
   initialState,
   onFilterChange,
-}: UseFiltersOptions<T>) {
-  const [filters, setFilters] = React.useState<T>(initialState)
+  syncToUrl = false,
+  urlPrefix = 'f_',
+}: UseFiltersOptions<T>): UseFiltersReturn<T> {
+  // Use URL-synced version if enabled
+  const urlFilters = useFilterParams<T>({
+    initialState,
+    paramPrefix: urlPrefix,
+    onFilterChange,
+  })
 
-  const updateFilter = React.useCallback(
+  // Use local state version
+  const [localFilters, setLocalFilters] = React.useState<T>(initialState)
+
+  const localUpdateFilter = React.useCallback(
     <K extends keyof T>(key: K, value: T[K]) => {
-      setFilters((prev) => {
+      setLocalFilters((prev) => {
         const next = { ...prev, [key]: value }
         onFilterChange?.(next)
         return next
@@ -284,13 +309,13 @@ export function useFilters<T extends Record<string, unknown>>({
     [onFilterChange]
   )
 
-  const resetFilters = React.useCallback(() => {
-    setFilters(initialState)
+  const localResetFilters = React.useCallback(() => {
+    setLocalFilters(initialState)
     onFilterChange?.(initialState)
   }, [initialState, onFilterChange])
 
-  const hasActiveFilters = React.useMemo(() => {
-    return Object.entries(filters).some(([key, value]) => {
+  const localHasActiveFilters = React.useMemo(() => {
+    return Object.entries(localFilters).some(([key, value]) => {
       const initial = initialState[key]
       if (Array.isArray(value)) {
         return value.length > 0
@@ -300,12 +325,17 @@ export function useFilters<T extends Record<string, unknown>>({
       }
       return value !== initial && value !== 'all' && value !== ''
     })
-  }, [filters, initialState])
+  }, [localFilters, initialState])
+
+  // Return URL-synced or local version based on option
+  if (syncToUrl) {
+    return urlFilters
+  }
 
   return {
-    filters,
-    updateFilter,
-    resetFilters,
-    hasActiveFilters,
+    filters: localFilters,
+    updateFilter: localUpdateFilter,
+    resetFilters: localResetFilters,
+    hasActiveFilters: localHasActiveFilters,
   }
 }
