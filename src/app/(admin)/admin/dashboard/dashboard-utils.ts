@@ -18,7 +18,7 @@ export interface Widget {
   tenant_id: string
   dashboard_id: string
   key: string
-  widget_type: 'kpi' | 'timeseries' | 'table' | 'bar' | 'donut'
+  widget_type: 'kpi' | 'timeseries' | 'trend' | 'table' | 'bar' | 'donut'
   title: string
   subtitle: string | null
   rpc_name: string | null

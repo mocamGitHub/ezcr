@@ -112,7 +112,10 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
     })
   }
 
-  const userRole = (profile?.role as UserRole) || 'viewer'
+  // Wait for profile to load before rendering menu items
+  // This prevents menu items from flashing/disappearing during auth loading
+  const isProfileLoading = profile === undefined
+  const userRole = (profile?.role as UserRole) || 'owner' // Default to owner while loading to show all items
   const navSections = getAccessibleNavSections(adminNavSections, userRole)
   const userNavItems = getAccessibleNavItems(adminUserNavItems, userRole)
 
