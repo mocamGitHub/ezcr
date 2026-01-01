@@ -31,6 +31,7 @@ import type {
 } from '@/types/configurator-rules'
 import { RULE_TYPE_INFO, RULE_TYPE_CATEGORIES } from '@/types/configurator-rules'
 import { toast } from 'sonner'
+import type { AppliedTemplate } from '@/lib/configurator/templates'
 
 interface PaginationMeta {
   total: number
@@ -158,6 +159,30 @@ export default function ConfiguratorRulesPage() {
 
     setSuccessMessage(isEdit ? 'Rule updated successfully' : 'Rule created successfully')
     fetchRules()
+  }
+
+  // Handle batch create (from template packs)
+  const handleBatchCreate = async (rules: AppliedTemplate[]) => {
+    try {
+      const response = await fetch('/api/admin/configurator/rules/batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rules }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create rules')
+      }
+
+      toast.success(`Created ${rules.length} rules from template pack`)
+      setSuccessMessage(`Successfully created ${rules.length} rules`)
+      fetchRules()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to create rules')
+      throw err
+    }
   }
 
   // Handle toggle active (optimistic update)
@@ -352,6 +377,7 @@ export default function ConfiguratorRulesPage() {
         onOpenChange={setEditorOpen}
         rule={selectedRule}
         onSave={handleSaveRule}
+        onBatchCreate={handleBatchCreate}
       />
     </div>
   )

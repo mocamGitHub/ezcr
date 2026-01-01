@@ -1,6 +1,53 @@
 // Configurator Rules Types
 // Product-centric rule types - each product/accessory has its own rules
 
+// =============================================================================
+// NESTED CONDITION TYPES (for AND/OR logic)
+// =============================================================================
+
+/** Primitive condition value types */
+export type ConditionValue = string | number | boolean | string[] | number[]
+
+/** Simple flat condition - key-value pairs */
+export type FlatCondition = Record<string, ConditionValue>
+
+/** AND condition - all sub-conditions must match */
+export interface AndCondition {
+  $and: NestedCondition[]
+}
+
+/** OR condition - at least one sub-condition must match */
+export interface OrCondition {
+  $or: NestedCondition[]
+}
+
+/** NOT condition - sub-condition must NOT match */
+export interface NotCondition {
+  $not: NestedCondition
+}
+
+/** A nested condition can be flat, AND, OR, or NOT */
+export type NestedCondition = FlatCondition | AndCondition | OrCondition | NotCondition
+
+/** Check if a condition is an AND condition */
+export function isAndCondition(condition: NestedCondition): condition is AndCondition {
+  return typeof condition === 'object' && '$and' in condition
+}
+
+/** Check if a condition is an OR condition */
+export function isOrCondition(condition: NestedCondition): condition is OrCondition {
+  return typeof condition === 'object' && '$or' in condition
+}
+
+/** Check if a condition is a NOT condition */
+export function isNotCondition(condition: NestedCondition): condition is NotCondition {
+  return typeof condition === 'object' && '$not' in condition
+}
+
+// =============================================================================
+// RULE TYPE DEFINITIONS
+// =============================================================================
+
 // Models
 export type ModelRuleType = 'AUN250' | 'AUN210'
 

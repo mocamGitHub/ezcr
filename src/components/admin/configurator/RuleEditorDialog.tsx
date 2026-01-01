@@ -21,15 +21,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Loader2, AlertCircle } from 'lucide-react'
+import { Loader2, AlertCircle, Sparkles } from 'lucide-react'
 import type { ConfiguratorRule, RuleType, CreateRuleRequest, UpdateRuleRequest } from '@/types/configurator-rules'
 import { RULE_TYPE_INFO, RULE_TYPE_CATEGORIES, CONDITION_SCHEMAS, ACTION_SCHEMAS } from '@/types/configurator-rules'
+import { TemplateSelector } from './TemplateSelector'
+import { TemplatePackDialog } from './TemplatePackDialog'
+import {
+  applyTemplate,
+  type RuleTemplate,
+  type TemplatePack,
+  type VariableValues,
+  type AppliedTemplate,
+} from '@/lib/configurator/templates'
 
 interface RuleEditorDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   rule?: ConfiguratorRule | null
   onSave: (data: CreateRuleRequest | UpdateRuleRequest, isEdit: boolean, ruleId?: string) => Promise<void>
+  onBatchCreate?: (rules: AppliedTemplate[]) => Promise<void>
 }
 
 // Product-centric rule types grouped by category
@@ -61,6 +71,7 @@ export function RuleEditorDialog({
   onOpenChange,
   rule,
   onSave,
+  onBatchCreate,
 }: RuleEditorDialogProps) {
   const isEdit = !!(rule && rule.id)
 
@@ -80,6 +91,11 @@ export function RuleEditorDialog({
   // Loading state
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Template selector state
+  const [templateSelectorOpen, setTemplateSelectorOpen] = useState(false)
+  const [packDialogOpen, setPackDialogOpen] = useState(false)
+  const [selectedPack, setSelectedPack] = useState<TemplatePack | null>(null)
 
   // Initialize form when rule changes
   useEffect(() => {
@@ -181,6 +197,25 @@ export function RuleEditorDialog({
     }
   }
 
+  // Handle template selection
+  const handleSelectTemplate = (template: RuleTemplate, variables: VariableValues) => {
+    const applied = applyTemplate(template, variables)
+    setRuleType(applied.ruleType)
+    setRuleKey(applied.ruleKey)
+    setConditionJson(JSON.stringify(applied.condition, null, 2))
+    setActionJson(JSON.stringify(applied.action, null, 2))
+    setMessage(applied.message || '')
+    setPriority(applied.priority)
+    setConditionError(null)
+    setActionError(null)
+  }
+
+  // Handle pack selection - opens pack dialog
+  const handleSelectPack = (pack: TemplatePack) => {
+    setSelectedPack(pack)
+    setPackDialogOpen(true)
+  }
+
   const typeInfo = RULE_TYPE_INFO[ruleType]
 
   return (
@@ -194,6 +229,25 @@ export function RuleEditorDialog({
               : 'Create a new configurator business rule for a product.'}
           </DialogDescription>
         </DialogHeader>
+
+        {/* Use Template Button - only show for new rules */}
+        {!isEdit && (
+          <div className="flex items-center gap-2 py-2 px-1">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setTemplateSelectorOpen(true)}
+              className="gap-2"
+            >
+              <Sparkles className="h-4 w-4" />
+              Use Template
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              Start from a pre-configured template
+            </span>
+          </div>
+        )}
 
         <div className="grid gap-4 py-4">
           {/* Product/Rule Type - Grouped by Category */}
@@ -377,6 +431,29 @@ export function RuleEditorDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* Template Selector Dialog */}
+      <TemplateSelector
+        open={templateSelectorOpen}
+        onOpenChange={setTemplateSelectorOpen}
+        onSelectTemplate={handleSelectTemplate}
+        onSelectPack={handleSelectPack}
+      />
+
+      {/* Template Pack Dialog */}
+      {selectedPack && onBatchCreate && (
+        <TemplatePackDialog
+          open={packDialogOpen}
+          onOpenChange={setPackDialogOpen}
+          pack={selectedPack}
+          onApply={async (rules) => {
+            await onBatchCreate(rules)
+            setPackDialogOpen(false)
+            onOpenChange(false)
+            setSelectedPack(null)
+          }}
+        />
+      )}
     </Dialog>
   )
 }
