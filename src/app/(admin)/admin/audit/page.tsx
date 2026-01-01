@@ -1,22 +1,18 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
+import type { DateRange } from 'react-day-picker'
 import { usePageTitle } from '@/hooks/usePageTitle'
 import {
   PageHeader,
   AdminDataTable,
   AdminDataTableSkeleton,
+  AdminFilterBar,
   type ColumnDef,
+  type FilterConfig,
 } from '@/components/admin'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Dialog,
@@ -164,6 +160,7 @@ export default function AdminAuditPage() {
   const [actorTypeFilter, setActorTypeFilter] = useState<
     'all' | 'user' | 'shortcut' | 'system' | 'webhook'
   >('all')
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
 
   // Detail dialog
   const [selectedEntry, setSelectedEntry] = useState<AuditLogEntry | null>(null)
@@ -180,6 +177,8 @@ export default function AdminAuditPage() {
         sortDirection,
         search: searchValue,
         actorTypeFilter,
+        startDate: dateRange?.from?.toISOString(),
+        endDate: dateRange?.to?.toISOString(),
       }
       const result = await getAuditLogs(params)
       setEntries(result.data)
@@ -191,7 +190,7 @@ export default function AdminAuditPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, pageSize, sortColumn, sortDirection, searchValue, actorTypeFilter])
+  }, [page, pageSize, sortColumn, sortDirection, searchValue, actorTypeFilter, dateRange])
 
   const fetchStats = useCallback(async () => {
     try {
@@ -233,6 +232,44 @@ export default function AdminAuditPage() {
     setActorTypeFilter(value as typeof actorTypeFilter)
     setPage(1)
   }
+
+  const handleDateRangeChange = (range: DateRange | undefined) => {
+    setDateRange(range)
+    setPage(1)
+  }
+
+  const handleClearFilters = () => {
+    setActorTypeFilter('all')
+    setDateRange(undefined)
+    setPage(1)
+  }
+
+  // Build filter config for AdminFilterBar
+  const filterConfig: FilterConfig[] = useMemo(() => [
+    {
+      type: 'select' as const,
+      key: 'actorType',
+      label: 'Actor Type',
+      value: actorTypeFilter,
+      onChange: handleActorTypeChange,
+      allLabel: 'All Actors',
+      options: [
+        { value: 'user', label: 'User' },
+        { value: 'shortcut', label: 'Shortcut' },
+        { value: 'system', label: 'System' },
+        { value: 'webhook', label: 'Webhook' },
+      ],
+    },
+    {
+      type: 'daterange' as const,
+      key: 'dateRange',
+      label: 'Date Range',
+      value: dateRange,
+      onChange: handleDateRangeChange,
+      placeholder: 'Filter by date',
+      presets: true,
+    },
+  ], [actorTypeFilter, dateRange])
 
   const handleViewDetails = (entry: AuditLogEntry) => {
     setSelectedEntry(entry)
@@ -312,21 +349,12 @@ export default function AdminAuditPage() {
         </div>
       )}
 
-      {/* Actor Type Filter */}
-      <div className="flex items-center gap-4">
-        <Select value={actorTypeFilter} onValueChange={handleActorTypeChange}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filter by actor" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Actors</SelectItem>
-            <SelectItem value="user">User</SelectItem>
-            <SelectItem value="shortcut">Shortcut</SelectItem>
-            <SelectItem value="system">System</SelectItem>
-            <SelectItem value="webhook">Webhook</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      {/* Filters */}
+      <AdminFilterBar
+        filters={filterConfig}
+        onClearAll={handleClearFilters}
+        showFilterIcon
+      />
 
       {/* Data Table */}
       {loading && entries.length === 0 ? (

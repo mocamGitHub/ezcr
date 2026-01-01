@@ -39,17 +39,6 @@ export interface GetCustomersPaginatedResult {
   pageSize: number
 }
 
-export interface CRMDashboardStats {
-  totalCustomers: number
-  totalRevenue: number
-  avgOrderValue: number
-  avgOrdersPerCustomer: number
-  newCustomers30Days: number
-  atRiskCustomers: number
-  vipCustomers: number
-  customersWithOpenTasks: number
-}
-
 // =====================================================
 // GET CUSTOMERS PAGINATED (for AdminDataTable)
 // =====================================================

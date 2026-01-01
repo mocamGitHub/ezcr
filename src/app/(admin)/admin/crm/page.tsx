@@ -37,7 +37,6 @@ import {
   bulkAddTags,
   getCustomersForExport,
   type CustomerProfile,
-  type CRMDashboardStats,
 } from './actions'
 
 export default function CRMPage() {
@@ -63,8 +62,14 @@ export default function CRMPage() {
   const [activeSegment, setActiveSegment] = useState<string>('all')
   const [filters, setFilters] = useState<CustomerListFilters>({})
 
-  // Stats
-  const [stats, setStats] = useState<CRMDashboardStats | null>(null)
+  // Stats - type matches return of getCRMDashboardStats
+  const [stats, setStats] = useState<{
+    totalCustomers: number
+    newCustomers: number
+    atRiskCustomers: number
+    customersWithTasks: number
+    avgLTV: number
+  } | null>(null)
 
   // Selection state
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
@@ -103,7 +108,7 @@ export default function CRMPage() {
   const loadStats = useCallback(async () => {
     try {
       const dashboardStats = await getCRMDashboardStats()
-      setStats(dashboardStats as CRMDashboardStats)
+      setStats(dashboardStats)
     } catch (err) {
       console.error('Failed to load stats:', err)
     }

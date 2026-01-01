@@ -13,6 +13,10 @@ export { AdminDataTable } from './AdminDataTable'
 export type { AdminDataTableProps, ColumnDef, RowAction, BulkAction } from './AdminDataTable'
 export { AdminDataTableSkeleton } from './AdminDataTableSkeleton'
 
+// Filters
+export { AdminFilterBar, useFilters } from './AdminFilterBar'
+export type { FilterConfig, SelectFilterConfig, MultiSelectFilterConfig, DateRangeFilterConfig } from './AdminFilterBar'
+
 // State components
 export { AdminEmptyState } from './AdminEmptyState'
 export { AdminErrorState } from './AdminErrorState'
