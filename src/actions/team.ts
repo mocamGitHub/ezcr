@@ -429,6 +429,85 @@ export async function deleteTeamMember(userId: string) {
 }
 
 /**
+ * Paginated team members query for AdminDataTable
+ */
+export interface GetTeamMembersPaginatedParams {
+  page?: number
+  pageSize?: number
+  sortColumn?: string
+  sortDirection?: 'asc' | 'desc'
+  search?: string
+}
+
+export interface GetTeamMembersPaginatedResult {
+  data: TeamMember[]
+  totalCount: number
+  page: number
+  pageSize: number
+}
+
+/**
+ * Get paginated team members with sorting and search
+ * Only owners and admins can view team members
+ */
+export async function getTeamMembersPaginated(
+  params: GetTeamMembersPaginatedParams = {}
+): Promise<GetTeamMembersPaginatedResult> {
+  try {
+    await requireOwnerOrAdmin()
+
+    const {
+      page = 1,
+      pageSize = 10,
+      sortColumn = 'first_name',
+      sortDirection = 'asc',
+      search = '',
+    } = params
+
+    const supabase = createServiceClient()
+    const tenantId = await getTenantId()
+
+    // Build base query
+    let query = supabase
+      .from('user_profiles')
+      .select('*', { count: 'exact' })
+      .eq('tenant_id', tenantId)
+      .neq('role', 'customer')
+
+    // Apply search filter
+    if (search.trim()) {
+      const searchTerm = `%${search.trim()}%`
+      query = query.or(
+        `email.ilike.${searchTerm},first_name.ilike.${searchTerm},last_name.ilike.${searchTerm}`
+      )
+    }
+
+    // Apply sorting
+    const validSortColumns = ['first_name', 'last_name', 'email', 'role', 'is_active', 'last_login', 'created_at']
+    const column = validSortColumns.includes(sortColumn) ? sortColumn : 'first_name'
+    query = query.order(column, { ascending: sortDirection === 'asc', nullsFirst: false })
+
+    // Apply pagination
+    const offset = (page - 1) * pageSize
+    query = query.range(offset, offset + pageSize - 1)
+
+    const { data, error, count } = await query
+
+    if (error) throw error
+
+    return {
+      data: (data || []) as TeamMember[],
+      totalCount: count || 0,
+      page,
+      pageSize,
+    }
+  } catch (error) {
+    console.error('Error fetching paginated team members:', error)
+    throw error
+  }
+}
+
+/**
  * Get team statistics
  */
 export async function getTeamStats() {

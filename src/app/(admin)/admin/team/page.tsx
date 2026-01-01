@@ -1,7 +1,15 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { getTeamMembers, inviteTeamMember, updateTeamMember, deactivateTeamMember, reactivateTeamMember, type TeamMember, type InviteTeamMemberData } from '@/actions/team'
+import { useEffect, useState, useCallback } from 'react'
+import {
+  getTeamMembersPaginated,
+  getTeamStats,
+  inviteTeamMember,
+  deactivateTeamMember,
+  reactivateTeamMember,
+  type TeamMember,
+  type InviteTeamMemberData,
+} from '@/actions/team'
 import { getRoleDisplayName, getRoleBadgeColor, getInvitableRoles } from '@/lib/permissions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,10 +19,30 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { EnvironmentBanner } from '@/components/EnvironmentBanner'
+import { AdminDataTable, PageHeader, type ColumnDef, type RowAction } from '@/components/admin'
+import { UserPlus, UserX, UserCheck } from 'lucide-react'
 
 export default function TeamManagementPage() {
+  // Table state
   const [members, setMembers] = useState<TeamMember[]>([])
+  const [totalCount, setTotalCount] = useState(0)
+  const [page, setPage] = useState(1)
+  const [pageSize] = useState(10)
+  const [sortColumn, setSortColumn] = useState('first_name')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
+  const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Stats state
+  const [stats, setStats] = useState<{
+    total: number
+    active: number
+    inactive: number
+    byRole: { owner: number; admin: number; customer_service: number; viewer: number }
+  } | null>(null)
+
+  // Invite modal state
   const [inviteModalOpen, setInviteModalOpen] = useState(false)
   const [inviteLoading, setInviteLoading] = useState(false)
   const [inviteData, setInviteData] = useState<InviteTeamMemberData>({
@@ -24,22 +52,50 @@ export default function TeamManagementPage() {
     role: 'viewer',
   })
 
-  const loadMembers = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true)
-      const data = await getTeamMembers()
-      setMembers(data)
-    } catch (error: any) {
-      console.error('Error loading team members:', error)
-      toast.error(error.message || 'Failed to load team members')
+      setError(null)
+      const [membersResult, statsResult] = await Promise.all([
+        getTeamMembersPaginated({
+          page,
+          pageSize,
+          sortColumn,
+          sortDirection,
+          search,
+        }),
+        getTeamStats(),
+      ])
+      setMembers(membersResult.data)
+      setTotalCount(membersResult.totalCount)
+      setStats(statsResult)
+    } catch (err: any) {
+      console.error('Error loading team data:', err)
+      setError(err.message || 'Failed to load team data')
+      toast.error(err.message || 'Failed to load team data')
     } finally {
       setLoading(false)
     }
-  }
+  }, [page, pageSize, sortColumn, sortDirection, search])
 
   useEffect(() => {
-    loadMembers()
-  }, [])
+    loadData()
+  }, [loadData])
+
+  const handleSortChange = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortColumn(column)
+      setSortDirection('asc')
+    }
+    setPage(1) // Reset to first page on sort change
+  }
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value)
+    setPage(1) // Reset to first page on search
+  }
 
   const handleInvite = async () => {
     if (!inviteData.email) {
@@ -53,10 +109,10 @@ export default function TeamManagementPage() {
       toast.success(result.message || 'Team member invited successfully')
       setInviteModalOpen(false)
       setInviteData({ email: '', first_name: '', last_name: '', role: 'viewer' })
-      loadMembers()
-    } catch (error: any) {
-      console.error('Error inviting team member:', error)
-      toast.error(error.message || 'Failed to invite team member')
+      loadData()
+    } catch (err: any) {
+      console.error('Error inviting team member:', err)
+      toast.error(err.message || 'Failed to invite team member')
     } finally {
       setInviteLoading(false)
     }
@@ -71,144 +127,158 @@ export default function TeamManagementPage() {
         const result = await reactivateTeamMember(member.id)
         toast.success(result.message || 'Team member reactivated')
       }
-      loadMembers()
-    } catch (error: any) {
-      console.error('Error toggling team member status:', error)
-      toast.error(error.message || 'Failed to update team member')
+      loadData()
+    } catch (err: any) {
+      console.error('Error toggling team member status:', err)
+      toast.error(err.message || 'Failed to update team member')
     }
   }
 
-  if (loading) {
-    return (
-      <div className="p-8">
-        <EnvironmentBanner />
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-muted rounded w-1/4"></div>
-          <div className="h-64 bg-muted rounded"></div>
+  // Column definitions
+  const columns: ColumnDef<TeamMember>[] = [
+    {
+      key: 'first_name',
+      header: 'Name',
+      sortable: true,
+      cell: (member) => (
+        <div className="font-medium">
+          {member.first_name || member.last_name
+            ? `${member.first_name || ''} ${member.last_name || ''}`.trim()
+            : 'Not Set'}
         </div>
-      </div>
-    )
+      ),
+    },
+    {
+      key: 'email',
+      header: 'Email',
+      sortable: true,
+      cell: (member) => (
+        <span className="text-muted-foreground">{member.email}</span>
+      ),
+    },
+    {
+      key: 'role',
+      header: 'Role',
+      sortable: true,
+      cell: (member) => (
+        <Badge className={getRoleBadgeColor(member.role)}>
+          {getRoleDisplayName(member.role)}
+        </Badge>
+      ),
+    },
+    {
+      key: 'is_active',
+      header: 'Status',
+      sortable: true,
+      cell: (member) => (
+        <Badge
+          variant={member.is_active ? 'default' : 'secondary'}
+          className={member.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}
+        >
+          {member.is_active ? 'Active' : 'Inactive'}
+        </Badge>
+      ),
+    },
+    {
+      key: 'last_login',
+      header: 'Last Login',
+      sortable: true,
+      cell: (member) => (
+        <span className="text-muted-foreground">
+          {member.last_login
+            ? new Date(member.last_login).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+              })
+            : 'Never'}
+        </span>
+      ),
+    },
+  ]
+
+  // Row actions
+  const getRowActions = (member: TeamMember): RowAction<TeamMember>[] => {
+    if (member.role === 'owner') {
+      return [] // No actions for owners
+    }
+
+    return [
+      {
+        label: member.is_active ? 'Deactivate' : 'Reactivate',
+        onClick: () => handleToggleActive(member),
+        icon: member.is_active ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />,
+        destructive: member.is_active,
+      },
+    ]
   }
 
   return (
     <div className="p-8">
       <EnvironmentBanner />
 
-      <div className="mb-8">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-          <div>
-            <h1 className="text-3xl font-bold">Team Management</h1>
-            <p className="text-muted-foreground mt-1">
-              Manage staff members who have access to the admin dashboard
-            </p>
-          </div>
-        </div>
-        <Button
-          onClick={() => setInviteModalOpen(true)}
-          size="lg"
-          className="w-full sm:w-auto bg-blue-600 text-white hover:bg-blue-700"
-        >
-          + Invite Team Member
-        </Button>
-      </div>
+      <PageHeader
+        title="Team Management"
+        description="Manage staff members who have access to the admin dashboard"
+        primaryAction={
+          <Button
+            onClick={() => setInviteModalOpen(true)}
+            className="bg-blue-600 text-white hover:bg-blue-700"
+          >
+            <UserPlus className="h-4 w-4 mr-2" />
+            Invite Team Member
+          </Button>
+        }
+      />
 
       {/* Team Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div className="border rounded-lg p-4 text-center">
-          <div className="text-sm text-muted-foreground">Total Members</div>
-          <div className="text-2xl font-bold mt-1">{members.length}</div>
-        </div>
-        <div className="border rounded-lg p-4 text-center">
-          <div className="text-sm text-muted-foreground">Active</div>
-          <div className="text-2xl font-bold mt-1 text-green-600">
-            {members.filter(m => m.is_active).length}
+      {stats && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <div className="border rounded-lg p-4 text-center">
+            <div className="text-sm text-muted-foreground">Total Members</div>
+            <div className="text-2xl font-bold mt-1">{stats.total}</div>
+          </div>
+          <div className="border rounded-lg p-4 text-center">
+            <div className="text-sm text-muted-foreground">Active</div>
+            <div className="text-2xl font-bold mt-1 text-green-600">{stats.active}</div>
+          </div>
+          <div className="border rounded-lg p-4 text-center">
+            <div className="text-sm text-muted-foreground">Inactive</div>
+            <div className="text-2xl font-bold mt-1 text-orange-600">{stats.inactive}</div>
+          </div>
+          <div className="border rounded-lg p-4 text-center">
+            <div className="text-sm text-muted-foreground">Owners</div>
+            <div className="text-2xl font-bold mt-1 text-purple-600">{stats.byRole.owner}</div>
           </div>
         </div>
-        <div className="border rounded-lg p-4 text-center">
-          <div className="text-sm text-muted-foreground">Inactive</div>
-          <div className="text-2xl font-bold mt-1 text-orange-600">
-            {members.filter(m => !m.is_active).length}
-          </div>
-        </div>
-        <div className="border rounded-lg p-4 text-center">
-          <div className="text-sm text-muted-foreground">Owners</div>
-          <div className="text-2xl font-bold mt-1 text-purple-600">
-            {members.filter(m => m.role === 'owner').length}
-          </div>
-        </div>
-      </div>
+      )}
 
       {/* Team Members Table */}
-      <div className="border rounded-lg overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-muted/50 border-b">
-            <tr>
-              <th className="text-left px-4 py-3 font-medium text-sm">Name</th>
-              <th className="text-left px-4 py-3 font-medium text-sm">Email</th>
-              <th className="text-left px-4 py-3 font-medium text-sm">Role</th>
-              <th className="text-left px-4 py-3 font-medium text-sm">Status</th>
-              <th className="text-left px-4 py-3 font-medium text-sm">Last Login</th>
-              <th className="text-right px-4 py-3 font-medium text-sm">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {members.length === 0 && (
-              <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">
-                  No team members found
-                </td>
-              </tr>
-            )}
-            {members.map((member) => (
-              <tr key={member.id} className="border-t hover:bg-muted/30 transition-colors">
-                <td className="px-4 py-3">
-                  <div className="font-medium">
-                    {member.first_name || member.last_name
-                      ? `${member.first_name || ''} ${member.last_name || ''}`.trim()
-                      : 'Not Set'}
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-sm text-muted-foreground">
-                  {member.email}
-                </td>
-                <td className="px-4 py-3">
-                  <Badge className={getRoleBadgeColor(member.role)}>
-                    {getRoleDisplayName(member.role)}
-                  </Badge>
-                </td>
-                <td className="px-4 py-3">
-                  <Badge
-                    variant={member.is_active ? 'default' : 'secondary'}
-                    className={member.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}
-                  >
-                    {member.is_active ? 'Active' : 'Inactive'}
-                  </Badge>
-                </td>
-                <td className="px-4 py-3 text-sm text-muted-foreground">
-                  {member.last_login
-                    ? new Date(member.last_login).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                      })
-                    : 'Never'}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  {member.role !== 'owner' && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleToggleActive(member)}
-                    >
-                      {member.is_active ? 'Deactivate' : 'Reactivate'}
-                    </Button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <AdminDataTable
+        data={members}
+        columns={columns}
+        keyField="id"
+        sortColumn={sortColumn}
+        sortDirection={sortDirection}
+        onSortChange={handleSortChange}
+        page={page}
+        pageSize={pageSize}
+        totalCount={totalCount}
+        onPageChange={setPage}
+        searchValue={search}
+        onSearchChange={handleSearchChange}
+        searchPlaceholder="Search by name or email..."
+        loading={loading}
+        error={error}
+        onRetry={loadData}
+        emptyTitle="No team members found"
+        emptyDescription="Invite team members to give them access to the admin dashboard."
+        emptyAction={{
+          label: 'Invite Team Member',
+          onClick: () => setInviteModalOpen(true),
+        }}
+        rowActions={getRowActions}
+      />
 
       {/* Invite Modal */}
       <Dialog open={inviteModalOpen} onOpenChange={setInviteModalOpen}>
