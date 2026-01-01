@@ -18,7 +18,9 @@ import { Tags, Download, Users, RefreshCw } from 'lucide-react'
 import {
   AdminDataTable,
   AdminFilterBar,
+  FilterPresetDropdown,
   PageHeader,
+  useFilters,
   type ColumnDef,
   type BulkAction,
   type FilterConfig,
@@ -63,7 +65,28 @@ export default function CRMPage() {
   // Filters and segments
   const [activeSegment, setActiveSegment] = useState<string>('all')
   const [filters, setFilters] = useState<CustomerListFilters>({})
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
+
+  // URL-synced filters with presets
+  type CRMFilters = {
+    dateRange: DateRange | undefined
+    [key: string]: unknown
+  }
+
+  const {
+    filters: urlFilters,
+    updateFilter,
+    resetFilters,
+    hasActiveFilters,
+    applyPreset,
+  } = useFilters<CRMFilters>({
+    initialState: {
+      dateRange: undefined,
+    },
+    syncToUrl: true,
+    urlPrefix: 'f_',
+  })
+
+  const { dateRange } = urlFilters
 
   // Stats - type matches return of getCRMDashboardStats
   const [stats, setStats] = useState<{
@@ -168,13 +191,20 @@ export default function CRMPage() {
   }
 
   const handleDateRangeChange = (range: DateRange | undefined) => {
-    setDateRange(range)
+    updateFilter('dateRange', range)
     setPage(1)
   }
 
   const handleClearQuickFilters = () => {
-    setDateRange(undefined)
+    resetFilters()
     setPage(1)
+  }
+
+  const handleApplyPreset = (preset: Record<string, unknown>) => {
+    if (applyPreset) {
+      applyPreset(preset as Partial<CRMFilters>)
+      setPage(1)
+    }
   }
 
   // Build filter config for AdminFilterBar
@@ -394,11 +424,19 @@ export default function CRMPage() {
       {stats && <CRMStats stats={stats} />}
 
       {/* Quick Filters */}
-      <AdminFilterBar
-        filters={filterConfig}
-        onClearAll={handleClearQuickFilters}
-        showFilterIcon
-      />
+      <div className="flex flex-wrap items-center gap-3">
+        <AdminFilterBar
+          filters={filterConfig}
+          onClearAll={handleClearQuickFilters}
+          showFilterIcon
+        />
+        <FilterPresetDropdown
+          page="crm"
+          currentFilters={urlFilters}
+          onApplyPreset={handleApplyPreset}
+          hasActiveFilters={hasActiveFilters}
+        />
+      </div>
 
       {/* Customers Table */}
       <AdminDataTable

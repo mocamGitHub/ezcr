@@ -71,6 +71,9 @@ export interface GetTestimonialsPaginatedParams {
   sortDirection?: 'asc' | 'desc'
   search?: string
   status?: 'all' | 'pending' | 'approved' | 'rejected'
+  featured?: 'all' | 'featured' | 'not_featured'
+  startDate?: string
+  endDate?: string
 }
 
 export interface GetTestimonialsPaginatedResult {
