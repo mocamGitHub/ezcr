@@ -17,6 +17,7 @@ import {
   User,
   SlidersHorizontal,
   CalendarCheck,
+  FileText,
   type LucideIcon,
 } from 'lucide-react'
 import { type UserRole, hasPermission } from '@/lib/permissions'
@@ -160,6 +161,13 @@ export const adminNavSections: AdminNavSection[] = [
         href: '/admin/tools',
         icon: Wrench,
         description: 'Software subscriptions & services',
+        minRole: 'admin',
+      },
+      {
+        title: 'Audit Logs',
+        href: '/admin/audit',
+        icon: FileText,
+        description: 'View system activity logs',
         minRole: 'admin',
       },
     ],
