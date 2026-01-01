@@ -1,7 +1,40 @@
 'use server'
 
-import { createServiceClient } from '@/lib/supabase/service'
-import { requireStaffMember, getTenantId } from '@/actions/auth-utils'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { getTenantId as getEnvironmentTenantId } from '@/lib/tenant'
+
+// =====================================================
+// HELPER FUNCTIONS
+// =====================================================
+
+async function getTenantId(): Promise<string> {
+  return await getEnvironmentTenantId()
+}
+
+async function requireStaffMember() {
+  const supabase = await createClient()
+  const tenantId = await getTenantId()
+
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    throw new Error('Not authenticated')
+  }
+
+  const serviceClient = createServiceClient()
+  const { data: profile, error } = await serviceClient
+    .from('user_profiles')
+    .select('id, role')
+    .eq('id', user.id)
+    .eq('tenant_id', tenantId)
+    .single()
+
+  if (error || !profile || !['owner', 'admin', 'customer_service'].includes(profile.role)) {
+    throw new Error('Insufficient permissions')
+  }
+
+  return { userId: user.id, profile }
+}
 
 // =====================================================
 // TYPES
@@ -120,8 +153,16 @@ export async function getInventoryPaginated(
     throw new Error('Failed to fetch inventory')
   }
 
+  // Map data to handle Supabase returning product_categories as array
+  const mappedData = (data || []).map((item) => ({
+    ...item,
+    product_categories: Array.isArray(item.product_categories)
+      ? item.product_categories[0] || null
+      : item.product_categories,
+  })) as Product[]
+
   return {
-    data: (data || []) as Product[],
+    data: mappedData,
     totalCount: count || 0,
     page,
     pageSize,
@@ -298,5 +339,11 @@ export async function getProductsForExport(): Promise<Product[]> {
     throw new Error('Failed to fetch products for export')
   }
 
-  return (data || []) as Product[]
+  // Map data to handle Supabase returning product_categories as array
+  return (data || []).map((item) => ({
+    ...item,
+    product_categories: Array.isArray(item.product_categories)
+      ? item.product_categories[0] || null
+      : item.product_categories,
+  })) as Product[]
 }

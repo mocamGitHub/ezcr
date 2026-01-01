@@ -40,8 +40,8 @@ import { AdminErrorState } from './AdminErrorState'
 export interface ColumnDef<T> {
   /** Unique key for the column (used for sorting) */
   key: string
-  /** Header label */
-  header: string
+  /** Header label (string or React node) */
+  header: React.ReactNode
   /** Whether this column is sortable */
   sortable?: boolean
   /** Custom cell renderer */
