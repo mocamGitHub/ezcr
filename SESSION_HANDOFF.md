@@ -1,75 +1,101 @@
-# Session Handoff - Admin Filter Bars Complete
+# Session Handoff - Saved Filter Presets & URL Sync Complete
 
-**Date**: 2025-12-31
-**Time**: Late Evening Session
-**Previous Commit**: `d9cf410` - docs: Update SESSION_HANDOFF.md with complete session summary
-**Current Commit**: `7a6ce9b` - feat(contacts): Add AdminFilterBar with type, status, and date filters
-**Current Status**: All major admin pages now have AdminFilterBar integration
+**Date**: 2026-01-01
+**Time**: Morning Session
+**Previous Commit**: `7a6ce9b` - feat(contacts): Add AdminFilterBar with type, status, and date filters
+**Current Commit**: `88ccadf` - feat(admin): Enhance audit and orders pages with filter URL sync
+**Current Status**: URL sync and saved filter presets fully implemented
 **Branch**: main
-**Dev Server**: Running at http://localhost:3005
+**Dev Server**: Running at http://localhost:3005 ✅
 
 ---
 
 ## What Was Accomplished This Session
 
-### Filter Bar Additions
-- Added AdminFilterBar to Scheduler Bookings page (status + date range)
-- Added AdminFilterBar to CRM page (date range with presets)
-- Added AdminFilterBar to Contacts page (type, status, date range)
-- Enhanced Audit and Orders pages with filter URL sync
+### Feature 1: URL Sync for Filters
+- Created `useFilterParams` hook for syncing filter state with URL query params
+- Filters now persist in URL (shareable, bookmarkable)
+- Supports strings, arrays, and date ranges
+- Uses `f_` prefix to avoid parameter collisions
 
-### Files Modified This Session
+### Feature 2: Saved Filter Presets
+- Users can save named filter configurations
+- Presets stored in `user_profiles.metadata.filter_presets[]`
+- Save, load, and delete presets via dropdown UI
+- Presets are page-specific (Orders vs Audit vs CRM)
 
-1. `src/actions/scheduler-admin.ts` - Added startDate/endDate params and date range filtering
-2. `src/app/(admin)/admin/scheduler/bookings/page.tsx` - Replaced Select with AdminFilterBar
-3. `src/app/(admin)/admin/crm/page.tsx` - Added AdminFilterBar with date range filter
-4. `src/app/(admin)/admin/audit/page.tsx` - Added useFilters hook with URL sync
-5. `src/app/(admin)/admin/orders/page.tsx` - Added index signature for useFilters compatibility
-6. `src/app/(admin)/admin/contacts/actions.ts` - Added date range filtering support
-7. `src/app/(admin)/admin/contacts/page.tsx` - Replaced toolbar with AdminFilterBar
+### Implementation Details
+- Extended `useFilters` hook with `syncToUrl` and `urlPrefix` options
+- Created `FilterPresetDropdown` component for preset management
+- Server actions for CRUD operations on presets
+- Integrated into Orders and Audit pages
+
+### Files Created This Session (3 files)
+1. `src/hooks/useFilterParams.ts` - URL sync hook with serialization/deserialization
+2. `src/actions/filter-presets.ts` - Server actions for preset CRUD
+3. `src/components/admin/FilterPresetDropdown.tsx` - Dropdown UI component
+
+### Files Modified This Session (4 files)
+1. `src/components/admin/AdminFilterBar.tsx` - Extended useFilters with syncToUrl option
+2. `src/components/admin/index.ts` - Added FilterPresetDropdown export
+3. `src/app/(admin)/admin/orders/page.tsx` - Enabled URL sync and presets
+4. `src/app/(admin)/admin/audit/page.tsx` - Enabled URL sync and presets
 
 ---
 
 ## Current State
 
-### What's Working
-- All admin pages using AdminDataTable pattern
-- Orders page with status, payment, and date range filters
-- Scheduler bookings with status and date range filters
-- CRM page with date range filter + existing segment tabs and advanced filters
-- Contacts page with type, status, and date range filters
-- Audit log viewer with actor type and date range filters
+### What's Working ✅
+- ✅ Filter state persists in URL query params
+- ✅ URLs are shareable and bookmarkable
+- ✅ Users can save named filter presets
+- ✅ Presets dropdown in Orders and Audit pages
+- ✅ Date range serialization/deserialization
+- ✅ All TypeScript types correct
 
-### Admin Pages with AdminFilterBar
-- Orders (`/admin/orders`) - Status, Payment, Date Range
-- Scheduler Bookings (`/admin/scheduler/bookings`) - Status, Date Range
-- CRM (`/admin/crm`) - Date Range (+ existing advanced filters)
-- Contacts (`/admin/contacts`) - Type, Status, Date Range
-- Audit Logs (`/admin/audit`) - Actor Type, Date Range
+### URL Format
+```
+/admin/orders?f_status=pending&f_payment=unpaid&f_from=2025-01-01&f_to=2025-12-31
+```
 
-### Admin Pages Using AdminDataTable
-- Orders (`/admin/orders`)
-- CRM (`/admin/crm`)
-- Scheduler Bookings (`/admin/scheduler/bookings`)
-- Team (`/admin/team`)
-- Contacts (`/admin/contacts`)
-- Testimonials (`/admin/testimonials`)
-- Inventory (`/admin/inventory`)
-- Audit Logs (`/admin/audit`)
+### Preset Storage
+```typescript
+user_profiles.metadata.filter_presets = [
+  { id: "...", name: "Pending Orders", page: "orders", filters: {...} }
+]
+```
+
+---
+
+## How to Use the New Features
+
+### URL Sync
+1. Apply filters on Orders or Audit page
+2. URL updates automatically (e.g., `?f_status=pending`)
+3. Share URL or bookmark it
+4. Visiting URL restores filter state
+
+### Saved Presets
+1. Apply desired filters
+2. Click "Presets" dropdown button
+3. Click "Save current filters"
+4. Enter a name and save
+5. Load preset from dropdown anytime
 
 ---
 
 ## Next Immediate Actions
 
-### 1. Add AdminFilterBar to Remaining Pages (Optional)
-Consider adding filter bars to:
-- Testimonials page (status, date range)
-- Inventory page (category, stock status)
+### 1. Enable on More Pages
+Add URL sync and presets to:
+- CRM page (`/admin/crm`)
+- Scheduler Bookings (`/admin/scheduler/bookings`)
+- Contacts page (`/admin/contacts`)
 
 ### 2. Optional Enhancements
-- Add saved filter presets
-- Add filter URL sync to all pages
-- Add export with current filters applied
+- Add preset renaming capability
+- Add "Update preset" option (overwrite existing)
+- Export with current filters applied
 
 ---
 
@@ -95,8 +121,8 @@ None - all issues resolved.
 
 ---
 
-**Session Status**: Complete
-**Next Session**: Optional filter bar additions to remaining pages
-**Handoff Complete**: 2025-12-31
+**Session Status**: ✅ Complete
+**Next Session**: Enable URL sync/presets on more admin pages
+**Handoff Complete**: 2026-01-01
 
-All major admin pages now have AdminFilterBar with comprehensive filtering!
+All filter changes now persist in URL and can be saved as presets! 🎉
