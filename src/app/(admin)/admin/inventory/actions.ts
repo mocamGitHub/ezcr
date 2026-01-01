@@ -64,6 +64,7 @@ export interface GetInventoryPaginatedParams {
   sortDirection?: 'asc' | 'desc'
   search?: string
   showLowStockOnly?: boolean
+  categoryId?: string
 }
 
 export interface GetInventoryPaginatedResult {
@@ -98,6 +99,7 @@ export async function getInventoryPaginated(
     sortDirection = 'asc',
     search = '',
     showLowStockOnly = false,
+    categoryId,
   } = params
 
   const supabase = createServiceClient()
@@ -125,6 +127,15 @@ export async function getInventoryPaginated(
       { count: 'exact' }
     )
     .eq('tenant_id', tenantId)
+
+  // Apply category filter
+  if (categoryId && categoryId !== 'all') {
+    if (categoryId === 'uncategorized') {
+      query = query.is('category_id', null)
+    } else {
+      query = query.eq('category_id', categoryId)
+    }
+  }
 
   // Apply search filter
   if (search.trim()) {
@@ -346,4 +357,32 @@ export async function getProductsForExport(): Promise<Product[]> {
       ? item.product_categories[0] || null
       : item.product_categories,
   })) as Product[]
+}
+
+// =====================================================
+// GET CATEGORIES FOR FILTER DROPDOWN
+// =====================================================
+
+export interface Category {
+  id: string
+  name: string
+}
+
+export async function getCategoriesForFilter(): Promise<Category[]> {
+  await requireStaffMember()
+  const tenantId = await getTenantId()
+  const supabase = createServiceClient()
+
+  const { data, error } = await supabase
+    .from('product_categories')
+    .select('id, name')
+    .eq('tenant_id', tenantId)
+    .order('name', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching categories:', error)
+    return []
+  }
+
+  return data || []
 }

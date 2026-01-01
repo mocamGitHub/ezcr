@@ -33,10 +33,12 @@ import {
   getInventoryStats,
   getProductsForAlerts,
   getProductsForExport,
+  getCategoriesForFilter,
   toggleConfiguratorRules,
   toggleAlertSuppression,
   type Product,
   type InventoryStats,
+  type Category,
 } from './actions'
 
 export default function InventoryDashboardPage() {
@@ -56,6 +58,7 @@ export default function InventoryDashboardPage() {
   // URL-synced filters with presets
   type InventoryFilters = {
     stockFilter: 'all' | 'low_stock'
+    categoryId: string
     [key: string]: unknown
   }
 
@@ -68,12 +71,17 @@ export default function InventoryDashboardPage() {
   } = useFilters<InventoryFilters>({
     initialState: {
       stockFilter: 'all',
+      categoryId: 'all',
     },
     syncToUrl: true,
     urlPrefix: 'f_',
   })
 
   const showLowStockOnly = filters.stockFilter === 'low_stock'
+  const categoryId = filters.categoryId
+
+  // Categories for filter dropdown
+  const [categories, setCategories] = useState<Category[]>([])
 
   // Stats and alerts
   const [stats, setStats] = useState<InventoryStats | null>(null)
@@ -96,6 +104,7 @@ export default function InventoryDashboardPage() {
           sortDirection,
           search,
           showLowStockOnly,
+          categoryId: categoryId !== 'all' ? categoryId : undefined,
         }),
         getInventoryStats(),
         getProductsForAlerts(),
@@ -112,11 +121,16 @@ export default function InventoryDashboardPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, pageSize, sortColumn, sortDirection, search, showLowStockOnly])
+  }, [page, pageSize, sortColumn, sortDirection, search, showLowStockOnly, categoryId])
 
   useEffect(() => {
     loadData()
   }, [loadData])
+
+  // Load categories on mount
+  useEffect(() => {
+    getCategoriesForFilter().then(setCategories).catch(console.error)
+  }, [])
 
   const handleSortChange = (column: string) => {
     if (sortColumn === column) {
@@ -133,8 +147,13 @@ export default function InventoryDashboardPage() {
     setPage(1)
   }
 
-  const handleFilterChange = (value: string) => {
+  const handleStockFilterChange = (value: string) => {
     updateFilter('stockFilter', value as InventoryFilters['stockFilter'])
+    setPage(1)
+  }
+
+  const handleCategoryChange = (value: string) => {
+    updateFilter('categoryId', value)
     setPage(1)
   }
 
@@ -379,16 +398,28 @@ export default function InventoryDashboardPage() {
   const filterConfig: FilterConfig[] = useMemo(() => [
     {
       type: 'select' as const,
+      key: 'categoryId',
+      label: 'Category',
+      value: categoryId,
+      onChange: handleCategoryChange,
+      allLabel: 'All Categories',
+      options: [
+        { value: 'uncategorized', label: 'Uncategorized' },
+        ...categories.map((cat) => ({ value: cat.id, label: cat.name })),
+      ],
+    },
+    {
+      type: 'select' as const,
       key: 'stockFilter',
       label: 'Stock',
       value: filters.stockFilter,
-      onChange: handleFilterChange,
+      onChange: handleStockFilterChange,
       allLabel: 'All Products',
       options: [
         { value: 'low_stock', label: 'Low Stock Only' },
       ],
     },
-  ], [filters.stockFilter])
+  ], [categoryId, categories, filters.stockFilter])
 
   return (
     <div className="p-8">
