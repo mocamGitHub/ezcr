@@ -10,7 +10,7 @@ export { PageHeader } from './PageHeader'
 
 // Data table
 export { AdminDataTable } from './AdminDataTable'
-export type { AdminDataTableProps, ColumnDef, RowAction } from './AdminDataTable'
+export type { AdminDataTableProps, ColumnDef, RowAction, BulkAction } from './AdminDataTable'
 export { AdminDataTableSkeleton } from './AdminDataTableSkeleton'
 
 // State components

@@ -8,6 +8,7 @@ import {
   AdminDataTableSkeleton,
   type ColumnDef,
   type RowAction,
+  type BulkAction,
 } from '@/components/admin'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -34,6 +35,7 @@ import { toast } from 'sonner'
 import {
   getAdminBookings,
   cancelBooking,
+  bulkCancelBookings,
   type SchedulerBooking,
   type GetAdminBookingsParams,
 } from '@/actions/scheduler-admin'
@@ -131,6 +133,10 @@ export default function AdminSchedulerBookingsPage() {
   const [bookingToCancel, setBookingToCancel] = useState<SchedulerBooking | null>(null)
   const [cancelling, setCancelling] = useState(false)
 
+  // Bulk selection state
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
+  const [bulkCancelDialogOpen, setBulkCancelDialogOpen] = useState(false)
+
   const fetchBookings = useCallback(async () => {
     setLoading(true)
     setError(null)
@@ -200,6 +206,41 @@ export default function AdminSchedulerBookingsPage() {
       setCancelling(false)
     }
   }
+
+  const handleBulkCancel = async () => {
+    if (selectedKeys.size === 0) return
+
+    setCancelling(true)
+    try {
+      const result = await bulkCancelBookings(Array.from(selectedKeys))
+      toast.success(`${result.cancelledCount} booking(s) cancelled successfully`)
+      setBulkCancelDialogOpen(false)
+      setSelectedKeys(new Set())
+      fetchBookings()
+    } catch (err) {
+      console.error('Error bulk cancelling bookings:', err)
+      toast.error('Failed to cancel bookings')
+    } finally {
+      setCancelling(false)
+    }
+  }
+
+  // Get selected bookings that are scheduled (can be cancelled)
+  const getScheduledSelectedCount = useCallback(() => {
+    return bookings.filter(
+      (b) => selectedKeys.has(b.id) && b.status === 'scheduled'
+    ).length
+  }, [bookings, selectedKeys])
+
+  const bulkActions: BulkAction<SchedulerBooking>[] = [
+    {
+      label: 'Cancel Selected',
+      icon: <XCircle className="h-4 w-4" />,
+      destructive: true,
+      onClick: () => setBulkCancelDialogOpen(true),
+      disabled: (selected) => selected.filter((b) => b.status === 'scheduled').length === 0,
+    },
+  ]
 
   const rowActions = (booking: SchedulerBooking): RowAction<SchedulerBooking>[] => {
     const actions: RowAction<SchedulerBooking>[] = [
@@ -279,6 +320,10 @@ export default function AdminSchedulerBookingsPage() {
           emptyTitle="No bookings found"
           emptyDescription="There are no scheduled appointments matching your filters."
           rowActions={rowActions}
+          selectable
+          selectedKeys={selectedKeys}
+          onSelectionChange={setSelectedKeys}
+          bulkActions={bulkActions}
         />
       )}
 
@@ -309,6 +354,35 @@ export default function AdminSchedulerBookingsPage() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {cancelling ? 'Cancelling...' : 'Cancel Booking'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Cancel Confirmation Dialog */}
+      <AlertDialog open={bulkCancelDialogOpen} onOpenChange={setBulkCancelDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Multiple Bookings</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel {getScheduledSelectedCount()} scheduled booking(s)?
+              {selectedKeys.size > getScheduledSelectedCount() && (
+                <div className="mt-2 text-sm text-muted-foreground">
+                  Note: {selectedKeys.size - getScheduledSelectedCount()} selected booking(s) are
+                  already cancelled or rescheduled and will be skipped.
+                </div>
+              )}
+              <div className="mt-2 text-destructive">This action cannot be undone.</div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelling}>Keep Bookings</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkCancel}
+              disabled={cancelling || getScheduledSelectedCount() === 0}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {cancelling ? 'Cancelling...' : `Cancel ${getScheduledSelectedCount()} Booking(s)`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

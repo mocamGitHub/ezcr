@@ -182,6 +182,38 @@ export async function cancelBooking(bookingId: string): Promise<{ success: boole
 }
 
 /**
+ * Bulk cancel multiple bookings (admin action)
+ */
+export async function bulkCancelBookings(
+  bookingIds: string[]
+): Promise<{ success: boolean; cancelledCount: number }> {
+  try {
+    await requireOwnerOrAdmin()
+
+    const supabase = createServiceClient()
+    const tenantId = await getTenantId()
+
+    const { data, error } = await supabase
+      .from('nx_scheduler_booking')
+      .update({
+        status: 'cancelled',
+        updated_at: new Date().toISOString(),
+      })
+      .in('id', bookingIds)
+      .eq('tenant_id', tenantId)
+      .eq('status', 'scheduled') // Only cancel scheduled bookings
+      .select('id')
+
+    if (error) throw error
+
+    return { success: true, cancelledCount: data?.length || 0 }
+  } catch (error) {
+    console.error('Error bulk cancelling bookings:', error)
+    throw error
+  }
+}
+
+/**
  * Get a single booking by ID (admin)
  */
 export async function getAdminBooking(bookingId: string): Promise<SchedulerBooking | null> {
