@@ -201,20 +201,19 @@ BEGIN
   v_ytd_start := date_trunc('year', p_date_to)::date;
 
   -- Revenue from paid orders (MTD)
-  SELECT COALESCE(SUM(total_amount), 0), COUNT(*)
+  -- Note: orders table is single-tenant (no tenant_id column), uses grand_total
+  SELECT COALESCE(SUM(grand_total), 0), COUNT(*)
   INTO v_revenue_mtd, v_order_count
   FROM public.orders
-  WHERE tenant_id = p_tenant_id
-    AND payment_status = 'paid'
+  WHERE payment_status = 'paid'
     AND created_at::date >= v_mtd_start
     AND created_at::date <= p_date_to;
 
   -- Revenue YTD
-  SELECT COALESCE(SUM(total_amount), 0)
+  SELECT COALESCE(SUM(grand_total), 0)
   INTO v_revenue_ytd
   FROM public.orders
-  WHERE tenant_id = p_tenant_id
-    AND payment_status = 'paid'
+  WHERE payment_status = 'paid'
     AND created_at::date >= v_ytd_start
     AND created_at::date <= p_date_to;
 
@@ -274,6 +273,7 @@ DECLARE
 BEGIN
   v_bucket_size := COALESCE(p_filters->>'bucket_size', 'day');
 
+  -- Note: orders table is single-tenant (no tenant_id column), uses grand_total
   RETURN QUERY
   SELECT
     CASE v_bucket_size
@@ -281,10 +281,9 @@ BEGIN
       WHEN 'month' THEN date_trunc('month', o.created_at)::date
       ELSE o.created_at::date
     END AS bucket_date,
-    COALESCE(SUM(o.total_amount), 0) AS amount
+    COALESCE(SUM(o.grand_total), 0) AS amount
   FROM public.orders o
-  WHERE o.tenant_id = p_tenant_id
-    AND o.payment_status = 'paid'
+  WHERE o.payment_status = 'paid'
     AND o.created_at::date >= p_date_from
     AND o.created_at::date <= p_date_to
   GROUP BY 1
@@ -355,6 +354,7 @@ BEGIN
   v_limit := COALESCE((p_filters->>'limit')::int, 100);
   v_offset := COALESCE((p_filters->>'offset')::int, 0);
 
+  -- Note: orders table is single-tenant (no tenant_id column), uses grand_total
   RETURN QUERY
   (
     -- Orders as income
@@ -363,12 +363,11 @@ BEGIN
       COALESCE(o.customer_name, o.customer_email) AS payee,
       'Order ' || o.order_number AS memo,
       'Revenue' AS category,
-      o.total_amount AS amount,
+      o.grand_total AS amount,
       'orders' AS source,
       o.id AS ref_id
     FROM public.orders o
-    WHERE o.tenant_id = p_tenant_id
-      AND o.payment_status = 'paid'
+    WHERE o.payment_status = 'paid'
       AND o.created_at::date >= p_date_from
       AND o.created_at::date <= p_date_to
 
@@ -533,6 +532,7 @@ $$;
 -- =============================================================================
 
 -- Orders by status
+-- Note: orders table is single-tenant (no tenant_id column), uses grand_total
 CREATE OR REPLACE FUNCTION public.nx_orders_by_status(
   p_tenant_id UUID,
   p_date_from DATE,
@@ -548,10 +548,9 @@ BEGIN
   SELECT
     o.status,
     COUNT(*)::bigint,
-    COALESCE(SUM(o.total_amount), 0)
+    COALESCE(SUM(o.grand_total), 0)
   FROM public.orders o
-  WHERE o.tenant_id = p_tenant_id
-    AND o.created_at::date >= p_date_from
+  WHERE o.created_at::date >= p_date_from
     AND o.created_at::date <= p_date_to
   GROUP BY o.status
   ORDER BY COUNT(*) DESC;
@@ -580,16 +579,16 @@ DECLARE
 BEGIN
   v_limit := COALESCE((p_filters->>'limit')::int, 20);
 
+  -- Note: orders table is single-tenant, p_tenant_id ignored
   RETURN QUERY
   SELECT
     o.id AS order_id,
     o.order_number,
     EXTRACT(DAY FROM (NOW() - o.created_at))::int AS age_days,
     o.status,
-    o.total_amount
+    o.grand_total
   FROM public.orders o
-  WHERE o.tenant_id = p_tenant_id
-    AND o.status NOT IN ('completed', 'cancelled', 'delivered')
+  WHERE o.status NOT IN ('completed', 'cancelled', 'delivered')
     AND o.created_at::date >= p_date_from
     AND o.created_at::date <= p_date_to
   ORDER BY o.created_at ASC
