@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Save, ChevronDown, Trash2, Bookmark, Plus } from 'lucide-react'
+import { Save, ChevronDown, Trash2, Bookmark, Plus, Pencil, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -34,6 +34,7 @@ import {
   saveFilterPreset,
   getFilterPresets,
   deleteFilterPreset,
+  updateFilterPreset,
   type FilterPreset,
 } from '@/actions/filter-presets'
 
@@ -61,7 +62,11 @@ export function FilterPresetDropdown({
   const [loading, setLoading] = React.useState(true)
   const [saveDialogOpen, setSaveDialogOpen] = React.useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
+  const [renameDialogOpen, setRenameDialogOpen] = React.useState(false)
+  const [updateDialogOpen, setUpdateDialogOpen] = React.useState(false)
   const [presetToDelete, setPresetToDelete] = React.useState<FilterPreset | null>(null)
+  const [presetToRename, setPresetToRename] = React.useState<FilterPreset | null>(null)
+  const [presetToUpdate, setPresetToUpdate] = React.useState<FilterPreset | null>(null)
   const [presetName, setPresetName] = React.useState('')
   const [saving, setSaving] = React.useState(false)
 
@@ -126,6 +131,58 @@ export function FilterPresetDropdown({
     setDeleteDialogOpen(true)
   }
 
+  const openRenameDialog = (preset: FilterPreset, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setPresetToRename(preset)
+    setPresetName(preset.name)
+    setRenameDialogOpen(true)
+  }
+
+  const handleRenamePreset = async () => {
+    if (!presetToRename || !presetName.trim()) return
+
+    try {
+      setSaving(true)
+      const updated = await updateFilterPreset(presetToRename.id, { name: presetName.trim() })
+      setPresets((prev) =>
+        prev.map((p) => (p.id === updated.id ? updated : p)).sort((a, b) => a.name.localeCompare(b.name))
+      )
+      toast.success(`Preset renamed to "${presetName}"`)
+      setRenameDialogOpen(false)
+      setPresetToRename(null)
+      setPresetName('')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to rename preset'
+      toast.error(message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const openUpdateDialog = (preset: FilterPreset, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setPresetToUpdate(preset)
+    setUpdateDialogOpen(true)
+  }
+
+  const handleUpdatePreset = async () => {
+    if (!presetToUpdate) return
+
+    try {
+      setSaving(true)
+      const updated = await updateFilterPreset(presetToUpdate.id, { filters: currentFilters })
+      setPresets((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
+      toast.success(`Preset "${presetToUpdate.name}" updated with current filters`)
+      setUpdateDialogOpen(false)
+      setPresetToUpdate(null)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update preset'
+      toast.error(message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
     <>
       <DropdownMenu>
@@ -168,15 +225,36 @@ export function FilterPresetDropdown({
                 onClick={() => handleApplyPreset(preset)}
                 className="flex items-center justify-between group"
               >
-                <span className="truncate">{preset.name}</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
-                  onClick={(e) => confirmDelete(preset, e)}
-                >
-                  <Trash2 className="h-3 w-3" />
-                </Button>
+                <span className="truncate flex-1">{preset.name}</span>
+                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary"
+                    onClick={(e) => openUpdateDialog(preset, e)}
+                    title="Update with current filters"
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary"
+                    onClick={(e) => openRenameDialog(preset, e)}
+                    title="Rename"
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0 hover:bg-destructive/10 hover:text-destructive"
+                    onClick={(e) => confirmDelete(preset, e)}
+                    title="Delete"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
               </DropdownMenuItem>
             ))
           )}
@@ -230,6 +308,55 @@ export function FilterPresetDropdown({
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Rename Dialog */}
+      <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Rename Preset</DialogTitle>
+            <DialogDescription>
+              Enter a new name for this preset.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              placeholder="Preset name..."
+              value={presetName}
+              onChange={(e) => setPresetName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleRenamePreset()}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenameDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleRenamePreset} disabled={!presetName.trim() || saving}>
+              <Pencil className="h-4 w-4 mr-2" />
+              {saving ? 'Renaming...' : 'Rename'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Update Confirmation */}
+      <AlertDialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Update Preset</AlertDialogTitle>
+            <AlertDialogDescription>
+              Update &quot;{presetToUpdate?.name}&quot; with your current filter settings?
+              This will replace the saved filters.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleUpdatePreset} disabled={saving}>
+              {saving ? 'Updating...' : 'Update Preset'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
