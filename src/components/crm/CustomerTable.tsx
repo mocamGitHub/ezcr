@@ -6,6 +6,7 @@ import { formatCurrency } from '@/lib/utils'
 import { HealthScoreBadge } from './HealthScoreBadge'
 import { CustomerTagBadges } from './CustomerTagBadges'
 import { CustomerTableSkeleton } from '@/components/ui/table-skeleton'
+import { Checkbox } from '@/components/ui/checkbox'
 import { ArrowUpDown, ArrowUp, ArrowDown, AlertTriangle, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -21,6 +22,10 @@ interface CustomerTableProps {
   onCustomerClick: (email: string) => void
   onRetry?: () => void
   showHealthScore?: boolean
+  // Selection props
+  selectable?: boolean
+  selectedEmails?: Set<string>
+  onSelectionChange?: (emails: Set<string>) => void
 }
 
 export function CustomerTable({
@@ -33,6 +38,9 @@ export function CustomerTable({
   onCustomerClick,
   onRetry,
   showHealthScore = true,
+  selectable = false,
+  selectedEmails = new Set(),
+  onSelectionChange,
 }: CustomerTableProps) {
   const SortIcon = ({ column }: { column: SortField }) => {
     if (sortBy !== column) {
@@ -83,6 +91,35 @@ export function CustomerTable({
     })
   }, [customers, sortBy, sortOrder])
 
+  // Selection helpers
+  const allSelected = selectable && customers.length > 0 && customers.every((c) => selectedEmails.has(c.customer_email))
+  const someSelected = selectable && customers.some((c) => selectedEmails.has(c.customer_email)) && !allSelected
+
+  const handleSelectAll = () => {
+    if (!onSelectionChange) return
+    if (allSelected) {
+      const newEmails = new Set(selectedEmails)
+      customers.forEach((c) => newEmails.delete(c.customer_email))
+      onSelectionChange(newEmails)
+    } else {
+      const newEmails = new Set(selectedEmails)
+      customers.forEach((c) => newEmails.add(c.customer_email))
+      onSelectionChange(newEmails)
+    }
+  }
+
+  const handleSelectRow = (email: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!onSelectionChange) return
+    const newEmails = new Set(selectedEmails)
+    if (newEmails.has(email)) {
+      newEmails.delete(email)
+    } else {
+      newEmails.add(email)
+    }
+    onSelectionChange(newEmails)
+  }
+
   if (error) {
     return (
       <div className="border border-destructive/50 rounded-lg p-12 text-center bg-destructive/5">
@@ -132,6 +169,20 @@ export function CustomerTable({
       <table className="w-full min-w-[600px] lg:min-w-0">
         <thead className="bg-muted/50 border-b">
           <tr>
+            {selectable && (
+              <th className="px-4 py-3 w-[40px]">
+                <Checkbox
+                  checked={allSelected}
+                  ref={(el) => {
+                    if (el) {
+                      (el as unknown as HTMLInputElement).indeterminate = someSelected
+                    }
+                  }}
+                  onCheckedChange={handleSelectAll}
+                  aria-label="Select all customers"
+                />
+              </th>
+            )}
             <th
               className={`text-left ${headerClass}`}
               onClick={() => onSortChange('name')}
@@ -238,8 +289,19 @@ export function CustomerTable({
               tabIndex={0}
               role="button"
               aria-label={`View details for ${customer.name || customer.customer_email}`}
-              className="border-t hover:bg-muted/30 cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary"
+              className={`border-t hover:bg-muted/30 cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary ${
+                selectable && selectedEmails.has(customer.customer_email) ? 'bg-muted/30' : ''
+              }`}
             >
+              {selectable && (
+                <td className="px-4 py-3" onClick={(e) => handleSelectRow(customer.customer_email, e)}>
+                  <Checkbox
+                    checked={selectedEmails.has(customer.customer_email)}
+                    onCheckedChange={() => {}}
+                    aria-label={`Select ${customer.name || customer.customer_email}`}
+                  />
+                </td>
+              )}
               <td className="px-4 py-4 sm:py-3">
                 <div>
                   <div className="font-medium">{customer.name || 'Unknown'}</div>

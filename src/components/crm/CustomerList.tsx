@@ -1,19 +1,30 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { getCustomers, getCRMDashboardStats } from '@/actions/crm'
-import type { CustomerProfile, CustomerListFilters, CustomerSegment } from '@/types/crm'
+import { useRouter } from 'next/navigation'
+import { getCustomers, getCRMDashboardStats, bulkAddTags } from '@/actions/crm'
+import type { CustomerProfile, CustomerListFilters } from '@/types/crm'
 import { DEFAULT_SEGMENTS } from '@/types/crm'
 import { CustomerTable, type SortField } from './CustomerTable'
 import { CustomerFilters } from './CustomerFilters'
 import { CustomerSegmentTabs } from './CustomerSegmentTabs'
 import { CRMStats } from './CRMStats'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Tags, Download } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { toast } from 'sonner'
 
 export function CustomerList() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const { profile } = useAuth()
 
   // Get health score visibility preference from user metadata
@@ -32,6 +43,12 @@ export function CustomerList() {
   const [filters, setFilters] = useState<CustomerListFilters>({})
   const [sortBy, setSortBy] = useState<SortField>('last_order_date')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+
+  // Bulk selection state
+  const [selectedEmails, setSelectedEmails] = useState<Set<string>>(new Set())
+  const [addTagDialogOpen, setAddTagDialogOpen] = useState(false)
+  const [newTag, setNewTag] = useState('')
+  const [bulkActionLoading, setBulkActionLoading] = useState(false)
 
   // Load customers on mount and when filters change
   useEffect(() => {
@@ -114,6 +131,61 @@ export function CustomerList() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  // Bulk action handlers
+  const handleBulkAddTag = async () => {
+    if (!newTag.trim() || selectedEmails.size === 0) return
+
+    setBulkActionLoading(true)
+    try {
+      await bulkAddTags(Array.from(selectedEmails), [newTag.trim()])
+      toast.success(`Tag "${newTag.trim()}" added to ${selectedEmails.size} customer(s)`)
+      setAddTagDialogOpen(false)
+      setNewTag('')
+      setSelectedEmails(new Set())
+      loadCustomers() // Refresh
+    } catch (err) {
+      console.error('Error adding tags:', err)
+      toast.error('Failed to add tag')
+    } finally {
+      setBulkActionLoading(false)
+    }
+  }
+
+  const handleBulkExport = () => {
+    // Create CSV from selected customers
+    const selectedCustomers = customers.filter((c) => selectedEmails.has(c.customer_email))
+    const csvContent = [
+      ['Name', 'Email', 'Phone', 'Orders', 'Lifetime Value', 'Health Score', 'Tags'].join(','),
+      ...selectedCustomers.map((c) =>
+        [
+          `"${c.name || ''}"`,
+          `"${c.customer_email}"`,
+          `"${c.phone || ''}"`,
+          c.order_count,
+          c.lifetime_value.toFixed(2),
+          c.health_score ?? '',
+          `"${(c.tags || []).join('; ')}"`,
+        ].join(',')
+      ),
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `customers-export-${new Date().toISOString().split('T')[0]}.csv`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+
+    toast.success(`Exported ${selectedEmails.size} customer(s)`)
+  }
+
+  const handleClearSelection = () => {
+    setSelectedEmails(new Set())
+  }
+
   return (
     <div className="space-y-6">
       {/* Dashboard Stats */}
@@ -131,6 +203,35 @@ export function CustomerList() {
         onFilterChange={handleFilterChange}
       />
 
+      {/* Bulk Action Bar */}
+      {selectedEmails.size > 0 && (
+        <div className="flex items-center gap-4 p-3 bg-muted/50 border rounded-lg">
+          <span className="text-sm font-medium">{selectedEmails.size} selected</span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setAddTagDialogOpen(true)}
+            >
+              <Tags className="h-4 w-4 mr-2" />
+              Add Tag
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleBulkExport}>
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleClearSelection}
+            className="ml-auto"
+          >
+            Clear selection
+          </Button>
+        </div>
+      )}
+
       {/* Customer Table */}
       {error && (
         <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-lg">
@@ -146,6 +247,9 @@ export function CustomerList() {
         onSortChange={handleSortChange}
         onCustomerClick={handleCustomerClick}
         showHealthScore={showHealthScore}
+        selectable
+        selectedEmails={selectedEmails}
+        onSelectionChange={setSelectedEmails}
       />
 
       {/* Pagination */}
@@ -201,6 +305,34 @@ export function CustomerList() {
           </div>
         </div>
       )}
+
+      {/* Add Tag Dialog */}
+      <Dialog open={addTagDialogOpen} onOpenChange={setAddTagDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Tag to {selectedEmails.size} Customer(s)</DialogTitle>
+            <DialogDescription>
+              Enter a tag name to add to the selected customers.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              placeholder="Enter tag name..."
+              value={newTag}
+              onChange={(e) => setNewTag(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleBulkAddTag()}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddTagDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleBulkAddTag} disabled={!newTag.trim() || bulkActionLoading}>
+              {bulkActionLoading ? 'Adding...' : 'Add Tag'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

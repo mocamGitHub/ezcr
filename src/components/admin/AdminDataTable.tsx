@@ -29,6 +29,7 @@ import {
   MoreHorizontal,
   ChevronLeft,
   ChevronRight,
+  LucideIcon,
 } from 'lucide-react'
 import { AdminDataTableSkeleton } from './AdminDataTableSkeleton'
 import { AdminEmptyState } from './AdminEmptyState'
@@ -71,15 +72,19 @@ export interface RowAction<T> {
 /**
  * Bulk action definition
  */
-export interface BulkAction<T> {
+export interface BulkAction {
   label: string
-  onClick: (selectedRows: T[]) => void
+  onClick?: () => void
   /** Icon component */
   icon?: React.ReactNode
   /** Whether this is a destructive action (shows in red) */
   destructive?: boolean
-  /** Disable condition based on selected rows */
-  disabled?: (selectedRows: T[]) => boolean
+  /** Button variant */
+  variant?: 'default' | 'outline' | 'destructive' | 'ghost'
+  /** Whether the action is disabled */
+  disabled?: boolean
+  /** Custom render for complex actions (like AlertDialog) */
+  customRender?: React.ReactNode
 }
 
 /**
@@ -115,6 +120,7 @@ export interface AdminDataTableProps<T> {
   onRetry?: () => void
 
   // Empty state
+  emptyIcon?: LucideIcon
   emptyTitle?: string
   emptyDescription?: string
   emptyAction?: { label: string; onClick: () => void }
@@ -137,7 +143,7 @@ export interface AdminDataTableProps<T> {
   /** Callback when selection changes */
   onSelectionChange?: (selectedKeys: Set<string>) => void
   /** Bulk actions to show when rows are selected */
-  bulkActions?: BulkAction<T>[]
+  bulkActions?: BulkAction[]
 
   className?: string
 }
@@ -163,6 +169,7 @@ export function AdminDataTable<T extends object>({
   loading = false,
   error = null,
   onRetry,
+  emptyIcon,
   emptyTitle = 'No results found',
   emptyDescription,
   emptyAction,
@@ -256,10 +263,6 @@ export function AdminDataTable<T extends object>({
     [keyField, onSelectionChange, selectedKeys]
   )
 
-  const getSelectedRows = useCallback(() => {
-    return data.filter((row) => selectedKeys.has(String(row[keyField])))
-  }, [data, keyField, selectedKeys])
-
   // Loading state
   if (loading && data.length === 0) {
     return (
@@ -304,6 +307,7 @@ export function AdminDataTable<T extends object>({
           </div>
         )}
         <AdminEmptyState
+          icon={emptyIcon}
           title={emptyTitle}
           description={emptyDescription}
           action={emptyAction}
@@ -339,18 +343,22 @@ export function AdminDataTable<T extends object>({
             {selectedKeys.size} selected
           </span>
           <div className="flex items-center gap-2">
-            {bulkActions.map((action) => (
-              <Button
-                key={action.label}
-                variant={action.destructive ? 'destructive' : 'outline'}
-                size="sm"
-                onClick={() => action.onClick(getSelectedRows())}
-                disabled={action.disabled?.(getSelectedRows())}
-              >
-                {action.icon && <span className="mr-2">{action.icon}</span>}
-                {action.label}
-              </Button>
-            ))}
+            {bulkActions.map((action) =>
+              action.customRender ? (
+                action.customRender
+              ) : (
+                <Button
+                  key={action.label}
+                  variant={action.variant || (action.destructive ? 'destructive' : 'outline')}
+                  size="sm"
+                  onClick={action.onClick}
+                  disabled={action.disabled}
+                >
+                  {action.icon && <span className="mr-1">{action.icon}</span>}
+                  {action.label}
+                </Button>
+              )
+            )}
           </div>
           <Button
             variant="ghost"

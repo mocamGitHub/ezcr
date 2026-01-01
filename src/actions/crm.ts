@@ -569,6 +569,104 @@ export async function removeTagFromCustomer(email: string, tagId: string) {
 }
 
 /**
+ * Bulk add tags to multiple customers
+ * Creates tags if they don't exist
+ */
+export async function bulkAddTags(
+  emails: string[],
+  tagNames: string[]
+): Promise<{ success: boolean; addedCount: number }> {
+  try {
+    const supabase = createServiceClient()
+    const tenantId = await getTenantId()
+
+    const { data: { user } } = await supabase.auth.getUser()
+
+    let addedCount = 0
+
+    for (const tagName of tagNames) {
+      // Find or create the tag
+      let { data: existingTag } = await supabase
+        .from('customer_tags')
+        .select('id')
+        .eq('tenant_id', tenantId)
+        .eq('name', tagName.trim())
+        .single()
+
+      let tagId = existingTag?.id
+
+      if (!tagId) {
+        // Create the tag
+        const { data: newTag, error: createError } = await supabase
+          .from('customer_tags')
+          .insert({
+            tenant_id: tenantId,
+            name: tagName.trim(),
+            color: '#6B7280', // Default gray
+          })
+          .select('id')
+          .single()
+
+        if (createError) throw createError
+        tagId = newTag.id
+      }
+
+      // Bulk insert assignments (ignore conflicts)
+      const assignments = emails.map((email) => ({
+        tenant_id: tenantId,
+        customer_email: email,
+        tag_id: tagId,
+        assigned_by: user?.id,
+      }))
+
+      const { data, error: assignError } = await supabase
+        .from('customer_tag_assignments')
+        .upsert(assignments, {
+          onConflict: 'tenant_id,customer_email,tag_id',
+          ignoreDuplicates: true,
+        })
+        .select('id')
+
+      if (assignError) throw assignError
+      addedCount += data?.length || 0
+    }
+
+    return { success: true, addedCount }
+  } catch (error) {
+    console.error('Error bulk adding tags:', error)
+    throw error
+  }
+}
+
+/**
+ * Bulk remove tags from multiple customers
+ */
+export async function bulkRemoveTags(
+  emails: string[],
+  tagIds: string[]
+): Promise<{ success: boolean; removedCount: number }> {
+  try {
+    const supabase = createServiceClient()
+    const tenantId = await getTenantId()
+
+    const { data, error } = await supabase
+      .from('customer_tag_assignments')
+      .delete()
+      .eq('tenant_id', tenantId)
+      .in('customer_email', emails)
+      .in('tag_id', tagIds)
+      .select('id')
+
+    if (error) throw error
+
+    return { success: true, removedCount: data?.length || 0 }
+  } catch (error) {
+    console.error('Error bulk removing tags:', error)
+    throw error
+  }
+}
+
+/**
  * Calculate and update customer health score
  */
 export async function calculateHealthScore(email: string): Promise<number> {

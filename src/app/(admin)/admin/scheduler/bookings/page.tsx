@@ -232,13 +232,13 @@ export default function AdminSchedulerBookingsPage() {
     ).length
   }, [bookings, selectedKeys])
 
-  const bulkActions: BulkAction<SchedulerBooking>[] = [
+  const bulkActions: BulkAction[] = [
     {
       label: 'Cancel Selected',
       icon: <XCircle className="h-4 w-4" />,
       destructive: true,
       onClick: () => setBulkCancelDialogOpen(true),
-      disabled: (selected) => selected.filter((b) => b.status === 'scheduled').length === 0,
+      disabled: getScheduledSelectedCount() === 0,
     },
   ]
 
