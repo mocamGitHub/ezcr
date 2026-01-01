@@ -137,6 +137,7 @@ export default function AdminTestimonialsPage() {
         search,
         status: statusFilter,
         featured: featuredFilter,
+        rating: ratingFilter,
         startDate: dateRange?.from?.toISOString(),
         endDate: dateRange?.to?.toISOString(),
       })
@@ -149,7 +150,7 @@ export default function AdminTestimonialsPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, pageSize, sortColumn, sortDirection, search, statusFilter, featuredFilter, dateRange])
+  }, [page, pageSize, sortColumn, sortDirection, search, statusFilter, featuredFilter, ratingFilter, dateRange])
 
   useEffect(() => {
     loadData()
@@ -177,6 +178,11 @@ export default function AdminTestimonialsPage() {
 
   const handleFeaturedFilterChange = (value: 'all' | 'featured' | 'not_featured') => {
     updateFilter('featured', value)
+    setPage(1)
+  }
+
+  const handleRatingFilterChange = (value: 'all' | '1' | '2' | '3' | '4' | '5') => {
+    updateFilter('rating', value)
     setPage(1)
   }
 
@@ -225,6 +231,21 @@ export default function AdminTestimonialsPage() {
       ],
     },
     {
+      type: 'select' as const,
+      key: 'rating',
+      label: 'Rating',
+      value: ratingFilter,
+      onChange: (v: string) => handleRatingFilterChange(v as 'all' | '1' | '2' | '3' | '4' | '5'),
+      allLabel: 'All Ratings',
+      options: [
+        { value: '5', label: '5 Stars' },
+        { value: '4', label: '4 Stars' },
+        { value: '3', label: '3 Stars' },
+        { value: '2', label: '2 Stars' },
+        { value: '1', label: '1 Star' },
+      ],
+    },
+    {
       type: 'daterange' as const,
       key: 'dateRange',
       label: 'Created Date',
@@ -233,7 +254,7 @@ export default function AdminTestimonialsPage() {
       placeholder: 'Filter by date',
       presets: true,
     },
-  ], [statusFilter, featuredFilter, dateRange])
+  ], [statusFilter, featuredFilter, ratingFilter, dateRange])
 
   // Open detail dialog
   const openDetailDialog = async (testimonial: Testimonial) => {
