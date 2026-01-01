@@ -16,6 +16,7 @@ import {
   Settings,
   User,
   SlidersHorizontal,
+  CalendarCheck,
   type LucideIcon,
 } from 'lucide-react'
 import { type UserRole, hasPermission } from '@/lib/permissions'
@@ -87,6 +88,12 @@ export const adminNavSections: AdminNavSection[] = [
         href: '/admin/shipping',
         icon: Truck,
         description: 'Shipping analytics and management',
+      },
+      {
+        title: 'Bookings',
+        href: '/admin/scheduler/bookings',
+        icon: CalendarCheck,
+        description: 'Scheduled appointments',
       },
     ],
   },
