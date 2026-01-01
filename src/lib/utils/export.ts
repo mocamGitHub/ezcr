@@ -156,6 +156,28 @@ export const contactColumns: ExportColumn[] = [
   },
 ]
 
+export const bookingColumns: ExportColumn[] = [
+  { key: 'title', header: 'Appointment' },
+  { key: 'attendee_email', header: 'Attendee Email' },
+  { key: 'host_email', header: 'Host Email' },
+  { key: 'status', header: 'Status' },
+  {
+    key: 'start_at',
+    header: 'Start Date',
+    formatter: (v) => v ? new Date(v as string).toLocaleString() : ''
+  },
+  {
+    key: 'end_at',
+    header: 'End Date',
+    formatter: (v) => v ? new Date(v as string).toLocaleString() : ''
+  },
+  {
+    key: 'created_at',
+    header: 'Booked On',
+    formatter: (v) => v ? new Date(v as string).toLocaleDateString() : ''
+  },
+]
+
 /**
  * Format current date for export filename
  */

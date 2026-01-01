@@ -253,3 +253,64 @@ export async function getAdminBooking(bookingId: string): Promise<SchedulerBooki
     throw error
   }
 }
+
+/**
+ * Get bookings for export (with filters, no pagination)
+ */
+export interface GetBookingsForExportParams {
+  search?: string
+  statusFilter?: 'all' | 'scheduled' | 'cancelled' | 'rescheduled'
+  startDate?: string
+  endDate?: string
+}
+
+export async function getBookingsForExport(
+  params: GetBookingsForExportParams = {}
+): Promise<SchedulerBooking[]> {
+  const {
+    search = '',
+    statusFilter = 'all',
+    startDate,
+    endDate,
+  } = params
+
+  try {
+    await requireOwnerOrAdmin()
+
+    const supabase = createServiceClient()
+    const tenantId = await getTenantId()
+
+    let query = supabase
+      .from('nx_scheduler_booking')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .order('start_at', { ascending: false })
+
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      query = query.eq('status', statusFilter)
+    }
+
+    // Apply date range filter
+    if (startDate) {
+      query = query.gte('start_at', startDate)
+    }
+    if (endDate) {
+      query = query.lte('start_at', endDate)
+    }
+
+    // Apply search
+    if (search) {
+      query = query.or(`attendee_email.ilike.%${search}%,title.ilike.%${search}%,host_email.ilike.%${search}%`)
+    }
+
+    const { data, error } = await query
+
+    if (error) throw error
+
+    return (data || []) as SchedulerBooking[]
+  } catch (error) {
+    console.error('Error fetching bookings for export:', error)
+    throw error
+  }
+}

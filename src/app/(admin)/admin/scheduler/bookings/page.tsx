@@ -27,11 +27,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { RefreshCw, XCircle, Eye } from 'lucide-react'
+import { RefreshCw, XCircle, Eye, Download } from 'lucide-react'
 import { format, formatDistanceToNow } from 'date-fns'
 import { toast } from 'sonner'
+import { exportToCSV, bookingColumns, getExportFilename } from '@/lib/utils/export'
 import {
   getAdminBookings,
+  getBookingsForExport,
   cancelBooking,
   bulkCancelBookings,
   type SchedulerBooking,
@@ -229,6 +231,23 @@ export default function AdminSchedulerBookingsPage() {
     }
   }
 
+  const handleExport = async () => {
+    try {
+      const exportData = await getBookingsForExport({
+        search: searchValue,
+        statusFilter,
+        startDate: dateRange?.from?.toISOString(),
+        endDate: dateRange?.to?.toISOString(),
+      })
+      exportToCSV(exportData, bookingColumns, getExportFilename('bookings'))
+      const filterNote = hasActiveFilters ? ' (filtered)' : ''
+      toast.success(`Exported ${exportData.length} bookings${filterNote} to CSV`)
+    } catch (err) {
+      console.error('Error exporting bookings:', err)
+      toast.error('Failed to export bookings')
+    }
+  }
+
   // Build filter config for AdminFilterBar
   const filterConfig: FilterConfig[] = useMemo(() => [
     {
@@ -340,10 +359,16 @@ export default function AdminSchedulerBookingsPage() {
         title="Scheduled Bookings"
         description="View and manage all scheduled appointments"
         primaryAction={
-          <Button onClick={fetchBookings} disabled={loading}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleExport}>
+              <Download className="mr-2 h-4 w-4" />
+              Export CSV
+            </Button>
+            <Button onClick={fetchBookings} disabled={loading}>
+              <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         }
       />
 
