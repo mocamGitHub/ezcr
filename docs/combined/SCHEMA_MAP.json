@@ -1,0 +1,181 @@
+{
+  "version": "1.0.0",
+  "generated_at": "2026-01-01T00:00:00Z",
+  "tenant_resolution": {
+    "method": "environment_variable",
+    "env_var": "EZCR_TENANT_ID",
+    "membership_table": "user_profiles",
+    "membership_columns": {
+      "tenant_id": "tenant_id",
+      "user_id": "id",
+      "role": "role",
+      "is_active": "is_active"
+    },
+    "role_check_function": "has_role(user_id, required_role)",
+    "role_hierarchy": ["customer", "viewer", "customer_service", "admin", "owner"]
+  },
+  "tables": {
+    "tenants": {
+      "primary_key": "id",
+      "columns": ["id", "slug", "name", "subdomain", "settings", "is_active", "created_at", "updated_at"],
+      "tenant_scoped": false
+    },
+    "user_profiles": {
+      "primary_key": "id",
+      "columns": ["id", "tenant_id", "email", "first_name", "last_name", "phone", "role", "is_active", "last_login", "metadata", "created_at", "updated_at"],
+      "tenant_scoped": true,
+      "tenant_column": "tenant_id"
+    },
+    "orders": {
+      "primary_key": "id",
+      "columns": ["id", "tenant_id", "order_number", "user_id", "customer_email", "customer_name", "customer_phone", "status", "payment_status", "stripe_payment_intent_id", "subtotal", "tax_amount", "shipping_amount", "discount_amount", "total_amount", "shipping_address", "billing_address", "shipping_method", "tracking_number", "notes", "metadata", "created_at", "updated_at"],
+      "tenant_scoped": true,
+      "tenant_column": "tenant_id",
+      "key_columns": {
+        "total": "total_amount",
+        "status": "status",
+        "payment_status": "payment_status",
+        "date": "created_at",
+        "label": "order_number"
+      }
+    },
+    "order_items": {
+      "primary_key": "id",
+      "columns": ["id", "tenant_id", "order_id", "product_id", "variant_id", "product_name", "product_sku", "quantity", "unit_price", "total_price", "configuration", "created_at"],
+      "tenant_scoped": true,
+      "tenant_column": "tenant_id"
+    },
+    "nx_scheduler_booking": {
+      "primary_key": "id",
+      "columns": ["id", "tenant_id", "booking_uid", "cal_booking_id", "cal_event_type_id", "status", "start_at", "end_at", "host_email", "attendee_user_id", "attendee_email", "title", "location", "metadata", "created_at", "updated_at"],
+      "tenant_scoped": true,
+      "tenant_column": "tenant_id",
+      "key_columns": {
+        "start": "start_at",
+        "end": "end_at",
+        "status": "status",
+        "label": "attendee_email"
+      }
+    },
+    "nx_scheduler_settings": {
+      "primary_key": "tenant_id",
+      "columns": ["tenant_id", "organization_slug", "is_enabled", "created_at", "updated_at"],
+      "tenant_scoped": true,
+      "tenant_column": "tenant_id"
+    },
+    "nx_scheduler_event_type_map": {
+      "primary_key": "id",
+      "columns": ["id", "tenant_id", "purpose", "cal_event_type_id", "allow_kinds", "is_enabled", "created_at", "updated_at"],
+      "tenant_scoped": true,
+      "tenant_column": "tenant_id"
+    },
+    "books_bank_transactions": {
+      "primary_key": "id",
+      "columns": ["id", "tenant_id", "source", "posted_at", "amount", "currency", "merchant", "merchant_norm", "description", "external_id", "txn_hash", "cleared", "cleared_at", "created_at", "updated_at"],
+      "tenant_scoped": true,
+      "tenant_column": "tenant_id",
+      "key_columns": {
+        "date": "posted_at",
+        "amount": "amount",
+        "payee": "merchant",
+        "payee_normalized": "merchant_norm",
+        "description": "description",
+        "cleared": "cleared"
+      },
+      "sign_convention": {
+        "positive": "income",
+        "negative": "expense"
+      }
+    },
+    "books_documents": {
+      "primary_key": "id",
+      "columns": ["id", "tenant_id", "document_type", "sync_status", "storage_bucket", "storage_path", "original_filename", "content_type", "byte_size", "extracted_json", "extracted_fields", "vendor_guess", "vendor_norm", "total_amount", "currency", "document_date", "confidence_overall", "flags", "created_at", "updated_at"],
+      "tenant_scoped": true,
+      "tenant_column": "tenant_id"
+    },
+    "books_matches": {
+      "primary_key": "id",
+      "columns": ["id", "tenant_id", "document_id", "bank_transaction_id", "status", "score", "reasons", "created_at", "updated_at"],
+      "tenant_scoped": true,
+      "tenant_column": "tenant_id"
+    },
+    "books_settings": {
+      "primary_key": "tenant_id",
+      "columns": ["tenant_id", "enabled", "auto_link_threshold", "amount_tolerance", "date_window_days", "min_receipt_confidence", "created_at", "updated_at"],
+      "tenant_scoped": true,
+      "tenant_column": "tenant_id"
+    }
+  },
+  "revenue_source": {
+    "primary": {
+      "table": "orders",
+      "amount_column": "total_amount",
+      "date_column": "created_at",
+      "filter": "payment_status = 'paid'"
+    },
+    "alternate": {
+      "table": "books_bank_transactions",
+      "amount_column": "amount",
+      "date_column": "posted_at",
+      "filter": "amount > 0 AND cleared = true"
+    }
+  },
+  "expense_source": {
+    "table": "books_bank_transactions",
+    "amount_column": "amount",
+    "date_column": "posted_at",
+    "filter": "amount < 0 AND cleared = true",
+    "note": "Amount is negative for expenses; use ABS(amount) for positive values"
+  },
+  "helper_functions": {
+    "update_updated_at_column": {
+      "exists": true,
+      "usage": "BEFORE UPDATE trigger on tables with updated_at column"
+    },
+    "has_role": {
+      "exists": true,
+      "signature": "has_role(user_id UUID, required_role TEXT) RETURNS BOOLEAN",
+      "description": "Checks if user has required role or higher in hierarchy"
+    },
+    "nexcyte_tenant_id": {
+      "exists": true,
+      "usage": "Extracts tenant_id from JWT for RLS in Books module"
+    },
+    "nx_is_tenant_member": {
+      "exists": true,
+      "usage": "Checks if current user is member of tenant (scheduler module)"
+    },
+    "nx_is_tenant_admin": {
+      "exists": true,
+      "usage": "Checks if current user is admin/staff of tenant (scheduler module)"
+    }
+  },
+  "entity_mappings": {
+    "order": {
+      "table": "orders",
+      "tenant_column": "tenant_id",
+      "label_column": "order_number",
+      "require_exists": true,
+      "allow_unresolved": false
+    },
+    "appointment": {
+      "table": "nx_scheduler_booking",
+      "tenant_column": "tenant_id",
+      "label_column": "attendee_email",
+      "require_exists": true,
+      "allow_unresolved": false
+    },
+    "customer": {
+      "table": null,
+      "require_exists": false,
+      "allow_unresolved": true,
+      "note": "No dedicated customers table; use orders.customer_email or user_profiles"
+    },
+    "ticket": {
+      "table": null,
+      "require_exists": false,
+      "allow_unresolved": true,
+      "note": "Tickets not yet implemented"
+    }
+  }
+}
