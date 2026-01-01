@@ -32,6 +32,8 @@ export interface GetAdminBookingsParams {
   sortDirection?: 'asc' | 'desc'
   search?: string
   statusFilter?: 'all' | 'scheduled' | 'cancelled' | 'rescheduled'
+  startDate?: string
+  endDate?: string
 }
 
 export interface GetAdminBookingsResult {
@@ -89,6 +91,8 @@ export async function getAdminBookings(
     sortDirection = 'desc',
     search = '',
     statusFilter = 'all',
+    startDate,
+    endDate,
   } = params
 
   try {
@@ -106,6 +110,14 @@ export async function getAdminBookings(
     // Apply status filter
     if (statusFilter !== 'all') {
       query = query.eq('status', statusFilter)
+    }
+
+    // Apply date range filter
+    if (startDate) {
+      query = query.gte('start_at', startDate)
+    }
+    if (endDate) {
+      query = query.lte('start_at', endDate)
     }
 
     // Apply search

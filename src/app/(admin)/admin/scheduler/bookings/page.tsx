@@ -1,24 +1,20 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
+import type { DateRange } from 'react-day-picker'
 import { usePageTitle } from '@/hooks/usePageTitle'
 import {
   PageHeader,
   AdminDataTable,
   AdminDataTableSkeleton,
+  AdminFilterBar,
   type ColumnDef,
   type RowAction,
   type BulkAction,
+  type FilterConfig,
 } from '@/components/admin'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -127,6 +123,7 @@ export default function AdminSchedulerBookingsPage() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   const [searchValue, setSearchValue] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'scheduled' | 'cancelled' | 'rescheduled'>('all')
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
 
   // Cancel dialog state
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
@@ -148,6 +145,8 @@ export default function AdminSchedulerBookingsPage() {
         sortDirection,
         search: searchValue,
         statusFilter,
+        startDate: dateRange?.from?.toISOString(),
+        endDate: dateRange?.to?.toISOString(),
       }
       const result = await getAdminBookings(params)
       setBookings(result.data)
@@ -159,7 +158,7 @@ export default function AdminSchedulerBookingsPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, pageSize, sortColumn, sortDirection, searchValue, statusFilter])
+  }, [page, pageSize, sortColumn, sortDirection, searchValue, statusFilter, dateRange])
 
   useEffect(() => {
     fetchBookings()
@@ -188,6 +187,43 @@ export default function AdminSchedulerBookingsPage() {
     setStatusFilter(value as typeof statusFilter)
     setPage(1)
   }
+
+  const handleDateRangeChange = (range: DateRange | undefined) => {
+    setDateRange(range)
+    setPage(1)
+  }
+
+  const handleClearFilters = () => {
+    setStatusFilter('all')
+    setDateRange(undefined)
+    setPage(1)
+  }
+
+  // Build filter config for AdminFilterBar
+  const filterConfig: FilterConfig[] = useMemo(() => [
+    {
+      type: 'select' as const,
+      key: 'status',
+      label: 'Status',
+      value: statusFilter,
+      onChange: handleStatusFilterChange,
+      allLabel: 'All Statuses',
+      options: [
+        { value: 'scheduled', label: 'Scheduled' },
+        { value: 'cancelled', label: 'Cancelled' },
+        { value: 'rescheduled', label: 'Rescheduled' },
+      ],
+    },
+    {
+      type: 'daterange' as const,
+      key: 'dateRange',
+      label: 'Booking Date',
+      value: dateRange,
+      onChange: handleDateRangeChange,
+      placeholder: 'Filter by date',
+      presets: true,
+    },
+  ], [statusFilter, dateRange])
 
   const handleCancelBooking = async () => {
     if (!bookingToCancel) return
@@ -281,20 +317,12 @@ export default function AdminSchedulerBookingsPage() {
         }
       />
 
-      {/* Status Filter */}
-      <div className="flex items-center gap-4">
-        <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="scheduled">Scheduled</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
-            <SelectItem value="rescheduled">Rescheduled</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      {/* Filters */}
+      <AdminFilterBar
+        filters={filterConfig}
+        onClearAll={handleClearFilters}
+        showFilterIcon
+      />
 
       {/* Data Table */}
       {loading && bookings.length === 0 ? (
