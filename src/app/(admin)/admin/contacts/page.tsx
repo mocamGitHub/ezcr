@@ -1,6 +1,7 @@
 'use client'
 
-import React, { useState, useEffect, useTransition, useCallback } from 'react'
+import React, { useState, useEffect, useTransition, useCallback, useMemo } from 'react'
+import type { DateRange } from 'react-day-picker'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -54,7 +55,14 @@ import type {
   ContactStatus,
 } from '@/types/contacts-tools'
 import { CONTACT_TYPE_LABELS } from '@/types/contacts-tools'
-import { AdminDataTable, PageHeader, type ColumnDef, type RowAction } from '@/components/admin'
+import {
+  AdminDataTable,
+  AdminFilterBar,
+  PageHeader,
+  type ColumnDef,
+  type RowAction,
+  type FilterConfig,
+} from '@/components/admin'
 
 export default function ContactsPage() {
   // Table state
@@ -71,6 +79,7 @@ export default function ContactsPage() {
   // Filters
   const [typeFilter, setTypeFilter] = useState<ContactType | 'all'>('all')
   const [statusFilter, setStatusFilter] = useState<ContactStatus | 'all'>('all')
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
 
   // Dialog states
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false)
@@ -99,6 +108,8 @@ export default function ContactsPage() {
         search,
         type: typeFilter,
         status: statusFilter,
+        startDate: dateRange?.from?.toISOString(),
+        endDate: dateRange?.to?.toISOString(),
       })
       setContacts(result.data)
       setTotalCount(result.totalCount)
@@ -109,7 +120,7 @@ export default function ContactsPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, pageSize, sortColumn, sortDirection, search, typeFilter, statusFilter])
+  }, [page, pageSize, sortColumn, sortDirection, search, typeFilter, statusFilter, dateRange])
 
   useEffect(() => {
     loadData()
@@ -139,6 +150,56 @@ export default function ContactsPage() {
     setStatusFilter(value)
     setPage(1)
   }
+
+  const handleDateRangeChange = (range: DateRange | undefined) => {
+    setDateRange(range)
+    setPage(1)
+  }
+
+  const handleClearFilters = () => {
+    setTypeFilter('all')
+    setStatusFilter('all')
+    setDateRange(undefined)
+    setPage(1)
+  }
+
+  // Build filter config for AdminFilterBar
+  const filterConfig: FilterConfig[] = useMemo(() => [
+    {
+      type: 'select' as const,
+      key: 'type',
+      label: 'Type',
+      value: typeFilter,
+      onChange: (v: string) => handleTypeFilterChange(v as ContactType | 'all'),
+      allLabel: 'All Types',
+      options: Object.entries(CONTACT_TYPE_LABELS).map(([value, label]) => ({
+        value,
+        label,
+      })),
+    },
+    {
+      type: 'select' as const,
+      key: 'status',
+      label: 'Status',
+      value: statusFilter,
+      onChange: (v: string) => handleStatusFilterChange(v as ContactStatus | 'all'),
+      allLabel: 'All Statuses',
+      options: [
+        { value: 'active', label: 'Active' },
+        { value: 'inactive', label: 'Inactive' },
+        { value: 'pending', label: 'Pending' },
+      ],
+    },
+    {
+      type: 'daterange' as const,
+      key: 'dateRange',
+      label: 'Created Date',
+      value: dateRange,
+      onChange: handleDateRangeChange,
+      placeholder: 'Filter by date',
+      presets: true,
+    },
+  ], [typeFilter, statusFilter, dateRange])
 
   // Reset form
   const resetForm = () => {
@@ -411,43 +472,6 @@ export default function ContactsPage() {
     },
   ]
 
-  // Toolbar with type and status filters
-  const toolbar = (
-    <div className="flex items-center gap-2">
-      <Select
-        value={typeFilter}
-        onValueChange={(v) => handleTypeFilterChange(v as ContactType | 'all')}
-      >
-        <SelectTrigger className="w-[150px]">
-          <SelectValue placeholder="All Types" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Types</SelectItem>
-          {Object.entries(CONTACT_TYPE_LABELS).map(([value, label]) => (
-            <SelectItem key={value} value={value}>
-              {label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Select
-        value={statusFilter}
-        onValueChange={(v) => handleStatusFilterChange(v as ContactStatus | 'all')}
-      >
-        <SelectTrigger className="w-[130px]">
-          <SelectValue placeholder="All Statuses" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Statuses</SelectItem>
-          <SelectItem value="active">Active</SelectItem>
-          <SelectItem value="inactive">Inactive</SelectItem>
-          <SelectItem value="pending">Pending</SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
-  )
-
   return (
     <div className="p-8">
       <PageHeader
@@ -459,6 +483,13 @@ export default function ContactsPage() {
             Add Contact
           </Button>
         }
+      />
+
+      {/* Filters */}
+      <AdminFilterBar
+        filters={filterConfig}
+        onClearAll={handleClearFilters}
+        showFilterIcon
       />
 
       <AdminDataTable
@@ -485,7 +516,6 @@ export default function ContactsPage() {
           onClick: handleCreate,
         }}
         rowActions={getRowActions}
-        toolbar={toolbar}
       />
 
       {/* Create/Edit Dialog */}

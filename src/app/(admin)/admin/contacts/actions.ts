@@ -245,6 +245,8 @@ export interface GetContactsPaginatedParams {
   search?: string
   type?: ContactType | 'all'
   status?: ContactStatus | 'all'
+  startDate?: string
+  endDate?: string
 }
 
 export interface GetContactsPaginatedResult {
@@ -268,6 +270,8 @@ export async function getContactsPaginated(
     search = '',
     type = 'all',
     status = 'all',
+    startDate,
+    endDate,
   } = params
 
   // Build base query
@@ -292,6 +296,14 @@ export async function getContactsPaginated(
   // Apply status filter
   if (status && status !== 'all') {
     query = query.eq('status', status)
+  }
+
+  // Apply date range filter
+  if (startDate) {
+    query = query.gte('created_at', startDate)
+  }
+  if (endDate) {
+    query = query.lte('created_at', endDate)
   }
 
   // Apply sorting
