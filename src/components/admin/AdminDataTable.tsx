@@ -118,7 +118,7 @@ export interface AdminDataTableProps<T> {
  * Reusable admin data table with server-side sorting, pagination, and search.
  * Provides consistent UX across all admin list pages.
  */
-export function AdminDataTable<T extends Record<string, unknown>>({
+export function AdminDataTable<T extends object>({
   data,
   columns,
   keyField,
