@@ -29,6 +29,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { useAuth } from '@/contexts/AuthContext'
+import { useAdminLayoutOptional } from '@/contexts/AdminLayoutContext'
 import {
   adminNavSections,
   adminUserNavItems,
@@ -39,7 +40,6 @@ import {
 } from '@/config/admin-nav'
 import { type UserRole } from '@/lib/permissions'
 
-const SIDEBAR_COLLAPSED_KEY = 'admin-sidebar-collapsed'
 const SECTIONS_COLLAPSED_KEY = 'admin-sections-collapsed'
 
 interface AdminSidebarProps {
@@ -50,17 +50,17 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
   const pathname = usePathname()
   const { profile, signOut } = useAuth()
   const { theme, toggleTheme } = useTheme()
-  const [collapsed, setCollapsed] = useState(false)
+  const layoutContext = useAdminLayoutOptional()
+
+  // Use context if available, otherwise fall back to local state
+  const collapsed = layoutContext?.sidebarCollapsed ?? false
+  const setCollapsed = layoutContext?.setSidebarCollapsed
+
   const [mobileOpen, setMobileOpen] = useState(false)
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set())
 
-  // Load collapsed state from localStorage
+  // Load collapsed sections from localStorage
   useEffect(() => {
-    const stored = localStorage.getItem(SIDEBAR_COLLAPSED_KEY)
-    if (stored !== null) {
-      setCollapsed(stored === 'true')
-    }
-    // Load collapsed sections - default to all collapsed if not set
     const storedSections = localStorage.getItem(SECTIONS_COLLAPSED_KEY)
     if (storedSections) {
       try {
@@ -91,11 +91,11 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
     }
   }, [pathname])
 
-  // Save collapsed state to localStorage
+  // Toggle sidebar collapsed state via context
   const toggleCollapsed = () => {
-    const newState = !collapsed
-    setCollapsed(newState)
-    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(newState))
+    if (setCollapsed) {
+      setCollapsed(!collapsed)
+    }
   }
 
   // Toggle section collapsed state

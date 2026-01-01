@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { AdminSidebar } from './AdminSidebar'
 import { AdminBreadcrumbs } from './AdminBreadcrumbs'
-
-const SIDEBAR_COLLAPSED_KEY = 'admin-sidebar-collapsed'
+import {
+  AdminLayoutProvider,
+  useAdminLayout,
+} from '@/contexts/AdminLayoutContext'
 
 interface AdminLayoutProps {
   children: React.ReactNode
@@ -17,48 +18,16 @@ interface AdminLayoutProps {
   hideBreadcrumbs?: boolean
 }
 
-export function AdminLayout({
+/**
+ * Inner layout component that uses the context.
+ */
+function AdminLayoutInner({
   children,
   breadcrumbs,
   className,
   hideBreadcrumbs = false,
 }: AdminLayoutProps) {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-
-  // Sync with sidebar collapsed state
-  useEffect(() => {
-    const checkCollapsed = () => {
-      const stored = localStorage.getItem(SIDEBAR_COLLAPSED_KEY)
-      setSidebarCollapsed(stored === 'true')
-    }
-
-    checkCollapsed()
-
-    // Listen for storage changes (in case user changes in another tab)
-    window.addEventListener('storage', checkCollapsed)
-
-    // Also listen for custom events from the sidebar
-    const handleSidebarChange = () => checkCollapsed()
-    window.addEventListener('sidebar-collapsed-change', handleSidebarChange)
-
-    return () => {
-      window.removeEventListener('storage', checkCollapsed)
-      window.removeEventListener('sidebar-collapsed-change', handleSidebarChange)
-    }
-  }, [])
-
-  // Poll for changes since storage event doesn't fire in same tab
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const stored = localStorage.getItem(SIDEBAR_COLLAPSED_KEY)
-      const isCollapsed = stored === 'true'
-      if (isCollapsed !== sidebarCollapsed) {
-        setSidebarCollapsed(isCollapsed)
-      }
-    }, 100)
-
-    return () => clearInterval(interval)
-  }, [sidebarCollapsed])
+  const { sidebarCollapsed } = useAdminLayout()
 
   return (
     <div className="min-h-screen bg-background">
@@ -67,7 +36,7 @@ export function AdminLayout({
       {/* Main content area */}
       <main
         className={cn(
-          'min-h-screen transition-all duration-300',
+          'min-h-screen transition-all duration-200',
           // Offset for sidebar on desktop
           'md:pl-64',
           sidebarCollapsed && 'md:pl-16',
@@ -83,5 +52,17 @@ export function AdminLayout({
         </div>
       </main>
     </div>
+  )
+}
+
+/**
+ * Admin layout wrapper with sidebar, breadcrumbs, and consistent spacing.
+ * Uses React Context for sidebar state (no polling).
+ */
+export function AdminLayout(props: AdminLayoutProps) {
+  return (
+    <AdminLayoutProvider>
+      <AdminLayoutInner {...props} />
+    </AdminLayoutProvider>
   )
 }
