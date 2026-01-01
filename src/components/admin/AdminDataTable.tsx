@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,6 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Search,
   ArrowUpDown,
@@ -55,13 +57,29 @@ export interface ColumnDef<T> {
  */
 export interface RowAction<T> {
   label: string
-  onClick: (row: T) => void
+  onClick?: (row: T) => void
+  /** Optional href for link actions */
+  href?: string
   /** Icon component */
   icon?: React.ReactNode
   /** Whether this is a destructive action (shows in red) */
   destructive?: boolean
   /** Whether to show a separator before this action */
   separator?: boolean
+}
+
+/**
+ * Bulk action definition
+ */
+export interface BulkAction<T> {
+  label: string
+  onClick: (selectedRows: T[]) => void
+  /** Icon component */
+  icon?: React.ReactNode
+  /** Whether this is a destructive action (shows in red) */
+  destructive?: boolean
+  /** Disable condition based on selected rows */
+  disabled?: (selectedRows: T[]) => boolean
 }
 
 /**
@@ -111,6 +129,16 @@ export interface AdminDataTableProps<T> {
   // Additional content above table (e.g., filters, bulk actions)
   toolbar?: React.ReactNode
 
+  // Bulk selection (optional)
+  /** Enable row selection checkboxes */
+  selectable?: boolean
+  /** Currently selected row keys */
+  selectedKeys?: Set<string>
+  /** Callback when selection changes */
+  onSelectionChange?: (selectedKeys: Set<string>) => void
+  /** Bulk actions to show when rows are selected */
+  bulkActions?: BulkAction<T>[]
+
   className?: string
 }
 
@@ -142,6 +170,10 @@ export function AdminDataTable<T extends object>({
   rowActions,
   onRowClick,
   toolbar,
+  selectable = false,
+  selectedKeys = new Set(),
+  onSelectionChange,
+  bulkActions,
   className,
 }: AdminDataTableProps<T>) {
   // Local search state for debouncing
@@ -189,6 +221,44 @@ export function AdminDataTable<T extends object>({
       <ArrowDown className="ml-1 h-4 w-4" />
     )
   }
+
+  // Selection helpers
+  const allSelected = selectable && data.length > 0 && data.every((row) => selectedKeys.has(String(row[keyField])))
+  const someSelected = selectable && data.some((row) => selectedKeys.has(String(row[keyField]))) && !allSelected
+
+  const handleSelectAll = useCallback(() => {
+    if (!onSelectionChange) return
+    if (allSelected) {
+      // Deselect all on current page
+      const newKeys = new Set(selectedKeys)
+      data.forEach((row) => newKeys.delete(String(row[keyField])))
+      onSelectionChange(newKeys)
+    } else {
+      // Select all on current page
+      const newKeys = new Set(selectedKeys)
+      data.forEach((row) => newKeys.add(String(row[keyField])))
+      onSelectionChange(newKeys)
+    }
+  }, [allSelected, data, keyField, onSelectionChange, selectedKeys])
+
+  const handleSelectRow = useCallback(
+    (row: T) => {
+      if (!onSelectionChange) return
+      const key = String(row[keyField])
+      const newKeys = new Set(selectedKeys)
+      if (newKeys.has(key)) {
+        newKeys.delete(key)
+      } else {
+        newKeys.add(key)
+      }
+      onSelectionChange(newKeys)
+    },
+    [keyField, onSelectionChange, selectedKeys]
+  )
+
+  const getSelectedRows = useCallback(() => {
+    return data.filter((row) => selectedKeys.has(String(row[keyField])))
+  }, [data, keyField, selectedKeys])
 
   // Loading state
   if (loading && data.length === 0) {
@@ -262,11 +332,56 @@ export function AdminDataTable<T extends object>({
         {toolbar}
       </div>
 
+      {/* Bulk action bar */}
+      {selectable && selectedKeys.size > 0 && bulkActions && bulkActions.length > 0 && (
+        <div className="flex items-center gap-4 p-3 bg-muted/50 border rounded-lg">
+          <span className="text-sm font-medium">
+            {selectedKeys.size} selected
+          </span>
+          <div className="flex items-center gap-2">
+            {bulkActions.map((action) => (
+              <Button
+                key={action.label}
+                variant={action.destructive ? 'destructive' : 'outline'}
+                size="sm"
+                onClick={() => action.onClick(getSelectedRows())}
+                disabled={action.disabled?.(getSelectedRows())}
+              >
+                {action.icon && <span className="mr-2">{action.icon}</span>}
+                {action.label}
+              </Button>
+            ))}
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onSelectionChange?.(new Set())}
+            className="ml-auto"
+          >
+            Clear selection
+          </Button>
+        </div>
+      )}
+
       {/* Table */}
       <div className="border rounded-lg overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50">
+              {selectable && (
+                <TableHead className="w-[40px]">
+                  <Checkbox
+                    checked={allSelected}
+                    ref={(el) => {
+                      if (el) {
+                        (el as unknown as HTMLInputElement).indeterminate = someSelected
+                      }
+                    }}
+                    onCheckedChange={handleSelectAll}
+                    aria-label="Select all"
+                  />
+                </TableHead>
+              )}
               {columns.map((column) => (
                 <TableHead
                   key={column.key}
@@ -295,10 +410,20 @@ export function AdminDataTable<T extends object>({
                 key={String(row[keyField])}
                 className={cn(
                   onRowClick && 'cursor-pointer hover:bg-muted/50',
-                  loading && 'opacity-50'
+                  loading && 'opacity-50',
+                  selectable && selectedKeys.has(String(row[keyField])) && 'bg-muted/30'
                 )}
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
               >
+                {selectable && (
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      checked={selectedKeys.has(String(row[keyField]))}
+                      onCheckedChange={() => handleSelectRow(row)}
+                      aria-label={`Select row`}
+                    />
+                  </TableCell>
+                )}
                 {columns.map((column) => (
                   <TableCell key={column.key} className={column.className}>
                     {column.cell(row)}
@@ -326,18 +451,35 @@ export function AdminDataTable<T extends object>({
                             {action.separator && index > 0 && (
                               <DropdownMenuSeparator />
                             )}
-                            <DropdownMenuItem
-                              onClick={() => action.onClick(row)}
-                              className={cn(
-                                action.destructive &&
-                                  'text-destructive focus:text-destructive'
-                              )}
-                            >
-                              {action.icon && (
-                                <span className="mr-2">{action.icon}</span>
-                              )}
-                              {action.label}
-                            </DropdownMenuItem>
+                            {action.href ? (
+                              <DropdownMenuItem asChild>
+                                <Link
+                                  href={action.href}
+                                  className={cn(
+                                    action.destructive &&
+                                      'text-destructive focus:text-destructive'
+                                  )}
+                                >
+                                  {action.icon && (
+                                    <span className="mr-2">{action.icon}</span>
+                                  )}
+                                  {action.label}
+                                </Link>
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem
+                                onClick={() => action.onClick?.(row)}
+                                className={cn(
+                                  action.destructive &&
+                                    'text-destructive focus:text-destructive'
+                                )}
+                              >
+                                {action.icon && (
+                                  <span className="mr-2">{action.icon}</span>
+                                )}
+                                {action.label}
+                              </DropdownMenuItem>
+                            )}
                           </div>
                         ))}
                       </DropdownMenuContent>
