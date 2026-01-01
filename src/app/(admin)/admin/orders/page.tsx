@@ -26,6 +26,18 @@ import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { RefreshCw, Search, Eye, Package, DollarSign, Clock, CheckSquare, Truck, XCircle, Download, ShoppingCart } from 'lucide-react'
 import { EmptyStateInline } from '@/components/ui/empty-state'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
+import { PageHeader } from '@/components/admin'
 import { formatDistanceToNow } from 'date-fns'
 import { toast } from 'sonner'
 import { exportToCSV, orderColumns, getExportFilename } from '@/lib/utils/export'
@@ -596,28 +608,26 @@ export default function AdminOrdersPage() {
   }
 
   return (
-    <div className="py-8 px-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Order Management</h1>
-          <p className="text-muted-foreground mt-1">
-            View and manage customer orders
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={handleExportOrders}>
-            <Download className="mr-2 h-4 w-4" />
-            Export CSV
-          </Button>
+    <div className="space-y-6">
+      <PageHeader
+        title="Order Management"
+        description="View and manage customer orders"
+        primaryAction={
           <Button onClick={fetchOrders} disabled={loading}>
             <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-        </div>
-      </div>
+        }
+        secondaryActions={
+          <Button variant="outline" onClick={handleExportOrders}>
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
+        }
+      />
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-card border rounded-lg p-4 text-center">
           <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
             <Package className="h-4 w-4" />
@@ -655,7 +665,7 @@ export default function AdminOrdersPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -684,7 +694,7 @@ export default function AdminOrdersPage() {
 
       {/* Bulk Actions Bar */}
       {selectedOrders.size > 0 && (
-        <div className="flex items-center justify-between bg-primary/10 border border-primary/20 rounded-lg p-4 mb-6">
+        <div className="flex items-center justify-between bg-primary/10 border border-primary/20 rounded-lg p-4">
           <div className="flex items-center gap-2">
             <CheckSquare className="h-5 w-5 text-primary" />
             <span className="font-medium">
@@ -719,16 +729,37 @@ export default function AdminOrdersPage() {
               <CheckSquare className="h-4 w-4 mr-1" />
               Mark Delivered
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => bulkUpdateStatus('canceled')}
-              disabled={bulkUpdating}
-              className="text-destructive hover:text-destructive"
-            >
-              <XCircle className="h-4 w-4 mr-1" />
-              Cancel
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={bulkUpdating}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <XCircle className="h-4 w-4 mr-1" />
+                  Cancel
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Cancel Orders</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to cancel {selectedOrders.size} order{selectedOrders.size !== 1 ? 's' : ''}?
+                    This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Keep Orders</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => bulkUpdateStatus('canceled')}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Cancel Orders
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             <Button
               variant="ghost"
               size="sm"
