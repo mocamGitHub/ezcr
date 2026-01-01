@@ -1,49 +1,43 @@
-'use client';
+'use client'
 
-import React, { useState, useEffect, useMemo, useTransition } from 'react';
-import { usePageTitle } from '@/hooks/usePageTitle';
-import { StaticStarRating } from '@/components/ui/star-rating';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import React, { useState, useEffect, useCallback, useTransition } from 'react'
+import { usePageTitle } from '@/hooks/usePageTitle'
+import { StaticStarRating } from '@/components/ui/star-rating'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components/ui/dialog';
+} from '@/components/ui/dialog'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@/components/ui/select'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-  SortableTableHead,
-  type SortDirection,
-} from '@/components/ui/table';
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import {
   CheckCircle,
   XCircle,
   MessageSquare,
-  MessageSquareText,
   Star,
   Trash2,
-  ChevronLeft,
-  ChevronRight,
-  AlertCircle,
   Loader2,
-  Search,
   RotateCcw,
   ShoppingCart,
   Clock,
@@ -52,741 +46,451 @@ import {
   CalendarDays,
   ExternalLink,
   BadgeCheck,
-} from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
-
-// =====================================================
-// TYPES
-// =====================================================
-
-interface Testimonial {
-  id: string;
-  user_id: string;
-  customer_name: string;
-  customer_email: string;
-  customer_avatar_url: string | null;
-  rating: number;
-  review_text: string;
-  product_id: string | null;
-  status: 'pending' | 'approved' | 'rejected';
-  is_featured: boolean;
-  is_verified_customer: boolean;
-  admin_response: string | null;
-  admin_response_by: string | null;
-  admin_response_at: string | null;
-  approved_by: string | null;
-  approved_at: string | null;
-  rejected_by: string | null;
-  rejected_at: string | null;
-  rejection_reason: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-interface CustomerOrder {
-  id: string;
-  order_number: string;
-  status: string;
-  total_amount: number;
-  created_at: string;
-}
-
-interface PaginationMeta {
-  total: number;
-  page: number;
-  limit: number;
-  total_pages: number;
-  has_next_page: boolean;
-  has_prev_page: boolean;
-}
-
-// =====================================================
-// ADMIN TESTIMONIALS PAGE
-// =====================================================
+} from 'lucide-react'
+import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
+import { AdminDataTable, PageHeader, type ColumnDef, type RowAction } from '@/components/admin'
+import {
+  getTestimonialsPaginated,
+  approveTestimonial,
+  rejectTestimonial,
+  respondToTestimonial,
+  toggleFeaturedTestimonial,
+  deleteTestimonial,
+  getCustomerOrders,
+  type Testimonial,
+  type CustomerOrder,
+} from './actions'
 
 export default function AdminTestimonialsPage() {
-  usePageTitle('Testimonials');
-  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
-  const [pagination, setPagination] = useState<PaginationMeta | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [isPending, startTransition] = useTransition();
+  usePageTitle('Testimonials')
+
+  // Table state
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([])
+  const [totalCount, setTotalCount] = useState(0)
+  const [page, setPage] = useState(1)
+  const [pageSize] = useState(10)
+  const [sortColumn, setSortColumn] = useState('created_at')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
+  const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Filters
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all')
 
   // Dialog states
-  const [selectedTestimonial, setSelectedTestimonial] = useState<Testimonial | null>(null);
-  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
-  const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false);
-  const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
-  const [isRespondDialogOpen, setIsRespondDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedTestimonial, setSelectedTestimonial] = useState<Testimonial | null>(null)
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false)
+  const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false)
+  const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false)
+  const [isRespondDialogOpen, setIsRespondDialogOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
   // Customer orders for detail view
-  const [customerOrders, setCustomerOrders] = useState<CustomerOrder[]>([]);
-  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
+  const [customerOrders, setCustomerOrders] = useState<CustomerOrder[]>([])
+  const [isLoadingOrders, setIsLoadingOrders] = useState(false)
 
   // Form states
-  const [rejectionReason, setRejectionReason] = useState('');
-  const [adminResponse, setAdminResponse] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('')
+  const [adminResponse, setAdminResponse] = useState('')
 
-  // Sorting
-  const [sortColumn, setSortColumn] = useState<string | null>(null);
-  const [sortDirection, setSortDirection] = useState<SortDirection>(null);
+  const [isPending, startTransition] = useTransition()
 
-  const handleSort = (column: string) => {
-    if (sortColumn === column) {
-      if (sortDirection === 'asc') {
-        setSortDirection('desc');
-      } else if (sortDirection === 'desc') {
-        setSortColumn(null);
-        setSortDirection(null);
-      }
-    } else {
-      setSortColumn(column);
-      setSortDirection('asc');
-    }
-  };
-
-  // Sorted testimonials
-  const sortedTestimonials = useMemo(() => {
-    if (!sortColumn || !sortDirection) return testimonials;
-
-    return [...testimonials].sort((a, b) => {
-      let aVal: string | number | null = null;
-      let bVal: string | number | null = null;
-
-      switch (sortColumn) {
-        case 'customer':
-          aVal = a.customer_name;
-          bVal = b.customer_name;
-          break;
-        case 'rating':
-          aVal = a.rating;
-          bVal = b.rating;
-          break;
-        case 'status':
-          aVal = a.status;
-          bVal = b.status;
-          break;
-        case 'date':
-          aVal = a.created_at;
-          bVal = b.created_at;
-          break;
-        default:
-          return 0;
-      }
-
-      if (typeof aVal === 'number' && typeof bVal === 'number') {
-        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
-      }
-      const comparison = String(aVal || '').localeCompare(String(bVal || ''));
-      return sortDirection === 'asc' ? comparison : -comparison;
-    });
-  }, [testimonials, sortColumn, sortDirection]);
-
-  // Auto-dismiss success message
-  useEffect(() => {
-    if (successMessage) {
-      const timer = setTimeout(() => setSuccessMessage(null), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [successMessage]);
-
-  // Fetch testimonials
-  useEffect(() => {
-    fetchTestimonials();
-  }, [statusFilter, currentPage]);
-
-  // Debounced search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchTestimonials();
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
-  const fetchTestimonials = async () => {
-    setIsLoading(true);
+  const loadData = useCallback(async () => {
     try {
-      const params = new URLSearchParams({
-        page: currentPage.toString(),
-        limit: '20',
+      setLoading(true)
+      setError(null)
+      const result = await getTestimonialsPaginated({
+        page,
+        pageSize,
+        sortColumn,
+        sortDirection,
+        search,
         status: statusFilter,
-      });
-
-      if (searchQuery.trim()) {
-        params.set('search', searchQuery.trim());
-      }
-
-      const response = await fetch(`/api/admin/testimonials?${params.toString()}`);
-      const data = await response.json();
-
-      if (response.ok) {
-        setTestimonials(data.testimonials);
-        setPagination(data.pagination);
-      } else {
-        setError(data.error || 'Failed to fetch testimonials');
-      }
-    } catch (error) {
-      console.error('Error fetching testimonials:', error);
-      setError('An unexpected error occurred');
+      })
+      setTestimonials(result.data)
+      setTotalCount(result.totalCount)
+    } catch (err: any) {
+      console.error('Error loading testimonials:', err)
+      setError(err.message || 'Failed to load testimonials')
+      toast.error('Failed to load testimonials')
     } finally {
-      setIsLoading(false);
+      setLoading(false)
     }
-  };
+  }, [page, pageSize, sortColumn, sortDirection, search, statusFilter])
 
-  // Fetch customer orders
-  const fetchCustomerOrders = async (email: string) => {
-    setIsLoadingOrders(true);
-    setCustomerOrders([]);
-    try {
-      const response = await fetch(`/api/admin/orders?search=${encodeURIComponent(email)}&limit=10`);
-      const data = await response.json();
-      if (response.ok && data.orders) {
-        setCustomerOrders(data.orders);
-      }
-    } catch (error) {
-      console.error('Error fetching customer orders:', error);
-    } finally {
-      setIsLoadingOrders(false);
+  useEffect(() => {
+    loadData()
+  }, [loadData])
+
+  const handleSortChange = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortColumn(column)
+      setSortDirection('asc')
     }
-  };
+    setPage(1)
+  }
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value)
+    setPage(1)
+  }
+
+  const handleStatusFilterChange = (value: 'all' | 'pending' | 'approved' | 'rejected') => {
+    setStatusFilter(value)
+    setPage(1)
+  }
 
   // Open detail dialog
-  const openDetailDialog = (testimonial: Testimonial) => {
-    setSelectedTestimonial(testimonial);
-    setIsDetailDialogOpen(true);
-    fetchCustomerOrders(testimonial.customer_email);
-  };
-
-  // Handle approve (also used for un-reject)
-  const handleApprove = async (fromDetail = false) => {
-    if (!selectedTestimonial) return;
-
-    setIsSubmitting(true);
-    setError(null);
-
+  const openDetailDialog = async (testimonial: Testimonial) => {
+    setSelectedTestimonial(testimonial)
+    setIsDetailDialogOpen(true)
+    setIsLoadingOrders(true)
     try {
-      const response = await fetch(
-        `/api/admin/testimonials/${selectedTestimonial.id}/approve`,
-        { method: 'POST' }
-      );
-
-      if (response.ok) {
-        const wasRejected = selectedTestimonial.status === 'rejected';
-        setSuccessMessage(wasRejected ? 'Testimonial restored and approved' : 'Testimonial approved successfully');
-        setIsApproveDialogOpen(false);
-        if (fromDetail) {
-          // Update the selected testimonial in detail view
-          const data = await response.json();
-          setSelectedTestimonial(data.testimonial);
-        }
-        fetchTestimonials();
-      } else {
-        const data = await response.json();
-        setError(data.error || 'Failed to approve testimonial');
-      }
-    } catch (error) {
-      setError('An unexpected error occurred');
+      const orders = await getCustomerOrders(testimonial.customer_email)
+      setCustomerOrders(orders)
+    } catch (err) {
+      console.error('Error fetching orders:', err)
     } finally {
-      setIsSubmitting(false);
+      setIsLoadingOrders(false)
     }
-  };
+  }
+
+  // Handle approve
+  const handleApprove = async (fromDetail = false) => {
+    if (!selectedTestimonial) return
+
+    startTransition(async () => {
+      try {
+        const wasRejected = selectedTestimonial.status === 'rejected'
+        const updated = await approveTestimonial(selectedTestimonial.id)
+        toast.success(wasRejected ? 'Testimonial restored and approved' : 'Testimonial approved')
+        setIsApproveDialogOpen(false)
+        if (fromDetail) {
+          setSelectedTestimonial(updated)
+        }
+        loadData()
+      } catch (err: any) {
+        toast.error(err.message || 'Failed to approve testimonial')
+      }
+    })
+  }
 
   // Handle reject
   const handleReject = async () => {
     if (!selectedTestimonial || !rejectionReason.trim()) {
-      setError('Please provide a rejection reason');
-      return;
-    }
-
-    setIsSubmitting(true);
-    setError(null);
-
-    try {
-      const response = await fetch(
-        `/api/admin/testimonials/${selectedTestimonial.id}/reject`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ rejection_reason: rejectionReason }),
-        }
-      );
-
-      if (response.ok) {
-        setSuccessMessage('Testimonial rejected');
-        setIsRejectDialogOpen(false);
-        setRejectionReason('');
-        fetchTestimonials();
-      } else {
-        const data = await response.json();
-        setError(data.error || 'Failed to reject testimonial');
-      }
-    } catch (error) {
-      setError('An unexpected error occurred');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Handle respond
-  const handleRespond = async () => {
-    if (!selectedTestimonial || !adminResponse.trim()) {
-      setError('Please provide a response');
-      return;
-    }
-
-    setIsSubmitting(true);
-    setError(null);
-
-    try {
-      const response = await fetch(
-        `/api/admin/testimonials/${selectedTestimonial.id}/respond`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ admin_response: adminResponse }),
-        }
-      );
-
-      if (response.ok) {
-        setSuccessMessage('Response added successfully');
-        setIsRespondDialogOpen(false);
-        setAdminResponse('');
-        fetchTestimonials();
-      } else {
-        const data = await response.json();
-        setError(data.error || 'Failed to add response');
-      }
-    } catch (error) {
-      setError('An unexpected error occurred');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Handle toggle featured with optimistic update
-  const handleToggleFeatured = async (testimonial: Testimonial, e?: React.MouseEvent) => {
-    e?.stopPropagation(); // Prevent row click
-
-    const newFeaturedState = !testimonial.is_featured;
-
-    // Optimistic update
-    setTestimonials(prev => prev.map(t =>
-      t.id === testimonial.id ? { ...t, is_featured: newFeaturedState } : t
-    ));
-
-    // Also update selected testimonial if open in detail
-    if (selectedTestimonial?.id === testimonial.id) {
-      setSelectedTestimonial(prev => prev ? { ...prev, is_featured: newFeaturedState } : null);
+      toast.error('Please provide a rejection reason')
+      return
     }
 
     startTransition(async () => {
       try {
-        const response = await fetch(
-          `/api/admin/testimonials/${testimonial.id}/feature`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ is_featured: newFeaturedState }),
-          }
-        );
-
-        if (response.ok) {
-          setSuccessMessage(`Testimonial ${newFeaturedState ? 'featured' : 'unfeatured'}`);
-        } else {
-          // Revert on error
-          setTestimonials(prev => prev.map(t =>
-            t.id === testimonial.id ? { ...t, is_featured: !newFeaturedState } : t
-          ));
-          if (selectedTestimonial?.id === testimonial.id) {
-            setSelectedTestimonial(prev => prev ? { ...prev, is_featured: !newFeaturedState } : null);
-          }
-          setError('Failed to update featured status');
-        }
-      } catch (error) {
-        // Revert on error
-        setTestimonials(prev => prev.map(t =>
-          t.id === testimonial.id ? { ...t, is_featured: !newFeaturedState } : t
-        ));
-        if (selectedTestimonial?.id === testimonial.id) {
-          setSelectedTestimonial(prev => prev ? { ...prev, is_featured: !newFeaturedState } : null);
-        }
-        setError('Failed to update featured status');
+        await rejectTestimonial(selectedTestimonial.id, rejectionReason)
+        toast.success('Testimonial rejected')
+        setIsRejectDialogOpen(false)
+        setRejectionReason('')
+        loadData()
+      } catch (err: any) {
+        toast.error(err.message || 'Failed to reject testimonial')
       }
-    });
-  };
+    })
+  }
+
+  // Handle respond
+  const handleRespond = async () => {
+    if (!selectedTestimonial || !adminResponse.trim()) {
+      toast.error('Please provide a response')
+      return
+    }
+
+    startTransition(async () => {
+      try {
+        await respondToTestimonial(selectedTestimonial.id, adminResponse)
+        toast.success('Response added successfully')
+        setIsRespondDialogOpen(false)
+        setAdminResponse('')
+        loadData()
+      } catch (err: any) {
+        toast.error(err.message || 'Failed to add response')
+      }
+    })
+  }
+
+  // Handle toggle featured
+  const handleToggleFeatured = async (testimonial: Testimonial, e?: React.MouseEvent) => {
+    e?.stopPropagation()
+
+    const newFeaturedState = !testimonial.is_featured
+
+    // Optimistic update
+    setTestimonials((prev) =>
+      prev.map((t) => (t.id === testimonial.id ? { ...t, is_featured: newFeaturedState } : t))
+    )
+    if (selectedTestimonial?.id === testimonial.id) {
+      setSelectedTestimonial((prev) => (prev ? { ...prev, is_featured: newFeaturedState } : null))
+    }
+
+    startTransition(async () => {
+      try {
+        await toggleFeaturedTestimonial(testimonial.id, newFeaturedState)
+        toast.success(`Testimonial ${newFeaturedState ? 'featured' : 'unfeatured'}`)
+      } catch (err) {
+        // Revert on error
+        setTestimonials((prev) =>
+          prev.map((t) => (t.id === testimonial.id ? { ...t, is_featured: !newFeaturedState } : t))
+        )
+        if (selectedTestimonial?.id === testimonial.id) {
+          setSelectedTestimonial((prev) => (prev ? { ...prev, is_featured: !newFeaturedState } : null))
+        }
+        toast.error('Failed to update featured status')
+      }
+    })
+  }
 
   // Handle delete
   const handleDelete = async () => {
-    if (!selectedTestimonial) return;
+    if (!selectedTestimonial) return
 
-    setIsSubmitting(true);
-    setError(null);
-
-    try {
-      const response = await fetch(
-        `/api/admin/testimonials/${selectedTestimonial.id}`,
-        { method: 'DELETE' }
-      );
-
-      if (response.ok) {
-        setSuccessMessage('Testimonial deleted successfully');
-        setIsDeleteDialogOpen(false);
-        setIsDetailDialogOpen(false);
-        fetchTestimonials();
-      } else {
-        const data = await response.json();
-        setError(data.error || 'Failed to delete testimonial');
+    startTransition(async () => {
+      try {
+        await deleteTestimonial(selectedTestimonial.id)
+        toast.success('Testimonial deleted')
+        setIsDeleteDialogOpen(false)
+        setIsDetailDialogOpen(false)
+        loadData()
+      } catch (err: any) {
+        toast.error(err.message || 'Failed to delete testimonial')
       }
-    } catch (error) {
-      setError('An unexpected error occurred');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    })
+  }
 
   // Format date
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'N/A';
+    if (!dateString) return 'N/A'
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
-    });
-  };
+    })
+  }
 
   // Format date with time
   const formatDateTime = (dateString: string | null) => {
-    if (!dateString) return 'N/A';
+    if (!dateString) return 'N/A'
     return new Date(dateString).toLocaleString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
       hour: 'numeric',
       minute: '2-digit',
-    });
-  };
+    })
+  }
 
   // Status badge variant
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case 'approved':
-        return 'default';
+        return 'default'
       case 'pending':
-        return 'secondary';
+        return 'secondary'
       case 'rejected':
-        return 'destructive';
+        return 'destructive'
       default:
-        return 'outline';
+        return 'outline'
     }
-  };
+  }
 
   // Order status colors
   const getOrderStatusColor = (status: string) => {
     switch (status) {
       case 'delivered':
-        return 'text-green-600';
+        return 'text-green-600'
       case 'shipped':
-        return 'text-blue-600';
+        return 'text-blue-600'
       case 'processing':
-        return 'text-yellow-600';
+        return 'text-yellow-600'
       case 'pending':
-        return 'text-gray-600';
+        return 'text-gray-600'
       default:
-        return 'text-muted-foreground';
+        return 'text-muted-foreground'
     }
-  };
+  }
+
+  // Column definitions
+  const columns: ColumnDef<Testimonial>[] = [
+    {
+      key: 'customer_name',
+      header: 'Customer',
+      sortable: true,
+      cell: (testimonial) => (
+        <div>
+          <p className="font-medium">{testimonial.customer_name}</p>
+          <p className="text-sm text-muted-foreground">{testimonial.customer_email}</p>
+        </div>
+      ),
+    },
+    {
+      key: 'rating',
+      header: 'Rating',
+      sortable: true,
+      cell: (testimonial) => <StaticStarRating rating={testimonial.rating} size="sm" />,
+    },
+    {
+      key: 'review_text',
+      header: 'Review',
+      cell: (testimonial) => (
+        <p className="text-sm line-clamp-2 max-w-md">{testimonial.review_text}</p>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      sortable: true,
+      cell: (testimonial) => (
+        <div className="flex flex-col gap-1">
+          <Badge variant={getStatusBadgeVariant(testimonial.status)}>{testimonial.status}</Badge>
+          {testimonial.is_featured && (
+            <Badge variant="outline" className="border-yellow-500 text-yellow-700 dark:text-yellow-400">
+              <Star className="h-3 w-3 mr-1 fill-current" />
+              Featured
+            </Badge>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'created_at',
+      header: 'Date',
+      sortable: true,
+      cell: (testimonial) => (
+        <span className="text-sm text-muted-foreground">{formatDate(testimonial.created_at)}</span>
+      ),
+    },
+  ]
+
+  // Row actions
+  const getRowActions = (testimonial: Testimonial): RowAction<Testimonial>[] => {
+    const actions: RowAction<Testimonial>[] = []
+
+    if (testimonial.status === 'pending') {
+      actions.push({
+        label: 'Approve',
+        onClick: () => {
+          setSelectedTestimonial(testimonial)
+          setIsApproveDialogOpen(true)
+        },
+        icon: <CheckCircle className="h-4 w-4 text-green-600" />,
+      })
+      actions.push({
+        label: 'Reject',
+        onClick: () => {
+          setSelectedTestimonial(testimonial)
+          setIsRejectDialogOpen(true)
+        },
+        icon: <XCircle className="h-4 w-4 text-red-600" />,
+      })
+    }
+
+    if (testimonial.status === 'approved') {
+      actions.push({
+        label: 'Add Response',
+        onClick: () => {
+          setSelectedTestimonial(testimonial)
+          setAdminResponse(testimonial.admin_response || '')
+          setIsRespondDialogOpen(true)
+        },
+        icon: <MessageSquare className="h-4 w-4" />,
+      })
+      actions.push({
+        label: testimonial.is_featured ? 'Unfeature' : 'Feature',
+        onClick: () => handleToggleFeatured(testimonial),
+        icon: (
+          <Star
+            className={cn('h-4 w-4', testimonial.is_featured && 'fill-yellow-400 text-yellow-400')}
+          />
+        ),
+      })
+    }
+
+    if (testimonial.status === 'rejected') {
+      actions.push({
+        label: 'Restore & Approve',
+        onClick: () => {
+          setSelectedTestimonial(testimonial)
+          setIsApproveDialogOpen(true)
+        },
+        icon: <RotateCcw className="h-4 w-4 text-blue-600" />,
+      })
+    }
+
+    actions.push({
+      label: 'Delete',
+      onClick: () => {
+        setSelectedTestimonial(testimonial)
+        setIsDeleteDialogOpen(true)
+      },
+      icon: <Trash2 className="h-4 w-4" />,
+      destructive: true,
+      separator: true,
+    })
+
+    return actions
+  }
+
+  // Toolbar with status filter
+  const toolbar = (
+    <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
+      <SelectTrigger className="w-[150px]">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">All Statuses</SelectItem>
+        <SelectItem value="pending">Pending</SelectItem>
+        <SelectItem value="approved">Approved</SelectItem>
+        <SelectItem value="rejected">Rejected</SelectItem>
+      </SelectContent>
+    </Select>
+  )
 
   return (
     <div className="p-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-          <MessageSquareText className="h-8 w-8" />
-          Testimonials Management
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          Approve, reject, and respond to customer testimonials
-        </p>
-      </div>
+      <PageHeader
+        title="Testimonials"
+        description="Approve, reject, and respond to customer testimonials"
+      />
 
-      {/* Success/Error Messages */}
-      {successMessage && (
-        <Alert className="mb-6 border-green-500 bg-green-50 dark:bg-green-950/20">
-          <CheckCircle className="h-4 w-4 text-green-600" />
-          <AlertDescription className="text-green-800 dark:text-green-200">{successMessage}</AlertDescription>
-        </Alert>
-      )}
-
-      {error && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {/* Filters */}
-      <div className="bg-card rounded-lg border p-4 mb-6">
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex-1 min-w-[200px]">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by name, email, or review..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="approved">Approved</SelectItem>
-              <SelectItem value="rejected">Rejected</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <span className="text-sm text-muted-foreground">
-            {pagination?.total ?? 0} testimonial{(pagination?.total ?? 0) !== 1 ? 's' : ''}
-          </span>
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="bg-card rounded-lg border">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        ) : testimonials.length === 0 ? (
-          <div className="text-center py-12">
-            <MessageSquareText className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-            <p className="text-muted-foreground">No testimonials found</p>
-            {(searchQuery || statusFilter !== 'all') && (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setSearchQuery('');
-                  setStatusFilter('all');
-                }}
-                className="mt-4"
-              >
-                Clear filters
-              </Button>
-            )}
-          </div>
-        ) : (
-          <>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <SortableTableHead
-                    sortKey="customer"
-                    currentSort={sortColumn}
-                    currentDirection={sortDirection}
-                    onSort={handleSort}
-                  >
-                    Customer
-                  </SortableTableHead>
-                  <SortableTableHead
-                    sortKey="rating"
-                    currentSort={sortColumn}
-                    currentDirection={sortDirection}
-                    onSort={handleSort}
-                  >
-                    Rating
-                  </SortableTableHead>
-                  <TableHead>Review</TableHead>
-                  <SortableTableHead
-                    sortKey="status"
-                    currentSort={sortColumn}
-                    currentDirection={sortDirection}
-                    onSort={handleSort}
-                  >
-                    Status
-                  </SortableTableHead>
-                  <SortableTableHead
-                    sortKey="date"
-                    currentSort={sortColumn}
-                    currentDirection={sortDirection}
-                    onSort={handleSort}
-                  >
-                    Date
-                  </SortableTableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sortedTestimonials.map((testimonial) => (
-                  <TableRow
-                    key={testimonial.id}
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => openDetailDialog(testimonial)}
-                  >
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{testimonial.customer_name}</p>
-                        <p className="text-sm text-muted-foreground">{testimonial.customer_email}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <StaticStarRating rating={testimonial.rating} size="sm" />
-                    </TableCell>
-                    <TableCell className="max-w-md">
-                      <p className="text-sm line-clamp-2">{testimonial.review_text}</p>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-1">
-                        <Badge variant={getStatusBadgeVariant(testimonial.status)}>
-                          {testimonial.status}
-                        </Badge>
-                        {testimonial.is_featured && (
-                          <Badge variant="outline" className="border-yellow-500 text-yellow-700 dark:text-yellow-400">
-                            <Star className="h-3 w-3 mr-1 fill-current" />
-                            Featured
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {formatDate(testimonial.created_at)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                        {testimonial.status === 'pending' && (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              title="Approve"
-                              onClick={() => {
-                                setSelectedTestimonial(testimonial);
-                                setIsApproveDialogOpen(true);
-                              }}
-                            >
-                              <CheckCircle className="h-4 w-4 text-green-600" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              title="Reject"
-                              onClick={() => {
-                                setSelectedTestimonial(testimonial);
-                                setIsRejectDialogOpen(true);
-                              }}
-                            >
-                              <XCircle className="h-4 w-4 text-red-600" />
-                            </Button>
-                          </>
-                        )}
-                        {testimonial.status === 'approved' && (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              title="Add Response"
-                              onClick={() => {
-                                setSelectedTestimonial(testimonial);
-                                setAdminResponse(testimonial.admin_response || '');
-                                setIsRespondDialogOpen(true);
-                              }}
-                            >
-                              <MessageSquare className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              title={testimonial.is_featured ? 'Unfeature' : 'Feature'}
-                              onClick={(e) => handleToggleFeatured(testimonial, e)}
-                            >
-                              <Star
-                                className={cn(
-                                  'h-4 w-4',
-                                  testimonial.is_featured && 'fill-yellow-400 text-yellow-400'
-                                )}
-                              />
-                            </Button>
-                          </>
-                        )}
-                        {testimonial.status === 'rejected' && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            title="Restore & Approve"
-                            onClick={() => {
-                              setSelectedTestimonial(testimonial);
-                              setIsApproveDialogOpen(true);
-                            }}
-                          >
-                            <RotateCcw className="h-4 w-4 text-blue-600" />
-                          </Button>
-                        )}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          title="Delete"
-                          onClick={() => {
-                            setSelectedTestimonial(testimonial);
-                            setIsDeleteDialogOpen(true);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-600" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-
-            {/* Pagination */}
-            {pagination && pagination.total_pages > 1 && (
-              <div className="border-t p-4 flex items-center justify-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage((p) => p - 1)}
-                  disabled={!pagination.has_prev_page}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="text-sm text-muted-foreground">
-                  Page {pagination.page} of {pagination.total_pages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage((p) => p + 1)}
-                  disabled={!pagination.has_next_page}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
-          </>
-        )}
-      </div>
+      <AdminDataTable
+        data={testimonials}
+        columns={columns}
+        keyField="id"
+        sortColumn={sortColumn}
+        sortDirection={sortDirection}
+        onSortChange={handleSortChange}
+        page={page}
+        pageSize={pageSize}
+        totalCount={totalCount}
+        onPageChange={setPage}
+        searchValue={search}
+        onSearchChange={handleSearchChange}
+        searchPlaceholder="Search by name, email, or review..."
+        loading={loading}
+        error={error}
+        onRetry={loadData}
+        emptyTitle="No testimonials found"
+        emptyDescription="Customer testimonials will appear here once submitted."
+        rowActions={getRowActions}
+        onRowClick={openDetailDialog}
+        toolbar={toolbar}
+      />
 
       {/* Detail Dialog */}
       <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <MessageSquareText className="h-5 w-5" />
-              Testimonial Details
-            </DialogTitle>
+            <DialogTitle className="flex items-center gap-2">Testimonial Details</DialogTitle>
           </DialogHeader>
 
           {selectedTestimonial && (
@@ -807,7 +511,10 @@ export default function AdminTestimonialsPage() {
                     </div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Mail className="h-4 w-4" />
-                      <a href={`mailto:${selectedTestimonial.customer_email}`} className="hover:underline">
+                      <a
+                        href={`mailto:${selectedTestimonial.customer_email}`}
+                        className="hover:underline"
+                      >
                         {selectedTestimonial.customer_email}
                       </a>
                     </div>
@@ -817,11 +524,17 @@ export default function AdminTestimonialsPage() {
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-2">
-                    <Badge variant={getStatusBadgeVariant(selectedTestimonial.status)} className="capitalize">
+                    <Badge
+                      variant={getStatusBadgeVariant(selectedTestimonial.status)}
+                      className="capitalize"
+                    >
                       {selectedTestimonial.status}
                     </Badge>
                     {selectedTestimonial.is_featured && (
-                      <Badge variant="outline" className="border-yellow-500 text-yellow-700 dark:text-yellow-400">
+                      <Badge
+                        variant="outline"
+                        className="border-yellow-500 text-yellow-700 dark:text-yellow-400"
+                      >
                         <Star className="h-3 w-3 mr-1 fill-current" />
                         Featured
                       </Badge>
@@ -860,7 +573,9 @@ export default function AdminTestimonialsPage() {
                 <div className="border border-red-200 rounded-lg p-4 bg-red-50/50 dark:bg-red-950/20">
                   <div className="flex items-center gap-2 mb-2">
                     <XCircle className="h-4 w-4 text-red-600" />
-                    <span className="font-medium text-sm text-red-700 dark:text-red-400">Rejection Reason</span>
+                    <span className="font-medium text-sm text-red-700 dark:text-red-400">
+                      Rejection Reason
+                    </span>
                     {selectedTestimonial.rejected_at && (
                       <span className="text-xs text-muted-foreground">
                         {formatDateTime(selectedTestimonial.rejected_at)}
@@ -897,13 +612,9 @@ export default function AdminTestimonialsPage() {
                   {selectedTestimonial.admin_response_at && (
                     <div className="flex items-center gap-2 text-blue-600">
                       <div className="w-2 h-2 rounded-full bg-blue-500" />
-                      <span>Response added: {formatDateTime(selectedTestimonial.admin_response_at)}</span>
-                    </div>
-                  )}
-                  {selectedTestimonial.updated_at !== selectedTestimonial.created_at && (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <div className="w-2 h-2 rounded-full bg-gray-400" />
-                      <span>Last updated: {formatDateTime(selectedTestimonial.updated_at)}</span>
+                      <span>
+                        Response added: {formatDateTime(selectedTestimonial.admin_response_at)}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -957,18 +668,15 @@ export default function AdminTestimonialsPage() {
               <div className="flex flex-wrap gap-2 pt-4 border-t">
                 {selectedTestimonial.status === 'pending' && (
                   <>
-                    <Button
-                      onClick={() => handleApprove(true)}
-                      disabled={isSubmitting}
-                    >
+                    <Button onClick={() => handleApprove(true)} disabled={isPending}>
                       <CheckCircle className="h-4 w-4 mr-2" />
                       Approve
                     </Button>
                     <Button
                       variant="destructive"
                       onClick={() => {
-                        setIsDetailDialogOpen(false);
-                        setIsRejectDialogOpen(true);
+                        setIsDetailDialogOpen(false)
+                        setIsRejectDialogOpen(true)
                       }}
                     >
                       <XCircle className="h-4 w-4 mr-2" />
@@ -981,9 +689,9 @@ export default function AdminTestimonialsPage() {
                     <Button
                       variant="outline"
                       onClick={() => {
-                        setAdminResponse(selectedTestimonial.admin_response || '');
-                        setIsDetailDialogOpen(false);
-                        setIsRespondDialogOpen(true);
+                        setAdminResponse(selectedTestimonial.admin_response || '')
+                        setIsDetailDialogOpen(false)
+                        setIsRespondDialogOpen(true)
                       }}
                     >
                       <MessageSquare className="h-4 w-4 mr-2" />
@@ -993,19 +701,18 @@ export default function AdminTestimonialsPage() {
                       variant="outline"
                       onClick={() => handleToggleFeatured(selectedTestimonial)}
                     >
-                      <Star className={cn(
-                        'h-4 w-4 mr-2',
-                        selectedTestimonial.is_featured && 'fill-yellow-400 text-yellow-400'
-                      )} />
+                      <Star
+                        className={cn(
+                          'h-4 w-4 mr-2',
+                          selectedTestimonial.is_featured && 'fill-yellow-400 text-yellow-400'
+                        )}
+                      />
                       {selectedTestimonial.is_featured ? 'Unfeature' : 'Feature'}
                     </Button>
                   </>
                 )}
                 {selectedTestimonial.status === 'rejected' && (
-                  <Button
-                    onClick={() => handleApprove(true)}
-                    disabled={isSubmitting}
-                  >
+                  <Button onClick={() => handleApprove(true)} disabled={isPending}>
                     <RotateCcw className="h-4 w-4 mr-2" />
                     Restore & Approve
                   </Button>
@@ -1014,8 +721,8 @@ export default function AdminTestimonialsPage() {
                   variant="outline"
                   className="text-red-600 hover:text-red-700"
                   onClick={() => {
-                    setIsDetailDialogOpen(false);
-                    setIsDeleteDialogOpen(true);
+                    setIsDetailDialogOpen(false)
+                    setIsDeleteDialogOpen(true)
                   }}
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
@@ -1028,31 +735,34 @@ export default function AdminTestimonialsPage() {
       </Dialog>
 
       {/* Approve Dialog */}
-      <Dialog open={isApproveDialogOpen} onOpenChange={setIsApproveDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {selectedTestimonial?.status === 'rejected' ? 'Restore & Approve Testimonial' : 'Approve Testimonial'}
-            </DialogTitle>
-          </DialogHeader>
-          <p>
-            {selectedTestimonial?.status === 'rejected'
-              ? 'This will restore the rejected testimonial and approve it for display.'
-              : 'Are you sure you want to approve this testimonial?'
-            }
-          </p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsApproveDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={() => handleApprove(false)} disabled={isSubmitting}>
-              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : (
-                selectedTestimonial?.status === 'rejected' ? 'Restore & Approve' : 'Approve'
+      <AlertDialog open={isApproveDialogOpen} onOpenChange={setIsApproveDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {selectedTestimonial?.status === 'rejected'
+                ? 'Restore & Approve Testimonial'
+                : 'Approve Testimonial'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {selectedTestimonial?.status === 'rejected'
+                ? 'This will restore the rejected testimonial and approve it for display.'
+                : 'Are you sure you want to approve this testimonial?'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => handleApprove(false)} disabled={isPending}>
+              {isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : selectedTestimonial?.status === 'rejected' ? (
+                'Restore & Approve'
+              ) : (
+                'Approve'
               )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Reject Dialog */}
       <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
@@ -1076,8 +786,8 @@ export default function AdminTestimonialsPage() {
             <Button variant="outline" onClick={() => setIsRejectDialogOpen(false)}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleReject} disabled={isSubmitting}>
-              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Reject'}
+            <Button variant="destructive" onClick={handleReject} disabled={isPending}>
+              {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Reject'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1107,30 +817,34 @@ export default function AdminTestimonialsPage() {
             <Button variant="outline" onClick={() => setIsRespondDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleRespond} disabled={isSubmitting}>
-              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Submit Response'}
+            <Button onClick={handleRespond} disabled={isPending}>
+              {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Submit Response'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Delete Dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Testimonial</DialogTitle>
-          </DialogHeader>
-          <p>Are you sure you want to delete this testimonial? This action cannot be undone.</p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={isSubmitting}>
-              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Delete'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Testimonial</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this testimonial? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
-  );
+  )
 }
