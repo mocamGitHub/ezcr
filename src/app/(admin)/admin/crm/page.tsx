@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import { CustomerList } from '@/components/crm/CustomerList'
 import { CustomerListSkeleton } from '@/components/crm/CustomerListSkeleton'
 import { EnvironmentBadge } from '@/components/EnvironmentBanner'
+import { PageHeader } from '@/components/admin'
 
 export const metadata = {
   title: 'CRM - Customer Management',
@@ -10,18 +11,12 @@ export const metadata = {
 
 export default function CRMPage() {
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Customer Relationship Management</h1>
-            <p className="text-muted-foreground mt-2">
-              View and manage all customer interactions, orders, and engagement
-            </p>
-          </div>
-          <EnvironmentBadge />
-        </div>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Customer Relationship Management"
+        description="View and manage all customer interactions, orders, and engagement"
+        secondaryActions={<EnvironmentBadge />}
+      />
 
       <Suspense fallback={<CustomerListSkeleton />}>
         <CustomerList />
