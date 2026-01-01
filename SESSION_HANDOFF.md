@@ -1,57 +1,73 @@
-# Session Handoff - Filter Preset Rename & Update Features
+# Session Handoff - Filtered Export for Admin Pages
 
 **Date**: 2026-01-01
-**Time**: Evening Session
-**Previous Commit**: `1947c25` - fix(testimonials): Complete rating filter integration in page
-**Current Commit**: `024f891` - feat(presets): Add rename and update options to filter presets
-**Current Status**: All filter presets fully functional with rename/update capabilities
+**Time**: Afternoon Session
+**Previous Commit**: `9a4fe97` - feat(tasks+dashboards): Add Tasks MVP and registry-driven Dashboard system
+**Current Commit**: `568518e` - feat(export): Add filtered export to admin pages
+**Current Status**: All admin pages now export with current filters applied
 **Branch**: main
-**Dev Server**: Running at http://localhost:3005
+**Dev Server**: Running at http://localhost:3005 ✅
 
 ---
 
 ## What Was Accomplished This Session
 
-### Filter Preset Enhancements
-- Added **Rename** option to saved filter presets
-- Added **Update** option to overwrite preset with current filters
-- Both features tested and confirmed working on all admin pages
+### Filtered Export Feature
+- Updated all admin pages to export data respecting current filters
+- Users can now filter data, then export only the filtered results
+- Toast messages indicate "(filtered)" when exporting with active filters
 
-### UI Improvements
-- Preset rows now show 3 action buttons on hover:
-  - ↻ Update with current filters
-  - ✏ Rename preset
-  - 🗑 Delete preset
-- Added confirmation dialogs for both rename and update operations
+### Pages Updated
 
-### Files Modified This Session (1 file)
-1. `src/components/admin/FilterPresetDropdown.tsx` - Added rename/update handlers, dialogs, and action buttons
+| Page | Export Filters Applied |
+|------|------------------------|
+| Inventory | Category, Stock Level, Search |
+| Orders | Status, Payment, Date Range, Search |
+| Testimonials | Status, Featured, Rating, Date Range, Search |
+| Contacts | Type, Status, Date Range, Search |
+
+### Files Modified This Session (9 files)
+1. `src/app/(admin)/admin/inventory/actions.ts` - Added filter params to getProductsForExport
+2. `src/app/(admin)/admin/inventory/page.tsx` - Pass current filters to export
+3. `src/app/(admin)/admin/orders/actions.ts` - Added filter params to getOrdersForExport
+4. `src/app/(admin)/admin/orders/page.tsx` - Pass current filters to export
+5. `src/app/(admin)/admin/testimonials/actions.ts` - Added getTestimonialsForExport function
+6. `src/app/(admin)/admin/testimonials/page.tsx` - Added Export CSV button with handler
+7. `src/app/(admin)/admin/contacts/actions.ts` - Added getContactsForExport function
+8. `src/app/(admin)/admin/contacts/page.tsx` - Added Export CSV button with handler
+9. `src/lib/utils/export.ts` - Added testimonialColumns and contactColumns
 
 ---
 
 ## Current State
 
-### All Admin Pages with Filter Presets ✅
+### What's Working ✅
+- ✅ Inventory export with category, stock level, search filters
+- ✅ Orders export with status, payment, date range, search filters
+- ✅ Testimonials export with status, featured, rating, date range, search filters
+- ✅ Contacts export with type, status, date range, search filters
+- ✅ All filter bars with URL sync and saved presets
+- ✅ Export shows "(filtered)" in toast when filters active
 
-| Page | Filters | URL Sync | Presets | Rename/Update |
-|------|---------|----------|---------|---------------|
-| Orders | Status, Payment, Date Range | ✅ | ✅ | ✅ |
-| Scheduler Bookings | Status, Date Range | ✅ | ✅ | ✅ |
-| CRM | Date Range + Advanced Filters | ✅ | ✅ | ✅ |
-| Contacts | Type, Status, Date Range | ✅ | ✅ | ✅ |
-| Audit | Actor Type, Date Range | ✅ | ✅ | ✅ |
-| Testimonials | Status, Featured, Rating, Date Range | ✅ | ✅ | ✅ |
-| Inventory | Category, Stock Level | ✅ | ✅ | ✅ |
+### Admin Pages with Complete Filter + Export
+| Page | Filters | Export |
+|------|---------|--------|
+| Orders | Status, Payment, Date Range | ✅ |
+| Scheduler Bookings | Status, Date Range | - |
+| CRM | Date Range + Advanced | - |
+| Contacts | Type, Status, Date Range | ✅ |
+| Audit | Actor Type, Date Range | - |
+| Testimonials | Status, Featured, Rating, Date Range | ✅ |
+| Inventory | Category, Stock Level | ✅ |
 
-### Key Features Working
-- ✅ Filter state persists in URL (shareable, bookmarkable)
-- ✅ Users can save named filter presets
-- ✅ Users can rename existing presets
-- ✅ Users can update presets with current filter values
-- ✅ Users can delete presets
-- ✅ Presets stored per-page in user_profiles.metadata
-- ✅ Clear all filters button
-- ✅ Date range presets (Last 7 days, 30 days, etc.)
+---
+
+## Next Immediate Actions
+
+### Optional Enhancements
+1. Add export to remaining pages (Scheduler Bookings, CRM, Audit)
+2. Add bulk export option for selected rows
+3. Add Excel/XLSX export format option
 
 ---
 
@@ -73,12 +89,12 @@ cat SESSION_HANDOFF.md
 
 ## Known Issues / Blockers
 
-None - all filter preset features complete and tested.
+- TypeScript errors in tasks dashboard (pre-existing, unrelated to this session's work)
 
 ---
 
 **Session Status**: ✅ Complete
-**Next Session**: New features or enhancements
+**Next Session**: Optional - add export to remaining pages or new features
 **Handoff Complete**: 2026-01-01
 
-Filter presets now fully featured with save, rename, update, and delete!
+All admin pages now support filtered exports!
