@@ -443,11 +443,29 @@ export default function InventoryDashboardPage() {
       {/* Inventory Alerts Panel */}
       <InventoryAlerts
         products={alertProducts}
-        onFilterLowStock={() => setShowLowStockOnly(!showLowStockOnly)}
+        onFilterLowStock={() => updateFilter('stockFilter', showLowStockOnly ? 'all' : 'low_stock')}
         showingLowStock={showLowStockOnly}
         onToggleAlertSuppression={handleToggleAlertSuppression}
         showSuppressed={showLowStockOnly}
       />
+
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3 mb-4">
+        <AdminFilterBar
+          filters={filterConfig}
+          onClearAll={handleClearFilters}
+          showFilterIcon
+        />
+        <FilterPresetDropdown
+          page="inventory"
+          currentFilters={filters}
+          onApplyPreset={handleApplyPreset}
+          hasActiveFilters={hasActiveFilters}
+        />
+        {stats && stats.suppressedCount > 0 && !showLowStockOnly && (
+          <span className="text-xs text-muted-foreground">({stats.suppressedCount} suppressed)</span>
+        )}
+      </div>
 
       {/* Inventory Table */}
       <AdminDataTable
@@ -474,7 +492,6 @@ export default function InventoryDashboardPage() {
             : 'No products found in inventory.'
         }
         rowActions={getRowActions}
-        toolbar={toolbar}
       />
 
       {/* Adjustment Dialog */}
