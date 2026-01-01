@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
+import type { DateRange } from 'react-day-picker'
 import { usePageTitle } from '@/hooks/usePageTitle'
 import { Button } from '@/components/ui/button'
 import {
@@ -36,10 +37,12 @@ import {
 } from '@/components/ui/alert-dialog'
 import {
   AdminDataTable,
+  AdminFilterBar,
   PageHeader,
   type ColumnDef,
   type RowAction,
   type BulkAction,
+  type FilterConfig,
 } from '@/components/admin'
 import { formatDistanceToNow } from 'date-fns'
 import { toast } from 'sonner'
@@ -122,6 +125,8 @@ export default function AdminOrdersPage() {
 
   // Filters
   const [statusFilter, setStatusFilter] = useState('all')
+  const [paymentFilter, setPaymentFilter] = useState('all')
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
 
   // Stats
   const [stats, setStats] = useState<OrderStats | null>(null)
@@ -148,6 +153,9 @@ export default function AdminOrdersPage() {
           sortDirection,
           search,
           statusFilter,
+          paymentFilter,
+          startDate: dateRange?.from?.toISOString(),
+          endDate: dateRange?.to?.toISOString(),
         }),
         getOrderStats(),
       ])
@@ -163,7 +171,7 @@ export default function AdminOrdersPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, pageSize, sortColumn, sortDirection, search, statusFilter])
+  }, [page, pageSize, sortColumn, sortDirection, search, statusFilter, paymentFilter, dateRange])
 
   useEffect(() => {
     loadData()
@@ -184,10 +192,71 @@ export default function AdminOrdersPage() {
     setPage(1)
   }
 
-  const handleFilterChange = (value: string) => {
+  const handleStatusFilterChange = (value: string) => {
     setStatusFilter(value)
     setPage(1)
   }
+
+  const handlePaymentFilterChange = (value: string) => {
+    setPaymentFilter(value)
+    setPage(1)
+  }
+
+  const handleDateRangeChange = (range: DateRange | undefined) => {
+    setDateRange(range)
+    setPage(1)
+  }
+
+  const handleClearFilters = () => {
+    setStatusFilter('all')
+    setPaymentFilter('all')
+    setDateRange(undefined)
+    setPage(1)
+  }
+
+  // Build filter config for AdminFilterBar
+  const filterConfig: FilterConfig[] = useMemo(() => [
+    {
+      type: 'select' as const,
+      key: 'status',
+      label: 'Order Status',
+      value: statusFilter,
+      onChange: handleStatusFilterChange,
+      allLabel: 'All Statuses',
+      options: [
+        { value: 'pending', label: 'Pending' },
+        { value: 'processing', label: 'Processing' },
+        { value: 'shipped', label: 'Shipped' },
+        { value: 'delivered', label: 'Delivered' },
+        { value: 'canceled', label: 'Canceled' },
+        { value: 'refunded', label: 'Refunded' },
+      ],
+    },
+    {
+      type: 'select' as const,
+      key: 'payment',
+      label: 'Payment Status',
+      value: paymentFilter,
+      onChange: handlePaymentFilterChange,
+      allLabel: 'All Payments',
+      options: [
+        { value: 'pending', label: 'Pending' },
+        { value: 'paid', label: 'Paid' },
+        { value: 'succeeded', label: 'Succeeded' },
+        { value: 'failed', label: 'Failed' },
+        { value: 'refunded', label: 'Refunded' },
+      ],
+    },
+    {
+      type: 'daterange' as const,
+      key: 'dateRange',
+      label: 'Order Date',
+      value: dateRange,
+      onChange: handleDateRangeChange,
+      placeholder: 'Filter by date',
+      presets: true,
+    },
+  ], [statusFilter, paymentFilter, dateRange])
 
   const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
     setUpdatingOrderId(orderId)
@@ -592,22 +661,13 @@ export default function AdminOrdersPage() {
     },
   ]
 
-  // Toolbar with status filter
+  // Toolbar with AdminFilterBar
   const toolbar = (
-    <Select value={statusFilter} onValueChange={handleFilterChange}>
-      <SelectTrigger className="w-[160px]">
-        <SelectValue placeholder="Filter by status" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="all">All Statuses</SelectItem>
-        <SelectItem value="pending">Pending</SelectItem>
-        <SelectItem value="processing">Processing</SelectItem>
-        <SelectItem value="shipped">Shipped</SelectItem>
-        <SelectItem value="delivered">Delivered</SelectItem>
-        <SelectItem value="canceled">Canceled</SelectItem>
-        <SelectItem value="refunded">Refunded</SelectItem>
-      </SelectContent>
-    </Select>
+    <AdminFilterBar
+      filters={filterConfig}
+      onClearAll={handleClearFilters}
+      showFilterIcon
+    />
   )
 
   return (
@@ -686,7 +746,7 @@ export default function AdminOrdersPage() {
         emptyIcon={ShoppingCart}
         emptyTitle="No orders found"
         emptyDescription={
-          search || statusFilter !== 'all'
+          search || statusFilter !== 'all' || paymentFilter !== 'all' || dateRange?.from
             ? 'No orders match your current filters.'
             : 'No orders found.'
         }

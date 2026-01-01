@@ -200,7 +200,8 @@
       "Bash(powershell -Command:*)",
       "Bash(PricingProvider\" errors.\n\n- QuickConfiguratorUFE: Added ConfiguratorWrapper around ConfiguratorProvider\n- ConfiguratorSmooth: Replaced ConfiguratorSettingsProvider with ConfiguratorWrapper\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(pnpm run lint:*)",
-      "Bash(pnpm run build:*)"
+      "Bash(pnpm run build:*)",
+      "Bash(git fetch:*)"
     ],
     "deny": [],
     "ask": []
