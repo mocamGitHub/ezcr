@@ -126,10 +126,11 @@ export default function AdminOrdersPage() {
   const [error, setError] = useState<string | null>(null)
 
   // Filters with URL sync
-  interface OrderFilters {
+  type OrderFilters = {
     status: string
     payment: string
     dateRange: DateRange | undefined
+    [key: string]: unknown
   }
 
   const {

@@ -8,6 +8,8 @@ import {
   AdminDataTable,
   AdminDataTableSkeleton,
   AdminFilterBar,
+  FilterPresetDropdown,
+  useFilters,
   type ColumnDef,
   type FilterConfig,
 } from '@/components/admin'
@@ -151,16 +153,36 @@ export default function AdminAuditPage() {
   const [totalCount, setTotalCount] = useState(0)
   const [stats, setStats] = useState<AuditStats | null>(null)
 
-  // Filters
+  // Pagination and sorting
   const [page, setPage] = useState(1)
   const [pageSize] = useState(50)
   const [sortColumn, setSortColumn] = useState('created_at')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   const [searchValue, setSearchValue] = useState('')
-  const [actorTypeFilter, setActorTypeFilter] = useState<
-    'all' | 'user' | 'shortcut' | 'system' | 'webhook'
-  >('all')
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
+
+  // Filters with URL sync
+  type AuditFilters = {
+    actorType: 'all' | 'user' | 'shortcut' | 'system' | 'webhook'
+    dateRange: DateRange | undefined
+    [key: string]: unknown
+  }
+
+  const {
+    filters,
+    updateFilter,
+    resetFilters,
+    hasActiveFilters,
+    applyPreset,
+  } = useFilters<AuditFilters>({
+    initialState: {
+      actorType: 'all',
+      dateRange: undefined,
+    },
+    syncToUrl: true,
+    urlPrefix: 'f_',
+  })
+
+  const { actorType: actorTypeFilter, dateRange } = filters
 
   // Detail dialog
   const [selectedEntry, setSelectedEntry] = useState<AuditLogEntry | null>(null)
@@ -229,19 +251,25 @@ export default function AdminAuditPage() {
   }
 
   const handleActorTypeChange = (value: string) => {
-    setActorTypeFilter(value as typeof actorTypeFilter)
+    updateFilter('actorType', value as AuditFilters['actorType'])
     setPage(1)
   }
 
   const handleDateRangeChange = (range: DateRange | undefined) => {
-    setDateRange(range)
+    updateFilter('dateRange', range)
     setPage(1)
   }
 
   const handleClearFilters = () => {
-    setActorTypeFilter('all')
-    setDateRange(undefined)
+    resetFilters()
     setPage(1)
+  }
+
+  const handleApplyPreset = (preset: Record<string, unknown>) => {
+    if (applyPreset) {
+      applyPreset(preset as Partial<AuditFilters>)
+      setPage(1)
+    }
   }
 
   // Build filter config for AdminFilterBar
@@ -350,11 +378,19 @@ export default function AdminAuditPage() {
       )}
 
       {/* Filters */}
-      <AdminFilterBar
-        filters={filterConfig}
-        onClearAll={handleClearFilters}
-        showFilterIcon
-      />
+      <div className="flex flex-wrap items-center gap-3">
+        <AdminFilterBar
+          filters={filterConfig}
+          onClearAll={handleClearFilters}
+          showFilterIcon
+        />
+        <FilterPresetDropdown
+          page="audit"
+          currentFilters={filters}
+          onApplyPreset={handleApplyPreset}
+          hasActiveFilters={hasActiveFilters}
+        />
+      </div>
 
       {/* Data Table */}
       {loading && entries.length === 0 ? (
