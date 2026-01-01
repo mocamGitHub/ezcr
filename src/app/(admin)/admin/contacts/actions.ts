@@ -234,6 +234,91 @@ export async function getContactsForDropdown(): Promise<
 }
 
 // ============================================
+// GET CONTACTS PAGINATED (for AdminDataTable)
+// ============================================
+
+export interface GetContactsPaginatedParams {
+  page?: number
+  pageSize?: number
+  sortColumn?: string
+  sortDirection?: 'asc' | 'desc'
+  search?: string
+  type?: ContactType | 'all'
+  status?: ContactStatus | 'all'
+}
+
+export interface GetContactsPaginatedResult {
+  data: Contact[]
+  totalCount: number
+  page: number
+  pageSize: number
+}
+
+export async function getContactsPaginated(
+  params: GetContactsPaginatedParams = {}
+): Promise<GetContactsPaginatedResult> {
+  const supabase = getAdminClient()
+  const tenantId = getTenantId()
+
+  const {
+    page = 1,
+    pageSize = 10,
+    sortColumn = 'company_name',
+    sortDirection = 'asc',
+    search = '',
+    type = 'all',
+    status = 'all',
+  } = params
+
+  // Build base query
+  let query = supabase
+    .from('tenant_contacts')
+    .select('*', { count: 'exact' })
+    .eq('tenant_id', tenantId)
+    .is('archived_at', null)
+
+  // Apply search filter
+  if (search.trim()) {
+    query = query.or(
+      `company_name.ilike.%${search.trim()}%,contact_name.ilike.%${search.trim()}%,email.ilike.%${search.trim()}%`
+    )
+  }
+
+  // Apply type filter
+  if (type && type !== 'all') {
+    query = query.eq('contact_type', type)
+  }
+
+  // Apply status filter
+  if (status && status !== 'all') {
+    query = query.eq('status', status)
+  }
+
+  // Apply sorting
+  const validSortColumns = ['company_name', 'contact_name', 'contact_type', 'status', 'city', 'created_at']
+  const column = validSortColumns.includes(sortColumn) ? sortColumn : 'company_name'
+  query = query.order(column, { ascending: sortDirection === 'asc', nullsFirst: false })
+
+  // Apply pagination
+  const offset = (page - 1) * pageSize
+  query = query.range(offset, offset + pageSize - 1)
+
+  const { data, error, count } = await query
+
+  if (error) {
+    console.error('Error fetching paginated contacts:', error)
+    throw new Error('Failed to fetch contacts')
+  }
+
+  return {
+    data: (data || []) as Contact[],
+    totalCount: count || 0,
+    page,
+    pageSize,
+  }
+}
+
+// ============================================
 // GET CONTACT STATS
 // ============================================
 

@@ -1,11 +1,10 @@
 'use client'
 
-import React, { useState, useEffect, useTransition, useMemo } from 'react'
+import React, { useState, useEffect, useTransition, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   Dialog,
   DialogContent,
@@ -21,31 +20,29 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-  SortableTableHead,
-  type SortDirection,
-} from '@/components/ui/table'
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import {
   Building2,
   Plus,
-  Search,
   Edit,
   Trash2,
   Mail,
   Phone,
   MapPin,
-  CheckCircle,
-  AlertCircle,
   Loader2,
   ExternalLink,
 } from 'lucide-react'
+import { toast } from 'sonner'
 import {
-  getContacts,
+  getContactsPaginated,
   createContact,
   updateContact,
   deleteContact,
@@ -55,21 +52,23 @@ import type {
   ContactFormData,
   ContactType,
   ContactStatus,
-  ContactFilters,
 } from '@/types/contacts-tools'
-import { CONTACT_TYPE_LABELS, STATUS_LABELS } from '@/types/contacts-tools'
-
-// ============================================
-// CONTACTS PAGE
-// ============================================
+import { CONTACT_TYPE_LABELS } from '@/types/contacts-tools'
+import { AdminDataTable, PageHeader, type ColumnDef, type RowAction } from '@/components/admin'
 
 export default function ContactsPage() {
+  // Table state
   const [contacts, setContacts] = useState<Contact[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [isPending, startTransition] = useTransition()
+  const [totalCount, setTotalCount] = useState(0)
+  const [page, setPage] = useState(1)
+  const [pageSize] = useState(10)
+  const [sortColumn, setSortColumn] = useState('company_name')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
+  const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   // Filters
-  const [searchQuery, setSearchQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState<ContactType | 'all'>('all')
   const [statusFilter, setStatusFilter] = useState<ContactStatus | 'all'>('all')
 
@@ -86,97 +85,59 @@ export default function ContactsPage() {
     status: 'active',
   })
 
-  // Messages
-  const [error, setError] = useState<string | null>(null)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
 
-  // Sorting
-  const [sortColumn, setSortColumn] = useState<string | null>(null)
-  const [sortDirection, setSortDirection] = useState<SortDirection>(null)
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const result = await getContactsPaginated({
+        page,
+        pageSize,
+        sortColumn,
+        sortDirection,
+        search,
+        type: typeFilter,
+        status: statusFilter,
+      })
+      setContacts(result.data)
+      setTotalCount(result.totalCount)
+    } catch (err: any) {
+      console.error('Error loading contacts:', err)
+      setError(err.message || 'Failed to load contacts')
+      toast.error('Failed to load contacts')
+    } finally {
+      setLoading(false)
+    }
+  }, [page, pageSize, sortColumn, sortDirection, search, typeFilter, statusFilter])
 
-  // Handle sort
-  const handleSort = (column: string) => {
+  useEffect(() => {
+    loadData()
+  }, [loadData])
+
+  const handleSortChange = (column: string) => {
     if (sortColumn === column) {
-      // Toggle direction or clear
-      if (sortDirection === 'asc') {
-        setSortDirection('desc')
-      } else if (sortDirection === 'desc') {
-        setSortColumn(null)
-        setSortDirection(null)
-      }
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'))
     } else {
       setSortColumn(column)
       setSortDirection('asc')
     }
+    setPage(1)
   }
 
-  // Sorted contacts
-  const sortedContacts = useMemo(() => {
-    if (!sortColumn || !sortDirection) return contacts
+  const handleSearchChange = (value: string) => {
+    setSearch(value)
+    setPage(1)
+  }
 
-    return [...contacts].sort((a, b) => {
-      let aVal: string | null = null
-      let bVal: string | null = null
+  const handleTypeFilterChange = (value: ContactType | 'all') => {
+    setTypeFilter(value)
+    setPage(1)
+  }
 
-      switch (sortColumn) {
-        case 'contact_name':
-          aVal = a.contact_name || ''
-          bVal = b.contact_name || ''
-          break
-        case 'company_name':
-          aVal = a.company_name
-          bVal = b.company_name
-          break
-        case 'contact_type':
-          aVal = a.contact_type
-          bVal = b.contact_type
-          break
-        case 'location':
-          aVal = [a.city, a.state].filter(Boolean).join(', ')
-          bVal = [b.city, b.state].filter(Boolean).join(', ')
-          break
-        case 'status':
-          aVal = a.status
-          bVal = b.status
-          break
-        default:
-          return 0
-      }
-
-      const comparison = (aVal || '').localeCompare(bVal || '')
-      return sortDirection === 'asc' ? comparison : -comparison
-    })
-  }, [contacts, sortColumn, sortDirection])
-
-  // Fetch contacts
-  useEffect(() => {
-    fetchContacts()
-  }, [typeFilter, statusFilter])
-
-  // Debounced search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchContacts()
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [searchQuery])
-
-  const fetchContacts = async () => {
-    setIsLoading(true)
-    try {
-      const filters: ContactFilters = {
-        search: searchQuery || undefined,
-        type: typeFilter,
-        status: statusFilter,
-      }
-      const data = await getContacts(filters)
-      setContacts(data)
-    } catch (err) {
-      setError('Failed to load contacts')
-      console.error(err)
-    } finally {
-      setIsLoading(false)
-    }
+  const handleStatusFilterChange = (value: ContactStatus | 'all') => {
+    setStatusFilter(value)
+    setPage(1)
   }
 
   // Reset form
@@ -225,10 +186,9 @@ export default function ContactsPage() {
   // Submit form
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError(null)
 
     if (!formData.company_name.trim()) {
-      setError('Company name is required')
+      toast.error('Company name is required')
       return
     }
 
@@ -236,16 +196,16 @@ export default function ContactsPage() {
       try {
         if (editingContact) {
           await updateContact(editingContact.id, formData)
-          setSuccessMessage('Contact updated successfully')
+          toast.success('Contact updated successfully')
         } else {
           await createContact(formData)
-          setSuccessMessage('Contact created successfully')
+          toast.success('Contact created successfully')
         }
         setIsFormDialogOpen(false)
         resetForm()
-        fetchContacts()
+        loadData()
       } catch (err) {
-        setError('Failed to save contact')
+        toast.error('Failed to save contact')
         console.error(err)
       }
     })
@@ -258,340 +218,275 @@ export default function ContactsPage() {
     startTransition(async () => {
       try {
         await deleteContact(contactToDelete.id)
-        setSuccessMessage('Contact deleted successfully')
+        toast.success('Contact deleted successfully')
         setIsDeleteDialogOpen(false)
         setContactToDelete(null)
-        fetchContacts()
+        loadData()
       } catch (err) {
-        setError('Failed to delete contact')
+        toast.error('Failed to delete contact')
         console.error(err)
       }
     })
   }
 
-  // Clear messages after timeout
-  useEffect(() => {
-    if (successMessage) {
-      const timer = setTimeout(() => setSuccessMessage(null), 3000)
-      return () => clearTimeout(timer)
-    }
-  }, [successMessage])
-
-  // Get status badge variant
-  const getStatusBadgeVariant = (status: ContactStatus) => {
-    switch (status) {
-      case 'active':
-        return 'default'
-      case 'inactive':
-        return 'secondary'
-      case 'pending':
-        return 'outline'
-      default:
-        return 'secondary'
-    }
+  // Inline update type
+  const handleTypeChange = (contact: Contact, newType: ContactType) => {
+    // Optimistic update
+    setContacts((prev) =>
+      prev.map((c) => (c.id === contact.id ? { ...c, contact_type: newType } : c))
+    )
+    // Background save
+    startTransition(async () => {
+      try {
+        await updateContact(contact.id, { contact_type: newType })
+      } catch (err) {
+        // Revert on error
+        setContacts((prev) =>
+          prev.map((c) =>
+            c.id === contact.id ? { ...c, contact_type: contact.contact_type } : c
+          )
+        )
+        toast.error('Failed to update type')
+        console.error(err)
+      }
+    })
   }
+
+  // Inline update status
+  const handleStatusChange = (contact: Contact, newStatus: ContactStatus) => {
+    // Optimistic update
+    setContacts((prev) =>
+      prev.map((c) => (c.id === contact.id ? { ...c, status: newStatus } : c))
+    )
+    // Background save
+    startTransition(async () => {
+      try {
+        await updateContact(contact.id, { status: newStatus })
+      } catch (err) {
+        // Revert on error
+        setContacts((prev) =>
+          prev.map((c) => (c.id === contact.id ? { ...c, status: contact.status } : c))
+        )
+        toast.error('Failed to update status')
+        console.error(err)
+      }
+    })
+  }
+
+  // Column definitions
+  const columns: ColumnDef<Contact>[] = [
+    {
+      key: 'contact_name',
+      header: 'Contact',
+      sortable: true,
+      cell: (contact) => (
+        <div className="space-y-1">
+          {contact.contact_name && (
+            <p className="text-sm font-medium">{contact.contact_name}</p>
+          )}
+          {contact.email && (
+            <a
+              href={`mailto:${contact.email}`}
+              className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Mail className="h-3 w-3" />
+              {contact.email}
+            </a>
+          )}
+          {contact.phone && (
+            <a
+              href={`tel:${contact.phone.replace(/\D/g, '')}`}
+              className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Phone className="h-3 w-3" />
+              {contact.phone}
+            </a>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'company_name',
+      header: 'Company',
+      sortable: true,
+      cell: (contact) => (
+        <div>
+          {contact.website ? (
+            <a
+              href={contact.website}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-blue-600 hover:underline flex items-center gap-1"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {contact.company_name}
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          ) : (
+            <p className="font-medium">{contact.company_name}</p>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'contact_type',
+      header: 'Type',
+      sortable: true,
+      cell: (contact) => (
+        <Select
+          value={contact.contact_type}
+          onValueChange={(v) => handleTypeChange(contact, v as ContactType)}
+        >
+          <SelectTrigger
+            className="h-8 w-[140px]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(CONTACT_TYPE_LABELS).map(([value, label]) => (
+              <SelectItem key={value} value={value}>
+                {label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      ),
+    },
+    {
+      key: 'city',
+      header: 'Location',
+      sortable: true,
+      cell: (contact) =>
+        contact.city || contact.state ? (
+          <p className="text-sm text-muted-foreground flex items-center gap-1">
+            <MapPin className="h-3 w-3" />
+            {[contact.city, contact.state].filter(Boolean).join(', ')}
+          </p>
+        ) : null,
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      sortable: true,
+      cell: (contact) => (
+        <Select
+          value={contact.status}
+          onValueChange={(v) => handleStatusChange(contact, v as ContactStatus)}
+        >
+          <SelectTrigger
+            className="h-8 w-[110px]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="inactive">Inactive</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
+          </SelectContent>
+        </Select>
+      ),
+    },
+  ]
+
+  // Row actions
+  const getRowActions = (contact: Contact): RowAction<Contact>[] => [
+    {
+      label: 'Edit',
+      onClick: () => handleEdit(contact),
+      icon: <Edit className="h-4 w-4" />,
+    },
+    {
+      label: 'Delete',
+      onClick: () => {
+        setContactToDelete(contact)
+        setIsDeleteDialogOpen(true)
+      },
+      icon: <Trash2 className="h-4 w-4" />,
+      destructive: true,
+      separator: true,
+    },
+  ]
+
+  // Toolbar with type and status filters
+  const toolbar = (
+    <div className="flex items-center gap-2">
+      <Select
+        value={typeFilter}
+        onValueChange={(v) => handleTypeFilterChange(v as ContactType | 'all')}
+      >
+        <SelectTrigger className="w-[150px]">
+          <SelectValue placeholder="All Types" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Types</SelectItem>
+          {Object.entries(CONTACT_TYPE_LABELS).map(([value, label]) => (
+            <SelectItem key={value} value={value}>
+              {label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={statusFilter}
+        onValueChange={(v) => handleStatusFilterChange(v as ContactStatus | 'all')}
+      >
+        <SelectTrigger className="w-[130px]">
+          <SelectValue placeholder="All Statuses" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Statuses</SelectItem>
+          <SelectItem value="active">Active</SelectItem>
+          <SelectItem value="inactive">Inactive</SelectItem>
+          <SelectItem value="pending">Pending</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+  )
 
   return (
     <div className="p-8">
-      {/* Header */}
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-            <Building2 className="h-8 w-8" />
-            Business Contacts
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Manage vendors, suppliers, partners, and service providers
-          </p>
-        </div>
-        <Button onClick={handleCreate}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Contact
-        </Button>
-      </div>
+      <PageHeader
+        title="Business Contacts"
+        description="Manage vendors, suppliers, partners, and service providers"
+        primaryAction={
+          <Button onClick={handleCreate}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Contact
+          </Button>
+        }
+      />
 
-      {/* Messages */}
-      {successMessage && (
-        <Alert className="mb-6 border-green-500 bg-green-50">
-          <CheckCircle className="h-4 w-4 text-green-600" />
-          <AlertDescription className="text-green-800">
-            {successMessage}
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {error && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {/* Filters */}
-      <div className="bg-card rounded-lg border p-4 mb-6">
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex-1 min-w-[200px]">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search contacts..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-
-          <Select
-            value={typeFilter}
-            onValueChange={(v) => setTypeFilter(v as ContactType | 'all')}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="All Types" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              {Object.entries(CONTACT_TYPE_LABELS).map(([value, label]) => (
-                <SelectItem key={value} value={value}>
-                  {label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={statusFilter}
-            onValueChange={(v) => setStatusFilter(v as ContactStatus | 'all')}
-          >
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="All Statuses" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <span className="text-sm text-muted-foreground">
-            {contacts.length} contact{contacts.length !== 1 ? 's' : ''}
-          </span>
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="bg-card rounded-lg border">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        ) : contacts.length === 0 ? (
-          <div className="text-center py-12">
-            <Building2 className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-            <p className="text-muted-foreground">No contacts found</p>
-            <Button variant="outline" onClick={handleCreate} className="mt-4">
-              <Plus className="h-4 w-4 mr-2" />
-              Add your first contact
-            </Button>
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <SortableTableHead
-                  sortKey="contact_name"
-                  currentSort={sortColumn}
-                  currentDirection={sortDirection}
-                  onSort={handleSort}
-                >
-                  Contact
-                </SortableTableHead>
-                <SortableTableHead
-                  sortKey="company_name"
-                  currentSort={sortColumn}
-                  currentDirection={sortDirection}
-                  onSort={handleSort}
-                >
-                  Company
-                </SortableTableHead>
-                <SortableTableHead
-                  sortKey="contact_type"
-                  currentSort={sortColumn}
-                  currentDirection={sortDirection}
-                  onSort={handleSort}
-                >
-                  Type
-                </SortableTableHead>
-                <SortableTableHead
-                  sortKey="location"
-                  currentSort={sortColumn}
-                  currentDirection={sortDirection}
-                  onSort={handleSort}
-                >
-                  Location
-                </SortableTableHead>
-                <SortableTableHead
-                  sortKey="status"
-                  currentSort={sortColumn}
-                  currentDirection={sortDirection}
-                  onSort={handleSort}
-                >
-                  Status
-                </SortableTableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedContacts.map((contact) => (
-                <TableRow key={contact.id}>
-                  <TableCell>
-                    <div className="space-y-1">
-                      {contact.contact_name && (
-                        <p className="text-sm font-medium">{contact.contact_name}</p>
-                      )}
-                      {contact.email && (
-                        <a
-                          href={`mailto:${contact.email}`}
-                          className="text-sm text-blue-600 hover:underline flex items-center gap-1"
-                        >
-                          <Mail className="h-3 w-3" />
-                          {contact.email}
-                        </a>
-                      )}
-                      {contact.phone && (
-                        <a
-                          href={`tel:${contact.phone.replace(/\D/g, '')}`}
-                          className="text-sm text-blue-600 hover:underline flex items-center gap-1"
-                        >
-                          <Phone className="h-3 w-3" />
-                          {contact.phone}
-                        </a>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      {contact.website ? (
-                        <a
-                          href={contact.website}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="font-medium text-blue-600 hover:underline flex items-center gap-1"
-                        >
-                          {contact.company_name}
-                          <ExternalLink className="h-3 w-3" />
-                        </a>
-                      ) : (
-                        <p className="font-medium">{contact.company_name}</p>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Select
-                      value={contact.contact_type}
-                      onValueChange={(v) => {
-                        const newType = v as ContactType
-                        // Optimistic update
-                        setContacts(prev => prev.map(c =>
-                          c.id === contact.id ? { ...c, contact_type: newType } : c
-                        ))
-                        // Background save
-                        startTransition(async () => {
-                          try {
-                            await updateContact(contact.id, { contact_type: newType })
-                          } catch (err) {
-                            // Revert on error
-                            setContacts(prev => prev.map(c =>
-                              c.id === contact.id ? { ...c, contact_type: contact.contact_type } : c
-                            ))
-                            setError('Failed to update type')
-                            console.error(err)
-                          }
-                        })
-                      }}
-                    >
-                      <SelectTrigger className="h-8 w-[140px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(CONTACT_TYPE_LABELS).map(([value, label]) => (
-                          <SelectItem key={value} value={value}>
-                            {label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell>
-                    {(contact.city || contact.state) && (
-                      <p className="text-sm text-muted-foreground flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        {[contact.city, contact.state].filter(Boolean).join(', ')}
-                      </p>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Select
-                      value={contact.status}
-                      onValueChange={(v) => {
-                        const newStatus = v as ContactStatus
-                        // Optimistic update
-                        setContacts(prev => prev.map(c =>
-                          c.id === contact.id ? { ...c, status: newStatus } : c
-                        ))
-                        // Background save
-                        startTransition(async () => {
-                          try {
-                            await updateContact(contact.id, { status: newStatus })
-                          } catch (err) {
-                            // Revert on error
-                            setContacts(prev => prev.map(c =>
-                              c.id === contact.id ? { ...c, status: contact.status } : c
-                            ))
-                            setError('Failed to update status')
-                            console.error(err)
-                          }
-                        })
-                      }}
-                    >
-                      <SelectTrigger className="h-8 w-[110px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="inactive">Inactive</SelectItem>
-                        <SelectItem value="pending">Pending</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleEdit(contact)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setContactToDelete(contact)
-                          setIsDeleteDialogOpen(true)
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4 text-red-600" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </div>
+      <AdminDataTable
+        data={contacts}
+        columns={columns}
+        keyField="id"
+        sortColumn={sortColumn}
+        sortDirection={sortDirection}
+        onSortChange={handleSortChange}
+        page={page}
+        pageSize={pageSize}
+        totalCount={totalCount}
+        onPageChange={setPage}
+        searchValue={search}
+        onSearchChange={handleSearchChange}
+        searchPlaceholder="Search contacts..."
+        loading={loading}
+        error={error}
+        onRetry={loadData}
+        emptyTitle="No contacts found"
+        emptyDescription="Add business contacts to manage your vendors, suppliers, and partners."
+        emptyAction={{
+          label: 'Add your first contact',
+          onClick: handleCreate,
+        }}
+        rowActions={getRowActions}
+        toolbar={toolbar}
+      />
 
       {/* Create/Edit Dialog */}
       <Dialog open={isFormDialogOpen} onOpenChange={setIsFormDialogOpen}>
@@ -875,37 +770,28 @@ export default function ContactsPage() {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Contact</DialogTitle>
-          </DialogHeader>
-          <p>
-            Are you sure you want to delete{' '}
-            <strong>{contactToDelete?.company_name}</strong>? This action cannot
-            be undone.
-          </p>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsDeleteDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Contact</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete{' '}
+              <strong>{contactToDelete?.company_name}</strong>? This action cannot
+              be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
               onClick={handleDelete}
               disabled={isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                'Delete'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
