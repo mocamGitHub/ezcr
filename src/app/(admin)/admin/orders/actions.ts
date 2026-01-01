@@ -44,6 +44,9 @@ export interface GetOrdersPaginatedParams {
   sortDirection?: 'asc' | 'desc'
   search?: string
   statusFilter?: string
+  paymentFilter?: string
+  startDate?: string
+  endDate?: string
 }
 
 export interface GetOrdersPaginatedResult {
@@ -76,6 +79,9 @@ export async function getOrdersPaginated(
     sortDirection = 'desc',
     search = '',
     statusFilter = 'all',
+    paymentFilter = 'all',
+    startDate,
+    endDate,
   } = params
 
   const supabase = createServiceClient()
@@ -88,6 +94,19 @@ export async function getOrdersPaginated(
   // Apply status filter
   if (statusFilter && statusFilter !== 'all') {
     query = query.eq('status', statusFilter)
+  }
+
+  // Apply payment status filter
+  if (paymentFilter && paymentFilter !== 'all') {
+    query = query.eq('payment_status', paymentFilter)
+  }
+
+  // Apply date range filter
+  if (startDate) {
+    query = query.gte('created_at', startDate)
+  }
+  if (endDate) {
+    query = query.lte('created_at', endDate)
   }
 
   // Apply search filter
