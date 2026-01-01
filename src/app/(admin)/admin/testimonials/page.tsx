@@ -83,6 +83,7 @@ export default function AdminTestimonialsPage() {
   type TestimonialFilters = {
     status: 'all' | 'pending' | 'approved' | 'rejected'
     featured: 'all' | 'featured' | 'not_featured'
+    rating: 'all' | '1' | '2' | '3' | '4' | '5'
     dateRange: DateRange | undefined
     [key: string]: unknown
   }
@@ -97,13 +98,14 @@ export default function AdminTestimonialsPage() {
     initialState: {
       status: 'all',
       featured: 'all',
+      rating: 'all',
       dateRange: undefined,
     },
     syncToUrl: true,
     urlPrefix: 'f_',
   })
 
-  const { status: statusFilter, featured: featuredFilter, dateRange } = filters
+  const { status: statusFilter, featured: featuredFilter, rating: ratingFilter, dateRange } = filters
 
   // Dialog states
   const [selectedTestimonial, setSelectedTestimonial] = useState<Testimonial | null>(null)

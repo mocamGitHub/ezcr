@@ -72,6 +72,7 @@ export interface GetTestimonialsPaginatedParams {
   search?: string
   status?: 'all' | 'pending' | 'approved' | 'rejected'
   featured?: 'all' | 'featured' | 'not_featured'
+  rating?: 'all' | '1' | '2' | '3' | '4' | '5'
   startDate?: string
   endDate?: string
 }
@@ -100,6 +101,7 @@ export async function getTestimonialsPaginated(
     search = '',
     status = 'all',
     featured = 'all',
+    rating = 'all',
     startDate,
     endDate,
   } = params
@@ -121,6 +123,11 @@ export async function getTestimonialsPaginated(
     query = query.eq('is_featured', true)
   } else if (featured === 'not_featured') {
     query = query.eq('is_featured', false)
+  }
+
+  // Apply rating filter
+  if (rating !== 'all') {
+    query = query.eq('rating', parseInt(rating, 10))
   }
 
   // Apply date range filter
