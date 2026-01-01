@@ -28,6 +28,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'sonner'
 import { formatCurrency } from '@/lib/utils'
+import { exportToCSV, customerColumns, getExportFilename } from '@/lib/utils/export'
 import { HealthScoreBadge } from '@/components/crm/HealthScoreBadge'
 import { CustomerTagBadges } from '@/components/crm/CustomerTagBadges'
 import { CustomerSegmentTabs } from '@/components/crm/CustomerSegmentTabs'
@@ -146,6 +147,32 @@ export default function CRMPage() {
       console.error('Failed to load stats:', err)
     }
   }, [])
+
+  const handleExportAll = async () => {
+    try {
+      // Merge date range into filters
+      const mergedFilters: CustomerListFilters = {
+        ...filters,
+        ...(dateRange?.from ? { last_order_after: dateRange.from.toISOString().split('T')[0] } : {}),
+        ...(dateRange?.to ? { last_order_before: dateRange.to.toISOString().split('T')[0] } : {}),
+      }
+      const exportData = await getCustomersForExport(mergedFilters)
+
+      // Transform tags for export (flatten to string)
+      const exportRows = exportData.map(c => ({
+        ...c,
+        tags: (c.tags || []).map(t => t.name).join('; '),
+      }))
+
+      exportToCSV(exportRows, customerColumns, getExportFilename('customers'))
+      const hasFilters = Object.keys(filters).length > 0 || hasActiveFilters
+      const filterNote = hasFilters ? ' (filtered)' : ''
+      toast.success(`Exported ${exportData.length} customers${filterNote} to CSV`)
+    } catch (err) {
+      console.error('Error exporting customers:', err)
+      toast.error('Failed to export customers')
+    }
+  }
 
   useEffect(() => {
     loadData()
@@ -412,10 +439,16 @@ export default function CRMPage() {
         title="Customer Relationship Management"
         description="View and manage all customer interactions, orders, and engagement"
         primaryAction={
-          <Button onClick={loadData} disabled={loading}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleExportAll}>
+              <Download className="mr-2 h-4 w-4" />
+              Export CSV
+            </Button>
+            <Button onClick={loadData} disabled={loading}>
+              <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         }
         secondaryActions={<EnvironmentBadge />}
       />

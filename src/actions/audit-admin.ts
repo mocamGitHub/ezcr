@@ -241,3 +241,83 @@ export async function getAuditStats(): Promise<{
     byActorType,
   }
 }
+
+/**
+ * Get audit logs for export (with filters, no pagination)
+ */
+export interface GetAuditLogsForExportParams {
+  search?: string
+  actorTypeFilter?: 'all' | 'user' | 'shortcut' | 'system' | 'webhook'
+  startDate?: string
+  endDate?: string
+}
+
+export async function getAuditLogsForExport(
+  params: GetAuditLogsForExportParams = {}
+): Promise<AuditLogEntry[]> {
+  await requireStaffMember()
+
+  const tenantId = await getTenantId()
+  const supabase = createServiceClient()
+
+  const {
+    search = '',
+    actorTypeFilter = 'all',
+    startDate,
+    endDate,
+  } = params
+
+  let query = supabase
+    .from('nx_audit_log')
+    .select('*')
+    .eq('tenant_id', tenantId)
+    .order('created_at', { ascending: false })
+
+  // Apply actor type filter
+  if (actorTypeFilter !== 'all') {
+    query = query.eq('actor_type', actorTypeFilter)
+  }
+
+  // Apply date filters
+  if (startDate) {
+    query = query.gte('created_at', startDate)
+  }
+  if (endDate) {
+    query = query.lte('created_at', endDate)
+  }
+
+  // Apply search
+  if (search) {
+    query = query.or(
+      `action.ilike.%${search}%,resource_type.ilike.%${search}%,resource_id.ilike.%${search}%`
+    )
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    console.error('Error fetching audit logs for export:', error)
+    throw new Error('Failed to fetch audit logs for export')
+  }
+
+  // Enrich with user emails
+  const entries = data || []
+  const userIds = [...new Set(entries.filter(e => e.user_id).map(e => e.user_id))]
+
+  let userEmails: Record<string, string> = {}
+  if (userIds.length > 0) {
+    const { data: users } = await supabase
+      .from('profiles')
+      .select('id, email')
+      .in('id', userIds)
+
+    if (users) {
+      userEmails = Object.fromEntries(users.map(u => [u.id, u.email]))
+    }
+  }
+
+  return entries.map(entry => ({
+    ...entry,
+    user_email: entry.user_id ? userEmails[entry.user_id] : undefined,
+  }))
+}

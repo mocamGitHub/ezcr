@@ -23,12 +23,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { RefreshCw, FileText, User, Bot, Webhook, Eye } from 'lucide-react'
+import { RefreshCw, FileText, User, Bot, Webhook, Eye, Download } from 'lucide-react'
 import { format, formatDistanceToNow } from 'date-fns'
 import { toast } from 'sonner'
+import { exportToCSV, auditColumns, getExportFilename } from '@/lib/utils/export'
 import {
   getAuditLogs,
   getAuditStats,
+  getAuditLogsForExport,
   type AuditLogEntry,
   type GetAuditLogsParams,
 } from '@/actions/audit-admin'
@@ -272,6 +274,23 @@ export default function AdminAuditPage() {
     }
   }
 
+  const handleExport = async () => {
+    try {
+      const exportData = await getAuditLogsForExport({
+        search: searchValue,
+        actorTypeFilter,
+        startDate: dateRange?.from?.toISOString(),
+        endDate: dateRange?.to?.toISOString(),
+      })
+      exportToCSV(exportData, auditColumns, getExportFilename('audit-logs'))
+      const filterNote = hasActiveFilters ? ' (filtered)' : ''
+      toast.success(`Exported ${exportData.length} audit logs${filterNote} to CSV`)
+    } catch (err) {
+      console.error('Error exporting audit logs:', err)
+      toast.error('Failed to export audit logs')
+    }
+  }
+
   // Build filter config for AdminFilterBar
   const filterConfig: FilterConfig[] = useMemo(() => [
     {
@@ -318,10 +337,16 @@ export default function AdminAuditPage() {
         title="Audit Logs"
         description="View system activity and security events"
         primaryAction={
-          <Button onClick={() => { fetchEntries(); fetchStats() }} disabled={loading}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleExport}>
+              <Download className="mr-2 h-4 w-4" />
+              Export CSV
+            </Button>
+            <Button onClick={() => { fetchEntries(); fetchStats() }} disabled={loading}>
+              <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         }
       />
 

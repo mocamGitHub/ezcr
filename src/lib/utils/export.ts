@@ -110,6 +110,8 @@ export const customerColumns: ExportColumn[] = [
     header: 'Lifetime Value',
     formatter: (v) => typeof v === 'number' ? `$${v.toFixed(2)}` : ''
   },
+  { key: 'health_score', header: 'Health Score' },
+  { key: 'tags', header: 'Tags' },
   {
     key: 'first_order_date',
     header: 'First Order',
@@ -176,6 +178,20 @@ export const bookingColumns: ExportColumn[] = [
     header: 'Booked On',
     formatter: (v) => v ? new Date(v as string).toLocaleDateString() : ''
   },
+]
+
+export const auditColumns: ExportColumn[] = [
+  {
+    key: 'created_at',
+    header: 'Time',
+    formatter: (v) => v ? new Date(v as string).toLocaleString() : ''
+  },
+  { key: 'actor_type', header: 'Actor Type' },
+  { key: 'user_email', header: 'User Email' },
+  { key: 'action', header: 'Action' },
+  { key: 'resource_type', header: 'Resource Type' },
+  { key: 'resource_id', header: 'Resource ID' },
+  { key: 'ip_address', header: 'IP Address' },
 ]
 
 /**
