@@ -16,7 +16,28 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Minus,
+  BarChart3,
+  LineChart as LineChartIcon,
+  AreaChart as AreaChartIcon,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
+import {
+  ResponsiveContainer,
+  LineChart,
+  AreaChart,
+  BarChart,
+  Line,
+  Area,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  CartesianGrid,
+} from 'recharts'
 import { executeWidgetRpc } from '@/app/(admin)/admin/dashboard/dashboard-actions'
 import { type Widget, type DateRange } from '@/app/(admin)/admin/dashboard/dashboard-utils'
 import { cn } from '@/lib/utils'
@@ -379,6 +400,8 @@ function KPIItem({
 
 // Trend Widget - Multi-metric chart with toggles
 type MetricKey = 'revenue' | 'expenses' | 'profit' | 'aov'
+type ChartStyle = 'bar' | 'line' | 'area'
+type ChartSizeMode = 'compact' | 'expanded'
 
 interface TrendData {
   bucket_date: string
@@ -396,11 +419,57 @@ const METRIC_CONFIG: Record<MetricKey, { label: string; color: string; bgColor: 
   aov: { label: 'AOV', color: 'rgb(168, 85, 247)', bgColor: 'bg-purple-500' },
 }
 
+const CHART_STYLES: { key: ChartStyle; icon: React.ReactNode; label: string }[] = [
+  { key: 'bar', icon: <BarChart3 className="h-4 w-4" />, label: 'Bar' },
+  { key: 'line', icon: <LineChartIcon className="h-4 w-4" />, label: 'Line' },
+  { key: 'area', icon: <AreaChartIcon className="h-4 w-4" />, label: 'Area' },
+]
+
+const STORAGE_KEY = 'dashboard-trend-prefs'
+
+function loadTrendPrefs(): { metrics: MetricKey[], chartStyle: ChartStyle, sizeMode: ChartSizeMode } {
+  if (typeof window === 'undefined') return { metrics: ['revenue'], chartStyle: 'bar', sizeMode: 'compact' }
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      return {
+        metrics: parsed.metrics || ['revenue'],
+        chartStyle: parsed.chartStyle || 'bar',
+        sizeMode: parsed.sizeMode || 'compact'
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+  return { metrics: ['revenue'], chartStyle: 'bar', sizeMode: 'compact' }
+}
+
+function saveTrendPrefs(metrics: MetricKey[], chartStyle: ChartStyle, sizeMode: ChartSizeMode) {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ metrics, chartStyle, sizeMode }))
+  } catch (e) {
+    // ignore
+  }
+}
+
 function TrendWidget({ widget, dateRange }: { widget: Widget; dateRange: DateRange }) {
   const [data, setData] = useState<TrendData[] | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [activeMetrics, setActiveMetrics] = useState<Set<MetricKey>>(new Set(['revenue']))
+  const [activeMetrics, setActiveMetrics] = useState<Set<MetricKey>>(() => {
+    const prefs = loadTrendPrefs()
+    return new Set(prefs.metrics)
+  })
+  const [chartStyle, setChartStyle] = useState<ChartStyle>(() => {
+    const prefs = loadTrendPrefs()
+    return prefs.chartStyle
+  })
+  const [sizeMode, setSizeMode] = useState<ChartSizeMode>(() => {
+    const prefs = loadTrendPrefs()
+    return prefs.sizeMode
+  })
 
   useEffect(() => {
     async function loadData() {
@@ -431,8 +500,19 @@ function TrendWidget({ widget, dateRange }: { widget: Widget; dateRange: DateRan
       } else {
         newSet.add(metric)
       }
+      saveTrendPrefs(Array.from(newSet), chartStyle, sizeMode)
       return newSet
     })
+  }
+
+  const handleChartStyleChange = (style: ChartStyle) => {
+    setChartStyle(style)
+    saveTrendPrefs(Array.from(activeMetrics), style, sizeMode)
+  }
+
+  const handleSizeModeChange = (mode: ChartSizeMode) => {
+    setSizeMode(mode)
+    saveTrendPrefs(Array.from(activeMetrics), chartStyle, mode)
   }
 
   if (loading) {
@@ -500,36 +580,101 @@ function TrendWidget({ widget, dateRange }: { widget: Widget; dateRange: DateRan
     config: METRIC_CONFIG[metric],
   }))
 
+  const activeMetricsList = Array.from(activeMetrics)
+
+  // Transform data for Recharts
+  const chartData = data.map(point => ({
+    date: point.bucket_date,
+    revenue: point.revenue,
+    expenses: point.expenses,
+    profit: point.profit,
+    aov: point.avg_order_value,
+  }))
+
   return (
     <Card className="h-full">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium">{widget.title}</CardTitle>
+          <div className="flex items-center gap-2">
+            {/* Size Mode Toggle */}
+            <div className="flex items-center gap-0.5 border rounded-md p-0.5 bg-muted/50">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "h-7 w-7 p-0 transition-all",
+                  sizeMode === 'compact'
+                    ? "bg-background shadow-sm text-primary ring-1 ring-primary/20"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => handleSizeModeChange('compact')}
+                title="Compact view (fit to screen)"
+              >
+                <Minimize2 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "h-7 w-7 p-0 transition-all",
+                  sizeMode === 'expanded'
+                    ? "bg-background shadow-sm text-primary ring-1 ring-primary/20"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => handleSizeModeChange('expanded')}
+                title="Expanded view (scroll for detail)"
+              >
+                <Maximize2 className="h-4 w-4" />
+              </Button>
+            </div>
+            {/* Chart Style Selector */}
+            <div className="flex items-center gap-0.5 border rounded-md p-0.5 bg-muted/50">
+              {CHART_STYLES.map(style => (
+                <Button
+                  key={style.key}
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    "h-7 w-7 p-0 transition-all",
+                    chartStyle === style.key
+                      ? "bg-background shadow-sm text-primary ring-1 ring-primary/20"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                  onClick={() => handleChartStyleChange(style.key)}
+                  title={style.label}
+                >
+                  {style.icon}
+                </Button>
+              ))}
+            </div>
+          </div>
         </div>
-        {/* Metric Toggle Buttons */}
-        <div className="flex flex-wrap gap-2 mt-2">
+        {/* Metric Checkboxes */}
+        <div className="flex flex-wrap gap-4 mt-2">
           {(Object.keys(METRIC_CONFIG) as MetricKey[]).map(metric => {
             const config = METRIC_CONFIG[metric]
             const isActive = activeMetrics.has(metric)
             return (
-              <Button
-                key={metric}
-                variant={isActive ? "default" : "outline"}
-                size="sm"
-                className={cn(
-                  "h-7 px-2 text-xs gap-1.5",
-                  isActive && config.bgColor,
-                  isActive && "text-white hover:opacity-90",
-                  !isActive && "hover:bg-muted"
-                )}
-                onClick={() => toggleMetric(metric)}
-              >
-                <span className={cn(
-                  "w-2 h-2 rounded-full",
-                  isActive ? "bg-white" : config.bgColor
-                )} />
-                {config.label}
-              </Button>
+              <div key={metric} className="flex items-center gap-1.5">
+                <Checkbox
+                  id={`metric-${metric}`}
+                  checked={isActive}
+                  onCheckedChange={() => toggleMetric(metric)}
+                  className="border-2"
+                  style={{
+                    borderColor: config.color,
+                    backgroundColor: isActive ? config.color : 'transparent'
+                  }}
+                />
+                <Label
+                  htmlFor={`metric-${metric}`}
+                  className="text-xs cursor-pointer select-none"
+                  style={{ color: isActive ? config.color : undefined }}
+                >
+                  {config.label}
+                </Label>
+              </div>
             )
           })}
         </div>
@@ -544,40 +689,140 @@ function TrendWidget({ widget, dateRange }: { widget: Widget; dateRange: DateRan
         </div>
       </CardHeader>
       <CardContent>
-        {/* Multi-line Chart */}
-        <div className="relative h-32">
-          {/* Chart area */}
-          <div className="flex items-end gap-0.5 h-full">
-            {data.map((point, i) => (
-              <div key={i} className="flex-1 relative h-full flex flex-col justify-end">
-                {Array.from(activeMetrics).map(metric => {
-                  const value = getMetricValue(point, metric)
-                  const height = maxValue > 0 ? (Math.abs(value) / maxValue) * 100 : 0
-                  const config = METRIC_CONFIG[metric]
-                  return (
-                    <div
-                      key={metric}
-                      className="absolute bottom-0 left-0 right-0 rounded-t transition-all hover:opacity-80"
-                      style={{
-                        height: `${height}%`,
-                        minHeight: value > 0 ? '2px' : '0',
-                        backgroundColor: config.color,
-                        opacity: 0.7 + (0.3 * Array.from(activeMetrics).indexOf(metric) / activeMetrics.size),
-                      }}
-                      title={`${point.bucket_date}: ${config.label} ${formatCurrency(value)}`}
-                    />
-                  )
-                })}
-              </div>
-            ))}
+        {/* Chart using Recharts */}
+        <div className={cn(
+          "-mx-2",
+          sizeMode === 'expanded' ? "h-80 overflow-x-auto" : "h-52"
+        )}>
+          <div style={sizeMode === 'expanded' ? { minWidth: Math.max(600, data.length * 25) } : {}}>
+          <ResponsiveContainer width="100%" height={sizeMode === 'expanded' ? 300 : 200}>
+            {chartStyle === 'bar' ? (
+              <BarChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 40 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.85)' }}
+                  tickLine={false}
+                  axisLine={false}
+                  interval={sizeMode === 'compact' ? Math.max(0, Math.ceil(data.length / 8) - 1) : "preserveStartEnd"}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
+                />
+                <YAxis
+                  tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.85)' }}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                />
+                <Tooltip
+                  content={<CustomTooltip />}
+                  cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3 }}
+                />
+                {activeMetricsList.map(metric => (
+                  <Bar
+                    key={metric}
+                    dataKey={metric}
+                    fill={METRIC_CONFIG[metric].color}
+                    radius={[2, 2, 0, 0]}
+                  />
+                ))}
+              </BarChart>
+            ) : chartStyle === 'line' ? (
+              <LineChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 40 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.85)' }}
+                  tickLine={false}
+                  axisLine={false}
+                  interval={sizeMode === 'compact' ? Math.max(0, Math.ceil(data.length / 8) - 1) : "preserveStartEnd"}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
+                />
+                <YAxis
+                  tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.85)' }}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                {activeMetricsList.map(metric => (
+                  <Line
+                    key={metric}
+                    type="monotone"
+                    dataKey={metric}
+                    stroke={METRIC_CONFIG[metric].color}
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 4, strokeWidth: 0 }}
+                  />
+                ))}
+              </LineChart>
+            ) : (
+              <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 40 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.85)' }}
+                  tickLine={false}
+                  axisLine={false}
+                  interval={sizeMode === 'compact' ? Math.max(0, Math.ceil(data.length / 8) - 1) : "preserveStartEnd"}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
+                />
+                <YAxis
+                  tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.85)' }}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                {activeMetricsList.map(metric => (
+                  <Area
+                    key={metric}
+                    type="monotone"
+                    dataKey={metric}
+                    stroke={METRIC_CONFIG[metric].color}
+                    fill={METRIC_CONFIG[metric].color}
+                    fillOpacity={0.2}
+                    strokeWidth={2}
+                  />
+                ))}
+              </AreaChart>
+            )}
+          </ResponsiveContainer>
           </div>
-        </div>
-        <div className="flex justify-between text-xs text-muted-foreground mt-2">
-          <span>{data[0]?.bucket_date}</span>
-          <span>{data[data.length - 1]?.bucket_date}</span>
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+// Custom tooltip for Recharts
+function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ dataKey: string; value: number; color: string }>; label?: string }) {
+  if (!active || !payload?.length) return null
+
+  return (
+    <div className="bg-popover border rounded-lg shadow-lg p-2 text-sm">
+      <div className="font-medium text-foreground mb-1">{label}</div>
+      {payload.map((entry) => (
+        <div key={entry.dataKey} className="flex items-center gap-2">
+          <span
+            className="w-2 h-2 rounded-full"
+            style={{ backgroundColor: entry.color }}
+          />
+          <span className="text-muted-foreground">
+            {METRIC_CONFIG[entry.dataKey as MetricKey]?.label || entry.dataKey}:
+          </span>
+          <span className="font-medium text-foreground">
+            {formatCurrency(entry.value)}
+          </span>
+        </div>
+      ))}
+    </div>
   )
 }
 

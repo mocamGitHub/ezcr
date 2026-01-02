@@ -137,7 +137,13 @@ export function DateRangePicker({
 
   const handleApply = () => {
     if (pendingRange?.from && pendingRange?.to) {
-      onChange?.(pendingRange)
+      // Ensure from < to (swap if needed)
+      let from = pendingRange.from
+      let to = pendingRange.to
+      if (from > to) {
+        ;[from, to] = [to, from]
+      }
+      onChange?.({ from, to })
       setOpen(false)
     }
   }
@@ -190,7 +196,7 @@ export function DateRangePicker({
           {value?.from ? (
             value.to ? (
               <>
-                {format(value.from, 'LLL dd')} - {format(value.to, 'LLL dd, y')}
+                {format(value.from, 'LLL dd, y')} - {format(value.to, 'LLL dd, y')}
               </>
             ) : (
               format(value.from, 'LLL dd, y')
@@ -235,6 +241,7 @@ export function DateRangePicker({
             <div className="flex gap-6">
               {/* Left calendar - From date */}
               <div className="space-y-2">
+                <div className="text-xs font-medium text-muted-foreground mb-1">From</div>
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
@@ -307,6 +314,7 @@ export function DateRangePicker({
 
               {/* Right calendar - To date */}
               <div className="space-y-2">
+                <div className="text-xs font-medium text-muted-foreground mb-1">To</div>
                 <div className="flex items-center gap-2">
                   <Select
                     value={getMonth(secondMonth).toString()}
