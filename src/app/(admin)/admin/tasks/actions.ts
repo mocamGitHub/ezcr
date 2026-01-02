@@ -207,6 +207,109 @@ export async function getColumns(boardId: string): Promise<TaskColumn[]> {
   return data || []
 }
 
+export async function createColumn(
+  boardId: string,
+  name: string,
+  color: string,
+  isDone: boolean = false
+): Promise<TaskColumn | null> {
+  const supabase = await createServiceClient()
+
+  // Get max position
+  const { data: maxPos } = await supabase
+    .from('task_board_columns')
+    .select('position')
+    .eq('board_id', boardId)
+    .order('position', { ascending: false })
+    .limit(1)
+    .single()
+
+  const position = (maxPos?.position || 0) + 1
+
+  // Generate slug from name
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+
+  const { data, error } = await supabase
+    .from('task_board_columns')
+    .insert({
+      board_id: boardId,
+      name,
+      slug,
+      color,
+      position,
+      is_done: isDone,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error creating column:', error)
+    return null
+  }
+
+  return data
+}
+
+export async function updateColumn(
+  columnId: string,
+  updates: {
+    name?: string
+    color?: string
+    is_done?: boolean
+  }
+): Promise<TaskColumn | null> {
+  const supabase = await createServiceClient()
+
+  // If name is being updated, also update slug
+  const updateData: Record<string, unknown> = { ...updates }
+  if (updates.name) {
+    updateData.slug = updates.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  }
+
+  const { data, error } = await supabase
+    .from('task_board_columns')
+    .update(updateData)
+    .eq('id', columnId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error updating column:', error)
+    return null
+  }
+
+  return data
+}
+
+export async function deleteColumn(columnId: string): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createServiceClient()
+
+  // Check if column has any tasks
+  const { count } = await supabase
+    .from('task_items')
+    .select('id', { count: 'exact', head: true })
+    .eq('column_id', columnId)
+
+  if (count && count > 0) {
+    return {
+      success: false,
+      error: `Cannot delete column with ${count} task${count > 1 ? 's' : ''}. Move or delete tasks first.`,
+    }
+  }
+
+  const { error } = await supabase
+    .from('task_board_columns')
+    .delete()
+    .eq('id', columnId)
+
+  if (error) {
+    console.error('Error deleting column:', error)
+    return { success: false, error: 'Failed to delete column' }
+  }
+
+  return { success: true }
+}
+
 // Task Actions
 export async function getTasks(boardId: string): Promise<TaskItem[]> {
   const supabase = await createServiceClient()

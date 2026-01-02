@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { Plus, User, List, Calendar, GripVertical, MessageSquare, Link2, Clock } from 'lucide-react'
+import { Plus, User, List, Calendar, GripVertical, MessageSquare, Link2, Clock, MoreHorizontal, Pencil, Trash2, CheckCircle } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePageTitle } from '@/hooks/usePageTitle'
 import { Button } from '@/components/ui/button'
@@ -29,12 +29,24 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Checkbox } from '@/components/ui/checkbox'
+import { toast } from 'sonner'
+import {
   getDefaultWorkspace,
   getBoardBySlug,
   getColumns,
   getTasks,
   createTask,
   moveTask,
+  createColumn,
+  updateColumn,
+  deleteColumn,
   type TaskBoard,
   type TaskColumn,
   type TaskItem,
@@ -54,6 +66,18 @@ const priorityBadgeColors = {
   low: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200',
 }
 
+const COLUMN_COLORS = [
+  { name: 'Gray', value: '#6b7280' },
+  { name: 'Red', value: '#ef4444' },
+  { name: 'Orange', value: '#f97316' },
+  { name: 'Yellow', value: '#eab308' },
+  { name: 'Green', value: '#22c55e' },
+  { name: 'Teal', value: '#14b8a6' },
+  { name: 'Blue', value: '#3b82f6' },
+  { name: 'Purple', value: '#8b5cf6' },
+  { name: 'Pink', value: '#ec4899' },
+]
+
 export default function TaskBoardPage() {
   const params = useParams()
   const boardSlug = params?.boardSlug as string
@@ -65,6 +89,11 @@ export default function TaskBoardPage() {
   const [tasks, setTasks] = useState<TaskItem[]>([])
   const [newTaskOpen, setNewTaskOpen] = useState(false)
   const [newTaskColumnId, setNewTaskColumnId] = useState<string | null>(null)
+
+  // Column management state
+  const [editColumnOpen, setEditColumnOpen] = useState(false)
+  const [editingColumn, setEditingColumn] = useState<TaskColumn | null>(null)
+  const [newColumnOpen, setNewColumnOpen] = useState(false)
 
   usePageTitle(board?.name || 'Board')
 
@@ -137,6 +166,49 @@ export default function TaskBoardPage() {
 
   const getTasksForColumn = (columnId: string) =>
     tasks.filter(t => t.column_id === columnId).sort((a, b) => a.position - b.position)
+
+  // Column handlers
+  const handleEditColumn = (column: TaskColumn) => {
+    setEditingColumn(column)
+    setEditColumnOpen(true)
+  }
+
+  const handleUpdateColumn = async (data: { name: string; color: string; is_done: boolean }) => {
+    if (!editingColumn) return
+
+    const updated = await updateColumn(editingColumn.id, data)
+    if (updated) {
+      setColumns(prev => prev.map(c => c.id === updated.id ? updated : c))
+      setEditColumnOpen(false)
+      setEditingColumn(null)
+      toast.success('Column updated')
+    } else {
+      toast.error('Failed to update column')
+    }
+  }
+
+  const handleDeleteColumn = async (column: TaskColumn) => {
+    const result = await deleteColumn(column.id)
+    if (result.success) {
+      setColumns(prev => prev.filter(c => c.id !== column.id))
+      toast.success('Column deleted')
+    } else {
+      toast.error(result.error || 'Failed to delete column')
+    }
+  }
+
+  const handleCreateColumn = async (data: { name: string; color: string; is_done: boolean }) => {
+    if (!board) return
+
+    const newCol = await createColumn(board.id, data.name, data.color, data.is_done)
+    if (newCol) {
+      setColumns(prev => [...prev, newCol])
+      setNewColumnOpen(false)
+      toast.success('Column created')
+    } else {
+      toast.error('Failed to create column')
+    }
+  }
 
   if (loading) {
     return (
@@ -218,21 +290,47 @@ export default function TaskBoardPage() {
             >
               <div className="flex items-center gap-2">
                 <span>{column.name}</span>
+                {column.is_done && (
+                  <CheckCircle className="h-3 w-3 text-green-600" />
+                )}
                 <Badge variant="secondary" className="text-xs">
                   {getTasksForColumn(column.id).length}
                 </Badge>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                onClick={() => {
-                  setNewTaskColumnId(column.id)
-                  setNewTaskOpen(true)
-                }}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => {
+                    setNewTaskColumnId(column.id)
+                    setNewTaskOpen(true)
+                  }}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-6 w-6">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleEditColumn(column)}>
+                      <Pencil className="h-4 w-4 mr-2" />
+                      Edit Column
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="text-destructive"
+                      onClick={() => handleDeleteColumn(column)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete Column
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
 
             {/* Column Body */}
@@ -260,6 +358,18 @@ export default function TaskBoardPage() {
             </div>
           </div>
         ))}
+
+        {/* Add Column Button */}
+        <div className="flex-shrink-0 w-72">
+          <Button
+            variant="outline"
+            className="w-full h-12 border-dashed"
+            onClick={() => setNewColumnOpen(true)}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Column
+          </Button>
+        </div>
       </div>
 
       {/* New Task Dialog */}
@@ -267,6 +377,26 @@ export default function TaskBoardPage() {
         open={newTaskOpen}
         onOpenChange={setNewTaskOpen}
         onSubmit={handleCreateTask}
+      />
+
+      {/* Edit Column Dialog */}
+      <ColumnDialog
+        open={editColumnOpen}
+        onOpenChange={(open) => {
+          setEditColumnOpen(open)
+          if (!open) setEditingColumn(null)
+        }}
+        onSubmit={handleUpdateColumn}
+        column={editingColumn}
+        title="Edit Column"
+      />
+
+      {/* New Column Dialog */}
+      <ColumnDialog
+        open={newColumnOpen}
+        onOpenChange={setNewColumnOpen}
+        onSubmit={handleCreateColumn}
+        title="Add Column"
       />
     </div>
   )
@@ -407,6 +537,105 @@ function NewTaskDialog({
             </Button>
             <Button type="submit" disabled={!title.trim()}>
               Create Task
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function ColumnDialog({
+  open,
+  onOpenChange,
+  onSubmit,
+  column,
+  title,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onSubmit: (data: { name: string; color: string; is_done: boolean }) => void
+  column?: TaskColumn | null
+  title: string
+}) {
+  const [name, setName] = useState(column?.name || '')
+  const [color, setColor] = useState(column?.color || COLUMN_COLORS[0].value)
+  const [isDone, setIsDone] = useState(column?.is_done || false)
+
+  // Reset form when column changes
+  useEffect(() => {
+    setName(column?.name || '')
+    setColor(column?.color || COLUMN_COLORS[0].value)
+    setIsDone(column?.is_done || false)
+  }, [column])
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!name.trim()) return
+    onSubmit({ name, color, is_done: isDone })
+    if (!column) {
+      // Reset only for new columns
+      setName('')
+      setColor(COLUMN_COLORS[0].value)
+      setIsDone(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>
+            {column ? 'Update the column settings.' : 'Add a new column to the board.'}
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="columnName">Name</Label>
+              <Input
+                id="columnName"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="Enter column name"
+                autoFocus
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Color</Label>
+              <div className="flex flex-wrap gap-2">
+                {COLUMN_COLORS.map(c => (
+                  <button
+                    key={c.value}
+                    type="button"
+                    className={`w-8 h-8 rounded-full border-2 transition-all ${
+                      color === c.value ? 'border-foreground scale-110' : 'border-transparent'
+                    }`}
+                    style={{ backgroundColor: c.value }}
+                    onClick={() => setColor(c.value)}
+                    title={c.name}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="isDone"
+                checked={isDone}
+                onCheckedChange={(checked) => setIsDone(checked === true)}
+              />
+              <Label htmlFor="isDone" className="text-sm font-normal cursor-pointer">
+                Mark as &quot;Done&quot; column (tasks moved here will auto-complete)
+              </Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={!name.trim()}>
+              {column ? 'Save Changes' : 'Add Column'}
             </Button>
           </DialogFooter>
         </form>
