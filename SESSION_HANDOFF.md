@@ -1,84 +1,62 @@
-# Session Handoff - Column Management + Export + TypeScript Fixes
+# Session Handoff - Dashboard Charts + Date Picker Enhancements
 
 **Date**: 2026-01-02
-**Time**: Morning Session
-**Previous Commit**: `923a731` - fix(types): Resolve TypeScript errors in tasks and dashboard
+**Time**: Afternoon Session
+**Previous Commit**: `5661778` - feat(dashboard): Refactor trend charts with Recharts and add view toggle
 **Current Commit**: `472ca44` - feat(tasks): Add column management actions (create, update, delete)
-**Current Status**: Kanban board column management complete
+**Current Status**: Dashboard charts refactored with Recharts, compact/expanded toggle added
 **Branch**: main
-**Dev Server**: Running at http://localhost:3001 ✅
+**Dev Server**: Running at http://localhost:3000 ✅
 
 ---
 
 ## What Was Accomplished This Session
 
-### 1. Kanban Board Column Management (NEW)
-Added full column CRUD functionality to the task board:
+### 1. Dashboard Trend Charts - Recharts Refactor
+Replaced custom SVG charts with Recharts library for better maintainability:
 
-**UI Features:**
-- Dropdown menu (⋯) on each column header with Edit/Delete options
-- "+ Add Column" button at end of board
-- Color picker with 9 preset colors
-- "Done column" checkbox (tasks moved here auto-complete)
-- Green checkmark indicator on done columns
-- Block deletion if column has tasks (with error message)
+- **Chart Types**: Bar, Line, Area charts with seamless toggle
+- **Compact/Expanded Toggle**: Switch between fit-to-screen and scrollable detailed views
+- **Dark Mode Fixes**: Axis labels now visible with `rgba(255,255,255,0.85)`
+- **Slanted Date Labels**: -45 degree angle for better readability
+- **LocalStorage Persistence**: Metrics, chart style, and size mode persist across sessions
 
-**Server Actions Added:**
-- `createColumn(boardId, name, color, isDone)` - creates column at end
-- `updateColumn(columnId, { name, color, is_done })` - updates column
-- `deleteColumn(columnId)` - deletes (blocked if has tasks)
+### 2. Date Range Picker Improvements
+- **From/To Labels**: Clear labels above each calendar
+- **Year Display**: Both dates now show year (e.g., "Oct 01, 2025 - Dec 31, 2025")
+- **Date Ordering**: Auto-swaps from/to if selected in wrong order
+- **Apply/Cancel**: Changes only apply when user clicks Apply
 
-**Files Modified:**
-- `src/app/(admin)/admin/tasks/actions.ts` - Added 3 new server actions
-- `src/app/(admin)/admin/tasks/boards/[boardSlug]/page.tsx` - Added UI components
+### 3. Task Board Column Management (from uncommitted changes)
+- Added createColumn, updateColumn, deleteColumn server actions
+- Column edit/delete UI with dropdown menu
+- Color picker with preset colors
+- is_done toggle for completion columns
 
-### 2. Completed Filtered Export for All Admin Pages
-- All 7 admin pages support exporting data with current filters
-- Toast messages indicate "(filtered)" when exporting with active filters
-
-### 3. Fixed All TypeScript Errors
-- Resolved 16 TypeScript errors across tasks and dashboard modules
-- 0 TypeScript errors remaining
+### Files Modified This Session (6 files)
+1. `package.json` / `package-lock.json` - Added recharts dependency
+2. `src/components/dashboard/WidgetRenderer.tsx` - Recharts integration, size toggle
+3. `src/components/ui/date-range-picker.tsx` - From/To labels, year display, date ordering
+4. `src/app/(admin)/admin/tasks/actions.ts` - Column CRUD actions
+5. `src/app/(admin)/admin/tasks/boards/[boardSlug]/page.tsx` - Column management UI
 
 ---
 
 ## Current State
 
 ### What's Working ✅
-- ✅ Kanban board column management (create, edit, delete)
-- ✅ All 7 admin pages have filtered export
-- ✅ TypeScript compiles with 0 errors
-- ✅ All filter bars with URL sync and saved presets
+- ✅ Dashboard trend charts with Recharts (bar, line, area)
+- ✅ Compact/expanded view toggle with persistence
+- ✅ Date range picker with From/To labels and proper ordering
+- ✅ Dark mode visibility for chart axis labels
+- ✅ Task board column management (create, edit, delete)
+- ✅ All chart preferences persist in localStorage
 
-### Tasks Board Features
-| Feature | Status |
-|---------|--------|
-| View board with columns | ✅ |
-| Drag & drop tasks between columns | ✅ |
-| Create tasks | ✅ |
-| Create columns | ✅ |
-| Edit columns (name, color, done flag) | ✅ |
-| Delete columns (blocked if has tasks) | ✅ |
-
-### Admin Pages - Complete Filter + Export Coverage
-| Page | Filters | Export |
-|------|---------|--------|
-| Orders | Status, Payment, Date Range | ✅ |
-| Scheduler Bookings | Status, Date Range | ✅ |
-| CRM | Date Range + Advanced | ✅ |
-| Contacts | Type, Status, Date Range | ✅ |
-| Audit | Actor Type, Date Range | ✅ |
-| Testimonials | Status, Featured, Rating, Date Range | ✅ |
-| Inventory | Category, Stock Level | ✅ |
-
----
-
-## Optional Future Enhancements
-
-1. Drag & drop to reorder columns
-2. Column WIP limits (warn when too many tasks)
-3. Bulk export option for selected rows
-4. Excel/XLSX export format option
+### Chart View Modes
+| Mode | Height | Scroll | Date Labels |
+|------|--------|--------|-------------|
+| Compact | 200px | No | Every 8th point |
+| Expanded | 300px | Horizontal | All points |
 
 ---
 
@@ -92,8 +70,8 @@ git log --oneline -5
 git status
 npm run dev  # If server not running
 
-# Read handoff document
-cat SESSION_HANDOFF.md
+# Test dashboard
+start http://localhost:3000/admin/dashboard/executive
 ```
 
 ---
@@ -101,11 +79,13 @@ cat SESSION_HANDOFF.md
 ## Known Issues / Blockers
 
 - Pre-existing: Foreign key error for `task_items_assigned_to_fkey` (doesn't affect functionality)
+- Axis labels hardcoded to light color (works in dark mode, may need adjustment for light mode)
 
 ---
 
 **Session Status**: ✅ Complete
-**Column Management**: ✅ Done
-**Export Feature**: ✅ Done
-**TypeScript Status**: 0 errors ✅
+**Dashboard Charts**: ✅ Recharts integration complete
+**Date Picker**: ✅ From/To labels and ordering fixed
 **Handoff Complete**: 2026-01-02
+
+🎉 Dashboard charts are now powered by Recharts with compact/expanded toggle!
