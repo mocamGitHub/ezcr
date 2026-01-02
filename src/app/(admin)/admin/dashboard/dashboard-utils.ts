@@ -54,51 +54,59 @@ export interface SavedView {
 }
 
 export interface DateRange {
-  from: Date
-  to: Date
+  from: string
+  to: string
   preset?: string
 }
 
 // Date preset helpers
+function formatDateString(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 export function getDatePreset(preset: string): DateRange {
   const now = new Date()
-  const to = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const toDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const to = formatDateString(toDate)
 
   switch (preset) {
     case '7d':
       return {
-        from: new Date(to.getTime() - 7 * 24 * 60 * 60 * 1000),
+        from: formatDateString(new Date(toDate.getTime() - 7 * 24 * 60 * 60 * 1000)),
         to,
         preset,
       }
     case '30d':
       return {
-        from: new Date(to.getTime() - 30 * 24 * 60 * 60 * 1000),
+        from: formatDateString(new Date(toDate.getTime() - 30 * 24 * 60 * 60 * 1000)),
         to,
         preset,
       }
     case 'mtd':
       return {
-        from: new Date(now.getFullYear(), now.getMonth(), 1),
+        from: formatDateString(new Date(now.getFullYear(), now.getMonth(), 1)),
         to,
         preset,
       }
     case 'qtd':
       const quarter = Math.floor(now.getMonth() / 3)
       return {
-        from: new Date(now.getFullYear(), quarter * 3, 1),
+        from: formatDateString(new Date(now.getFullYear(), quarter * 3, 1)),
         to,
         preset,
       }
     case 'ytd':
       return {
-        from: new Date(now.getFullYear(), 0, 1),
+        from: formatDateString(new Date(now.getFullYear(), 0, 1)),
         to,
         preset,
       }
     default:
       return {
-        from: new Date(to.getTime() - 30 * 24 * 60 * 60 * 1000),
+        from: formatDateString(new Date(toDate.getTime() - 30 * 24 * 60 * 60 * 1000)),
         to,
         preset: '30d',
       }

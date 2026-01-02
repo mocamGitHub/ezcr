@@ -70,6 +70,15 @@ export interface TaskItem {
   }
   links?: TaskLink[]
   comment_count?: number
+  // Joined relations for display
+  board?: {
+    name: string
+    slug: string
+  }
+  column?: {
+    name: string
+    color: string
+  }
 }
 
 export interface TaskComment {

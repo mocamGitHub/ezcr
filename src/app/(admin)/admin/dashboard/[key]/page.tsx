@@ -9,9 +9,10 @@ import {
   DollarSign,
   HeadphonesIcon,
   RefreshCw,
-  Calendar,
   ChevronDown,
 } from 'lucide-react'
+import { format } from 'date-fns'
+import type { DateRange as PickerDateRange } from 'react-day-picker'
 import { usePageTitle } from '@/hooks/usePageTitle'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -24,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { WidgetRenderer } from '@/components/dashboard/WidgetRenderer'
+import { DateRangePicker } from '@/components/ui/date-range-picker'
 import {
   getDashboard,
   getDashboards,
@@ -43,25 +45,61 @@ const iconMap: Record<string, React.ReactNode> = {
   HeadphonesIcon: <HeadphonesIcon className="h-4 w-4" />,
 }
 
-const datePresets = [
-  { label: 'Last 7 Days', value: '7d' },
-  { label: 'Last 30 Days', value: '30d' },
-  { label: 'Month to Date', value: 'mtd' },
-  { label: 'Quarter to Date', value: 'qtd' },
-  { label: 'Year to Date', value: 'ytd' },
-]
+const DATE_RANGE_STORAGE_KEY = 'dashboard-date-range'
+
+function loadDateRange(): { pickerRange: PickerDateRange, dateRange: DateRange } {
+  if (typeof window === 'undefined') {
+    const preset = getDatePreset('30d')
+    return {
+      pickerRange: { from: new Date(preset.from), to: new Date(preset.to) },
+      dateRange: preset
+    }
+  }
+  try {
+    const stored = localStorage.getItem(DATE_RANGE_STORAGE_KEY)
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      if (parsed.from && parsed.to) {
+        return {
+          pickerRange: { from: new Date(parsed.from), to: new Date(parsed.to) },
+          dateRange: { from: parsed.from, to: parsed.to }
+        }
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+  const preset = getDatePreset('30d')
+  return {
+    pickerRange: { from: new Date(preset.from), to: new Date(preset.to) },
+    dateRange: preset
+  }
+}
+
+function saveDateRange(from: string, to: string) {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.setItem(DATE_RANGE_STORAGE_KEY, JSON.stringify({ from, to }))
+  } catch (e) {
+    // ignore
+  }
+}
 
 export default function DashboardPage() {
   const params = useParams()
   const router = useRouter()
-  const dashboardKey = params.key as string
+  const dashboardKey = params?.key as string
 
   const [loading, setLoading] = useState(true)
   const [dashboard, setDashboard] = useState<Dashboard | null>(null)
   const [dashboards, setDashboards] = useState<Dashboard[]>([])
   const [widgets, setWidgets] = useState<Widget[]>([])
-  const [datePreset, setDatePreset] = useState('30d')
-  const [dateRange, setDateRange] = useState<DateRange>(getDatePreset('30d'))
+  const [pickerRange, setPickerRange] = useState<PickerDateRange | undefined>(() => {
+    return loadDateRange().pickerRange
+  })
+  const [dateRange, setDateRange] = useState<DateRange>(() => {
+    return loadDateRange().dateRange
+  })
   const [refreshKey, setRefreshKey] = useState(0)
 
   usePageTitle(dashboard?.name || 'Dashboard')
@@ -92,10 +130,15 @@ export default function DashboardPage() {
     fetchData()
   }, [fetchData])
 
-  const handlePresetChange = (preset: string) => {
-    setDatePreset(preset)
-    setDateRange(getDatePreset(preset))
-    setRefreshKey(prev => prev + 1)
+  const handleDateRangeChange = (range: PickerDateRange | undefined) => {
+    setPickerRange(range)
+    if (range?.from && range?.to) {
+      const from = format(range.from, 'yyyy-MM-dd')
+      const to = format(range.to, 'yyyy-MM-dd')
+      setDateRange({ from, to })
+      saveDateRange(from, to)
+      setRefreshKey(prev => prev + 1)
+    }
   }
 
   const handleRefresh = () => {
@@ -177,27 +220,12 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Date Range Selector */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                {datePresets.find(p => p.value === datePreset)?.label || 'Custom'}
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {datePresets.map(preset => (
-                <DropdownMenuItem
-                  key={preset.value}
-                  onClick={() => handlePresetChange(preset.value)}
-                  className={preset.value === datePreset ? 'bg-accent' : ''}
-                >
-                  {preset.label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Date Range Picker */}
+          <DateRangePicker
+            value={pickerRange}
+            onChange={handleDateRangeChange}
+            presets
+          />
 
           {/* Refresh Button */}
           <Button variant="outline" size="icon" onClick={handleRefresh}>

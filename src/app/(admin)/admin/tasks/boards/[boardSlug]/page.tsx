@@ -56,7 +56,7 @@ const priorityBadgeColors = {
 
 export default function TaskBoardPage() {
   const params = useParams()
-  const boardSlug = params.boardSlug as string
+  const boardSlug = params?.boardSlug as string
   const { user } = useAuth()
 
   const [loading, setLoading] = useState(true)

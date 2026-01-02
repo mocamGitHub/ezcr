@@ -271,12 +271,15 @@ export async function POST(request: NextRequest) {
         break
       }
 
-      default:
-        console.log(`[Tasks Webhook] Unhandled event type: ${body.event}`)
+      default: {
+        // Type assertion to handle exhaustive check - should never reach here
+        const _exhaustiveCheck: never = body
+        console.log(`[Tasks Webhook] Unhandled event type: ${(_exhaustiveCheck as WebhookEvent).event}`)
         return NextResponse.json(
-          { message: `Event type '${body.event}' not handled`, tasks_created: 0 },
+          { message: `Event type not handled`, tasks_created: 0 },
           { status: 200 }
         )
+      }
     }
 
     console.log(`[Tasks Webhook] Created ${tasksCreated.length} tasks for event ${body.event}`)
