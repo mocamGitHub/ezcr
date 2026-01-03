@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
+import { requireTenantAdmin } from "@/lib/auth/api-auth";
 
 // Use existing env var naming conventions from this project
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -19,22 +20,20 @@ function hmac(base: string) {
   return crypto.createHmac("sha256", N8N_WEBHOOK_SECRET).update(base).digest("hex");
 }
 
-// See ezcr-owa: implement proper tenant membership access control
-async function assertTenantAccess(_tenantId: string) {
-  return true;
-}
-
 export async function POST(req: NextRequest) {
+  // Authenticate user and verify tenant admin access
+  const authResult = await requireTenantAdmin(req);
+  if ('error' in authResult) {
+    return NextResponse.json(authResult.error, { status: authResult.status });
+  }
+  const { tenantId } = authResult;
+
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   const form = await req.formData();
-  const tenantId = String(form.get("tenant_id") ?? "");
   const file = form.get("file");
 
-  if (!tenantId) return NextResponse.json({ error: "tenant_id required" }, { status: 400 });
   if (!(file instanceof File)) return NextResponse.json({ error: "file required" }, { status: 400 });
-
-  await assertTenantAccess(tenantId);
 
   const docId = crypto.randomUUID();
   const originalName = file.name || "receipt";

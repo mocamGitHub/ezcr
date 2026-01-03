@@ -181,6 +181,33 @@ export const ROLE_GROUPS = {
 }
 
 /**
+ * Require tenant admin access for API routes
+ * Used for operations that require admin access within a tenant (e.g., books API)
+ * Returns authenticated user with tenantId or error response data
+ */
+export async function requireTenantAdmin(
+  request: NextRequest
+): Promise<{ user: AuthUser; tenantId: string } | { error: unknown; status: number }> {
+  const authResult = await requireRole(request, ROLE_GROUPS.ADMIN_ROLES)
+
+  if ('error' in authResult) {
+    return authResult
+  }
+
+  if (!authResult.user.tenantId) {
+    return {
+      error: { error: 'User is not associated with a tenant' },
+      status: 403,
+    }
+  }
+
+  return {
+    user: authResult.user,
+    tenantId: authResult.user.tenantId
+  }
+}
+
+/**
  * Authenticate admin for API routes
  * Returns supabase client, user, and potential error
  */

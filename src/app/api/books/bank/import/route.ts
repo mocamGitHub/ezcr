@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as crypto from "crypto";
+import { requireTenantAdmin } from "@/lib/auth/api-auth";
 
 const N8N_WEBHOOK_BASE_URL = process.env.N8N_WEBHOOK_BASE_URL!;
 const N8N_WEBHOOK_SECRET = process.env.N8N_WEBHOOK_SECRET!;
@@ -12,20 +13,18 @@ function hmac(base: string) {
   return crypto.createHmac("sha256", N8N_WEBHOOK_SECRET).update(base).digest("hex");
 }
 
-// See ezcr-owa: implement proper tenant membership access control
-async function assertTenantAccess(_tenantId: string) {
-  return true;
-}
-
 export async function POST(req: NextRequest) {
+  // Authenticate user and verify tenant admin access
+  const authResult = await requireTenantAdmin(req);
+  if ('error' in authResult) {
+    return NextResponse.json(authResult.error, { status: authResult.status });
+  }
+  const { tenantId } = authResult;
+
   const form = await req.formData();
-  const tenantId = String(form.get("tenant_id") ?? "");
   const file = form.get("file");
 
-  if (!tenantId) return NextResponse.json({ error: "tenant_id required" }, { status: 400 });
   if (!(file instanceof File)) return NextResponse.json({ error: "file required" }, { status: 400 });
-
-  await assertTenantAccess(tenantId);
 
   const importId = crypto.randomUUID();
   const bytes = await file.arrayBuffer();
