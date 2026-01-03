@@ -205,7 +205,8 @@
       "Bash(command -v:*)",
       "Bash(timeout /t 10 /nobreak)",
       "Bash(timeout /t 2 /nobreak)",
-      "Skill(superpowers:brainstorming)"
+      "Skill(superpowers:brainstorming)",
+      "Bash(bd close:*)"
     ],
     "deny": [],
     "ask": []
