@@ -1,7 +1,7 @@
 'use server'
 
 import { createServiceClient } from '@/lib/supabase/server'
-import type { Dashboard, Widget, SavedView, DateRange } from './dashboard-utils'
+import type { Dashboard, Widget, SavedView } from './dashboard-utils'
 
 function getTenantId(): string {
   const tenantId = process.env.EZCR_TENANT_ID

@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { SchedulerBooking, SchedulerBookingButton, MyBookings } from '@/components/scheduler'
-import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 
 export default function SchedulerPage() {

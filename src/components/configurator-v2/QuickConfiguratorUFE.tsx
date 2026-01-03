@@ -7,7 +7,7 @@
  * It provides the same UI as QuickConfiguratorV2 but uses UFE for business logic.
  */
 
-import React, { useState, useCallback, useMemo } from 'react'
+import React, { useState, useCallback } from 'react'
 import Link from 'next/link'
 import { ConfiguratorHeader } from './ConfiguratorHeader'
 import { ConfiguratorWrapper } from './ConfiguratorWrapper'
@@ -15,8 +15,8 @@ import { ConfiguratorProvider } from './ConfiguratorProvider'
 import { ArrowRight, CheckCircle, Info, Ruler, FileText, Clock, Phone, Calendar, X, AlertTriangle } from 'lucide-react'
 import { CallScheduler } from '@/components/contact/CallScheduler'
 import { useQuickWizard } from '@/lib/ufe/hooks'
-import { formatCurrency, getRampModel, getAccessory } from '@/lib/ufe'
-import type { UFEResult, RampRecommendation } from '@/lib/ufe/types'
+import { formatCurrency, getRampModel } from '@/lib/ufe'
+import type { UFEResult } from '@/lib/ufe/types'
 
 // =============================================================================
 // COMPONENTS

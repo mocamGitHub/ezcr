@@ -7,19 +7,10 @@ export async function POST(request: NextRequest) {
       email,
       firstName,
       lastName,
-      vehicle,
-      measurements,
-      motorcycle,
-      selectedModel,
-      extension,
-      boltlessKit,
-      tiedown,
-      service,
-      delivery,
-      subtotal,
-      salesTax,
-      processingFee,
       total,
+      // These are received but not used while email is disabled
+      // vehicle, measurements, motorcycle, selectedModel, extension,
+      // boltlessKit, tiedown, service, delivery, subtotal, salesTax, processingFee,
     } = body
 
     // Temporary: Log quote email instead of sending (staging deployment fix)

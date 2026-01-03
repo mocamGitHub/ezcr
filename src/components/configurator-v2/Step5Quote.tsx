@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useConfigurator } from './ConfiguratorProvider'
 import { useCart } from '@/contexts/CartContext'
 import { useToast } from '@/components/ui/toast'

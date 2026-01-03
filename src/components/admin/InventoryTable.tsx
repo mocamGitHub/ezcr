@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { InventoryTableSkeleton } from '@/components/ui/table-skeleton'
-import { Edit, History, PackagePlus, PackageMinus, AlertTriangle, RefreshCw, SlidersHorizontal } from 'lucide-react'
+import { History, PackagePlus, PackageMinus, AlertTriangle, RefreshCw, SlidersHorizontal } from 'lucide-react'
 import { InventoryAdjustmentDialog } from './InventoryAdjustmentDialog'
 
 interface Product {

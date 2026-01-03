@@ -2,7 +2,7 @@
 
 import { createServiceClient } from '@/lib/supabase/server'
 import { getTenantId as getEnvironmentTenantId } from '@/lib/tenant'
-import { startOfDay, subDays, format, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns'
+import { subDays, format, eachDayOfInterval } from 'date-fns'
 
 async function getTenantId(): Promise<string> {
   return await getEnvironmentTenantId()

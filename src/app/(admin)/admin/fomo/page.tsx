@@ -81,8 +81,8 @@ const DEFAULT_BANNER: FOMOBannerConfig = {
 }
 
 export default function FOMOManagementPage() {
-  const router = useRouter()
-  const { profile } = useAuth()
+  useRouter() // Keep for potential navigation
+  useAuth() // Keep for auth context
   const [banners, setBanners] = useState<FOMOBannerConfig[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)

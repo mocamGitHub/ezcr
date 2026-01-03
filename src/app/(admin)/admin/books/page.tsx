@@ -54,7 +54,7 @@ import {
   type BooksKPISummary,
   type ReceiptQueueItem,
   type BankTransaction,
-  type MatchSuggestion,
+  // type MatchSuggestion, // Currently unused
 } from '@/actions/books'
 
 type SortDirection = 'asc' | 'desc' | null

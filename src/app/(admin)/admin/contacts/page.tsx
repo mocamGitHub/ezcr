@@ -31,7 +31,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import {
-  Building2,
   Plus,
   Edit,
   Trash2,

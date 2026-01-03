@@ -11,7 +11,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { useState, useCallback } from 'react'
-import { getStripe } from '@/lib/stripe/client'
+// import { getStripe } from '@/lib/stripe/client' // Available for future use
 import { toast } from 'sonner'
 
 type FormErrors = {
