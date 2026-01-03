@@ -84,13 +84,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Get initial authenticated user
-    supabase.auth.getUser().then(({ data: { user } }: { data: { user: User | null } }) => {
-      setUser(user ?? null)
-      if (user) {
-        fetchProfile(user.id)
-      }
-      setLoading(false)
-    })
+    supabase.auth.getUser()
+      .then(({ data: { user } }: { data: { user: User | null } }) => {
+        setUser(user ?? null)
+        if (user) {
+          fetchProfile(user.id)
+        }
+      })
+      .catch((error: Error) => {
+        console.warn('Error getting user:', error.message)
+        setUser(null)
+        setProfile(null)
+      })
+      .finally(() => {
+        setLoading(false)
+      })
 
     // Listen for auth changes
     const {
