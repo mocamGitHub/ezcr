@@ -16,6 +16,25 @@ import {
   validateMeasurements,
 } from '@/lib/configurator/utils'
 
+const SESSION_ID_KEY = 'ezcr-configurator-session-id'
+
+/**
+ * Get or create a persistent session ID for the configurator
+ * Stored in localStorage so it persists across page reloads
+ */
+function getOrCreateSessionId(): string {
+  if (typeof window === 'undefined') {
+    return '' // SSR fallback
+  }
+
+  let sessionId = localStorage.getItem(SESSION_ID_KEY)
+  if (!sessionId) {
+    sessionId = crypto.randomUUID()
+    localStorage.setItem(SESSION_ID_KEY, sessionId)
+  }
+  return sessionId
+}
+
 interface ConfiguratorContextType {
   data: ConfiguratorData
   updateStep1: (data: Partial<Step1Data>) => void
@@ -196,6 +215,9 @@ export function ConfiguratorProvider({
 
   const saveConfiguration = async () => {
     try {
+      // Get persistent session ID for this configurator session
+      const sessionId = getOrCreateSessionId()
+
       // Save to database via API
       const response = await fetch('/api/configurations', {
         method: 'POST',
@@ -203,6 +225,7 @@ export function ConfiguratorProvider({
         body: JSON.stringify({
           configuration: data,
           calculatedPrice: data.quote?.total || 0,
+          sessionId,
         }),
       })
 

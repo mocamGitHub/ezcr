@@ -1,14 +1,59 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
+import { createServerClient } from '@supabase/ssr'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { getCurrentTenant } from '@/lib/tenant'
 import type { ConfiguratorData } from '@/types/configurator'
 
+/**
+ * Get or generate a session ID for the configurator
+ * Priority: 1) From request body, 2) From authenticated user, 3) Generate new UUID
+ */
+async function getSessionId(body: { sessionId?: string }): Promise<string> {
+  // 1. Check if client sent a session ID
+  if (body.sessionId && typeof body.sessionId === 'string') {
+    return body.sessionId
+  }
+
+  // 2. Try to get authenticated user's ID
+  try {
+    const cookieStore = await cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options)
+            })
+          },
+        },
+      }
+    )
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user?.id) {
+      return `user-${user.id}`
+    }
+  } catch {
+    // Not authenticated, continue to generate
+  }
+
+  // 3. Generate a new UUID as fallback
+  return crypto.randomUUID()
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { configuration, calculatedPrice } = body as {
+    const { configuration, calculatedPrice, sessionId: clientSessionId } = body as {
       configuration: ConfiguratorData
       calculatedPrice: number
+      sessionId?: string
     }
 
     // Get tenant ID from environment-aware configuration
@@ -29,8 +74,8 @@ export async function POST(request: NextRequest) {
 
     const TENANT_ID = tenant.id
 
-    // See ezcr-e48: Get session_id from cookies instead of temp value
-    const session_id = 'temp-session-' + Date.now()
+    // Get session ID from client, authenticated user, or generate new one
+    const session_id = await getSessionId({ sessionId: clientSessionId })
 
     // Get product ID for the selected ramp model
     const { data: product, error: productError } = await supabaseAdmin
