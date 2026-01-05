@@ -66,14 +66,12 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
       try {
         setCollapsedSections(new Set(JSON.parse(storedSections)))
       } catch {
-        // Ignore parse errors - use default collapsed state
-        setCollapsedSections(new Set(adminNavSections.map((s) => s.title)))
+        // Ignore parse errors - default to all expanded
+        setCollapsedSections(new Set())
       }
     } else {
-      // Default: all sections collapsed except "Main"
-      setCollapsedSections(
-        new Set(adminNavSections.filter((s) => s.title !== 'Main').map((s) => s.title))
-      )
+      // Default: all sections expanded
+      setCollapsedSections(new Set())
     }
   }, [])
 
