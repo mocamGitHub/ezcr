@@ -16,6 +16,7 @@ import { FOMOBanner } from '@/components/marketing/FOMOBanner'
 import { ToastProvider } from '@/components/ui/toast'
 import { OrganizationSchema, LocalBusinessSchema, WebsiteSchema } from '@/components/seo/StructuredData'
 import { GoogleAnalytics } from '@/components/analytics/GoogleAnalytics'
+import { MetaPixel } from '@/components/analytics/MetaPixel'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -114,6 +115,7 @@ export default function RootLayout({
       </head>
       <body className={inter.className} suppressHydrationWarning>
         <GoogleAnalytics />
+        <MetaPixel />
         {/* Structured Data - must be in body for next/script */}
         <OrganizationSchema />
         <LocalBusinessSchema />
