@@ -1,49 +1,61 @@
 {
-  "enabledPlugins": {
-    "superpowers@superpowers-marketplace": true
-  },
   "permissions": {
-    "defaultMode": "acceptEdits",
     "allow": [
-      "Read(*)",
-      "Edit(*)",
-
-      "Bash(git status:*)",
-      "Bash(git diff:*)",
-      "Bash(git log:*)",
-      "Bash(git branch:*)",
-      "Bash(git checkout:*)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-
-      "Bash(node:*)",
-      "Bash(npm:*)",
-      "Bash(npx:*)",
-      "Bash(pnpm:*)",
-      "Bash(yarn:*)",
-      "Bash(bun:*)",
-
-      "Bash(supabase:*)",
-      "Bash(pwsh:*)",
-      "Bash(powershell:*)"
-    ],
-    "ask": [
       "Bash(git push:*)",
-      "Bash(git pull:*)",
-      "Bash(git merge:*)",
-      "Bash(curl:*)",
-      "Bash(wget:*)",
-      "Bash(Invoke-WebRequest:*)",
-      "Bash(docker:*)"
+      "Bash(npm run dev:*)",
+      "Write",
+      "Bash(mkdir:*)",
+      "Bash(New-Item:*)"
     ],
     "deny": [
       "Read(./.env)",
       "Read(./.env.*)",
-      "Read(./**/.env)",
-      "Read(./**/.env.*)",
       "Read(./secrets/**)",
-      "Read(./**/secrets/**)",
-      "Read(./config/credentials.json)"
+      "Read(./**/*.pem)",
+      "Read(./**/*.key)",
+      "Read(./**/*id_rsa*)",
+      "Read(./**/*id_ed25519*)",
+      "Read(./config/credentials.json)",
+      "Bash(rm:*)",
+      "Bash(rmdir:*)",
+      "Bash(del:*)",
+      "Bash(format:*)",
+      "Bash(diskpart:*)",
+      "Bash(shutdown:*)",
+      "Bash(restart:*)",
+      "Bash(powershell:*)",
+      "Bash(pwsh:*)",
+      "Bash(cmd.exe:*)",
+      "Bash(git clean:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(curl:*)",
+      "Bash(wget:*)"
+    ],
+    "ask": [
+      "WebFetch",
+      "Bash(git pull:*)",
+      "Bash(git merge:*)",
+      "Bash(git rebase:*)",
+      "Bash(git cherry-pick:*)",
+      "Bash(npm install:*)",
+      "Bash(npm ci:*)",
+      "Bash(npx:*)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm dlx:*)",
+      "Bash(docker:*)",
+      "Bash(docker-compose:*)",
+      "Bash(supabase:*)",
+      "Bash(aws:*)",
+      "Bash(gh:*)",
+      "Bash(terraform:*)",
+      "Bash(kubectl:*)",
+      "Bash(helm:*)",
+      "Bash(ssh:*)",
+      "Bash(scp:*)",
+      "Bash(rsync:*)"
     ]
   }
 }
