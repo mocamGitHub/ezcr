@@ -11,10 +11,18 @@
 //   SLACK_WEBHOOK_URL=https://hooks.slack.com/xxx (optional)
 //   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 //   SUPABASE_SERVICE_KEY=your_service_role_key
+//
+// Analytics Environment Variables (optional - set whichever platforms you use):
+//   GA_MEASUREMENT_ID=G-XXXXXXXXXX       (Google Analytics 4)
+//   GA_API_SECRET=xxxxxxxxxxxxx          (Google Analytics 4)
+//   META_PIXEL_ID=xxxxxxxxxxxxxxxx       (Meta/Facebook Pixel)
+//   META_ACCESS_TOKEN=EAAxxxxxxxx        (Meta/Facebook Pixel)
+//   GOOGLE_ADS_WEBHOOK_URL=https://...   (Google Ads via webhook)
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
+import { trackOrderConversion } from '@/lib/analytics';
 
 // ============================================
 // TYPES
@@ -528,9 +536,36 @@ async function sendSlackNotification(orderData: OrderData, order: any) {
   }
 }
 
-async function trackConversion(_orderData: OrderData, _leadId: string | undefined) {
+async function trackConversion(orderData: OrderData, leadId: string | undefined) {
   // Send conversion data to analytics platforms (Google Analytics, Meta Pixel, etc.)
-  // See: ezcr-35g
+  try {
+    await trackOrderConversion(
+      {
+        orderNumber: orderData.orderNumber,
+        customerEmail: orderData.customerEmail,
+        customerPhone: orderData.customerPhone,
+        customerName: orderData.customerName,
+        productSku: orderData.productSku,
+        productName: orderData.productName,
+        productPrice: orderData.productPrice,
+        subtotal: orderData.subtotal,
+        shippingTotal: orderData.shippingTotal,
+        taxTotal: orderData.taxTotal,
+        grandTotal: orderData.grandTotal,
+        paymentIntentId: orderData.paymentIntentId,
+        sessionId: orderData.sessionId,
+        leadId: leadId,
+        utmSource: orderData.utmSource,
+        utmMedium: orderData.utmMedium,
+        utmCampaign: orderData.utmCampaign,
+      },
+      // Additional context could be passed from session cookies if available
+      undefined
+    );
+  } catch (error) {
+    // Don't let analytics failures affect order processing
+    console.error('[Analytics] Conversion tracking error:', error);
+  }
 }
 
 // ============================================
