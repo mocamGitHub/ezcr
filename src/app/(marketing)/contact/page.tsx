@@ -9,6 +9,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Phone, Mail, MapPin, Clock } from 'lucide-react'
 import { ChatCTA } from '@/components/chat/ChatCTA'
 import { CallScheduler } from '@/components/contact/CallScheduler'
+import { trackEvent } from '@/components/analytics/GoogleAnalytics'
+import { trackMetaEvent } from '@/components/analytics/MetaPixel'
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -27,6 +29,16 @@ export default function ContactPage() {
 
     // Simulate form submission
     await new Promise(resolve => setTimeout(resolve, 1000))
+
+    // Track contact form submission
+    trackEvent('generate_lead', {
+      event_category: 'contact',
+      event_label: formData.subject,
+    })
+    trackMetaEvent('Lead', {
+      content_name: `Contact Form: ${formData.subject}`,
+    })
+    trackMetaEvent('Contact')
 
     setSubmitted(true)
     setIsSubmitting(false)
