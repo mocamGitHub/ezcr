@@ -1,5 +1,6 @@
 ---
 name: testing-agent
+description: E2E testing, unit testing, integration testing, and test strategy
 ---
 
 # Agent 6: Testing Agent

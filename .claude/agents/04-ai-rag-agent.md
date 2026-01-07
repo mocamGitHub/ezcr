@@ -1,5 +1,6 @@
 ---
 name: ai-rag-agent
+description: RAG chatbot, semantic search, AI scheduling, and knowledge base management
 ---
 
 # Agent 4: AI/RAG Agent

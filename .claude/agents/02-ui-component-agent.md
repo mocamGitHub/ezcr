@@ -1,5 +1,6 @@
 ---
 name: ui-component-agent
+description: React components, ShadCN UI, responsive design, and accessibility
 ---
 
 # Agent 2: UI/Component Agent

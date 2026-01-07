@@ -1,5 +1,6 @@
 ---
 name: customer-success-agent
+description: User documentation, installation guides, support materials, and training content
 ---
 
 # Agent 11: Customer Success Agent

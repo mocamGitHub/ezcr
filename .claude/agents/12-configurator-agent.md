@@ -1,5 +1,6 @@
 ---
 name: configurator-agent
+description: 5-step product configurator, measurement validation, and extension selection
 ---
 
 # Agent 12: Product Configurator Agent

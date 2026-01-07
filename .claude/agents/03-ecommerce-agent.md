@@ -1,5 +1,6 @@
 ---
 name: ecommerce-agent
+description: Shopping cart, checkout, payments, orders, and shipping management
 ---
 
 # Agent 3: E-Commerce Agent

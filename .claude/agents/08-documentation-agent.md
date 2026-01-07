@@ -1,5 +1,6 @@
 ---
 name: documentation-agent
+description: Documentation, API docs, user guides, ADRs, and developer onboarding
 ---
 
 # Agent 8: Documentation Agent

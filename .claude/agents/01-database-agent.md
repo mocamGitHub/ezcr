@@ -1,5 +1,6 @@
 ---
 name: database-agent
+description: Database schema, migrations, RLS policies, and multi-tenant data management
 ---
 
 # Agent 1: Database Agent

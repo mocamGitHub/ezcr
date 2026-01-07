@@ -1,5 +1,6 @@
 ---
 name: devops-agent
+description: Docker, Coolify deployment, CI/CD pipelines, and environment management
 ---
 
 # Agent 7: DevOps Agent

@@ -1,5 +1,6 @@
 ---
 name: notebooklm-agent
+description: Knowledge base management, audio summaries, and documentation synthesis
 ---
 
 # Agent 10: NotebookLM Agent

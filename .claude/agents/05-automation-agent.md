@@ -1,5 +1,6 @@
 ---
 name: automation-agent
+description: N8N workflows, email/SMS automation, and scheduled task management
 ---
 
 # Agent 5: Automation Agent

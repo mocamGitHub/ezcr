@@ -1,5 +1,6 @@
 ---
 name: security-agent
+description: Security audits, PCI compliance, RLS policies, authentication, and input validation
 ---
 
 # Agent 9: Security Agent
