@@ -1,12 +1,14 @@
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useState, Suspense, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { CheckCircle2, Loader2, Package } from 'lucide-react'
 import Link from 'next/link'
 import { formatPrice } from '@/lib/utils/format'
+import { trackEcommerceEvent } from '@/components/analytics/GoogleAnalytics'
+import { trackMetaEvent } from '@/components/analytics/MetaPixel'
 
 type Order = {
   id: string
@@ -16,6 +18,13 @@ type Order = {
   status: string
   payment_status: string
   total_amount: number
+  grand_total?: number
+  product_sku?: string
+  product_name?: string
+  product_price?: number
+  quantity?: number
+  shipping_cost?: number
+  tax_total?: number
   shipping_address: any
   created_at: string
 }
@@ -26,6 +35,7 @@ function OrderConfirmationContent() {
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const hasTrackedPurchase = useRef(false)
 
   const sessionId = searchParams?.get('session_id')
 
@@ -59,6 +69,44 @@ function OrderConfirmationContent() {
 
     fetchOrder()
   }, [sessionId])
+
+  // Track purchase event when order is loaded
+  useEffect(() => {
+    if (!order || hasTrackedPurchase.current) return
+    hasTrackedPurchase.current = true
+
+    const totalValue = order.grand_total || order.total_amount
+    const productId = order.product_sku || order.id
+
+    // Track purchase for GA4
+    trackEcommerceEvent('purchase', {
+      transaction_id: order.order_number,
+      value: totalValue,
+      currency: 'USD',
+      tax: order.tax_total || 0,
+      shipping: order.shipping_cost || 0,
+      items: [{
+        item_id: productId,
+        item_name: order.product_name || 'EZ Cycle Ramp',
+        price: order.product_price || totalValue,
+        quantity: order.quantity || 1,
+      }],
+    })
+
+    // Track purchase for Meta Pixel
+    trackMetaEvent('Purchase', {
+      content_ids: [productId],
+      content_name: order.product_name || 'EZ Cycle Ramp',
+      content_type: 'product',
+      contents: [{
+        id: productId,
+        quantity: order.quantity || 1,
+      }],
+      currency: 'USD',
+      value: totalValue,
+      num_items: order.quantity || 1,
+    })
+  }, [order])
 
   if (loading) {
     return (
