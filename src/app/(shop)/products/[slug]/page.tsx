@@ -11,6 +11,7 @@ import { formatPrice } from '@/lib/utils/format'
 import { Check, X, Play } from 'lucide-react'
 import { ChatCTA } from '@/components/chat/ChatCTA'
 import { VideoEmbed } from '@/components/video/VideoEmbed'
+import { ProductViewTracker } from '@/components/analytics/ProductViewTracker'
 
 interface ProductPageProps {
   params: Promise<{
@@ -61,6 +62,15 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   return (
     <div>
+      {/* Analytics tracking */}
+      <ProductViewTracker
+        productId={product.id}
+        productName={product.name}
+        productSku={product.sku}
+        productPrice={product.base_price}
+        productCategory={product.category_id}
+      />
+
       {/* Breadcrumb */}
       <Breadcrumb
         className="mb-6"
