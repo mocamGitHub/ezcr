@@ -10,9 +10,11 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Loader2 } from 'lucide-react'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 // import { getStripe } from '@/lib/stripe/client' // Available for future use
 import { toast } from 'sonner'
+import { trackEcommerceEvent } from '@/components/analytics/GoogleAnalytics'
+import { trackMetaEvent } from '@/components/analytics/MetaPixel'
 
 type FormErrors = {
   firstName?: string
@@ -45,6 +47,34 @@ export default function CheckoutPage() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [errors, setErrors] = useState<FormErrors>({})
   const [touched, setTouched] = useState<Record<string, boolean>>({})
+  const hasTrackedCheckout = useRef(false)
+
+  // Track begin_checkout when page loads (for direct navigation to checkout)
+  useEffect(() => {
+    if (cart.items.length > 0 && !hasTrackedCheckout.current) {
+      hasTrackedCheckout.current = true
+      trackEcommerceEvent('begin_checkout', {
+        currency: 'USD',
+        value: cart.totalPrice,
+        items: cart.items.map((item) => ({
+          item_id: item.sku || item.productId,
+          item_name: item.productName,
+          price: item.price,
+          quantity: item.quantity,
+        })),
+      })
+      trackMetaEvent('InitiateCheckout', {
+        content_ids: cart.items.map((item) => item.sku || item.productId),
+        contents: cart.items.map((item) => ({
+          id: item.sku || item.productId,
+          quantity: item.quantity,
+        })),
+        currency: 'USD',
+        value: cart.totalPrice,
+        num_items: cart.totalItems,
+      })
+    }
+  }, [cart])
 
   const validateField = useCallback((name: string, value: string): string | undefined => {
     switch (name) {

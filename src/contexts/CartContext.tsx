@@ -2,6 +2,8 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { Cart, CartItem } from '@/lib/types/cart'
+import { trackEcommerceEvent } from '@/components/analytics/GoogleAnalytics'
+import { trackMetaEvent } from '@/components/analytics/MetaPixel'
 
 interface CartContextType {
   cart: Cart
@@ -68,6 +70,25 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
     })
     setIsOpen(true)
+
+    // Track add to cart event
+    trackEcommerceEvent('add_to_cart', {
+      currency: 'USD',
+      value: newItem.price,
+      items: [{
+        item_id: newItem.sku || newItem.productId,
+        item_name: newItem.productName,
+        price: newItem.price,
+        quantity: 1,
+      }],
+    })
+    trackMetaEvent('AddToCart', {
+      content_ids: [newItem.sku || newItem.productId],
+      content_name: newItem.productName,
+      content_type: 'product',
+      currency: 'USD',
+      value: newItem.price,
+    })
   }
 
   const removeItem = (productId: string) => {

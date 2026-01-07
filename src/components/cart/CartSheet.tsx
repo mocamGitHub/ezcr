@@ -15,6 +15,8 @@ import { formatPrice } from '@/lib/utils/format'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Minus, Plus, Trash2, ShoppingCart } from 'lucide-react'
+import { trackEcommerceEvent } from '@/components/analytics/GoogleAnalytics'
+import { trackMetaEvent } from '@/components/analytics/MetaPixel'
 
 // Product slugs that have actual product pages
 const LINKABLE_PRODUCT_SLUGS = ['aun250', 'aun210']
@@ -26,6 +28,31 @@ function isLinkableProduct(slug: string): boolean {
 
 export function CartSheet() {
   const { cart, isOpen, closeCart, updateQuantity, removeItem } = useCart()
+
+  const handleCheckoutClick = () => {
+    // Track begin checkout event
+    trackEcommerceEvent('begin_checkout', {
+      currency: 'USD',
+      value: cart.totalPrice,
+      items: cart.items.map((item) => ({
+        item_id: item.sku || item.productId,
+        item_name: item.productName,
+        price: item.price,
+        quantity: item.quantity,
+      })),
+    })
+    trackMetaEvent('InitiateCheckout', {
+      content_ids: cart.items.map((item) => item.sku || item.productId),
+      contents: cart.items.map((item) => ({
+        id: item.sku || item.productId,
+        quantity: item.quantity,
+      })),
+      currency: 'USD',
+      value: cart.totalPrice,
+      num_items: cart.totalItems,
+    })
+    closeCart()
+  }
 
   return (
     <Sheet open={isOpen} onOpenChange={closeCart}>
@@ -168,7 +195,7 @@ export function CartSheet() {
                   className="w-full bg-[#0B5394] hover:bg-[#0B5394]/90"
                   asChild
                 >
-                  <Link href="/checkout" onClick={closeCart}>
+                  <Link href="/checkout" onClick={handleCheckoutClick}>
                     Proceed to Checkout
                   </Link>
                 </Button>
