@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { ConfiguratorProvider, useConfigurator } from './ConfiguratorProvider'
 import { ConfiguratorWrapper } from './ConfiguratorWrapper'
@@ -13,6 +13,8 @@ import { Step5Quote } from './Step5Quote'
 import { ContactModal } from './ContactModal'
 import { ChatWidget } from './ChatWidget'
 import { Check } from 'lucide-react'
+import { trackEvent } from '@/components/analytics/GoogleAnalytics'
+import { trackMetaEvent, trackMetaCustomEvent } from '@/components/analytics/MetaPixel'
 
 const STEPS = [
   { number: 1, label: 'Vehicle' },
@@ -167,12 +169,49 @@ function ConfiguratorContent() {
   const [isLoading, setIsLoading] = useState(false)
   const [prevStep, setPrevStep] = useState(currentStep)
   const [direction, setDirection] = useState<'forward' | 'backward'>('forward')
+  const hasTrackedStart = useRef(false)
+  const hasTrackedQuote = useRef(false)
+
+  // Track configurator start
+  useEffect(() => {
+    if (!hasTrackedStart.current) {
+      hasTrackedStart.current = true
+      trackEvent('begin_configurator', {
+        configurator_type: 'full',
+      })
+      trackMetaCustomEvent('ConfiguratorStart', {
+        configurator_type: 'full',
+      })
+    }
+  }, [])
 
   // Track step direction and scroll to top on step change (especially for mobile)
   useEffect(() => {
     if (currentStep !== prevStep) {
       setDirection(currentStep > prevStep ? 'forward' : 'backward')
       setPrevStep(currentStep)
+
+      // Track step progression
+      const stepNames = ['', 'vehicle', 'measurements', 'motorcycle', 'configuration', 'quote']
+      trackEvent('configurator_step', {
+        step_number: currentStep,
+        step_name: stepNames[currentStep] || 'unknown',
+        configurator_type: 'full',
+      })
+
+      // Track quote completion (Step 5)
+      if (currentStep === 5 && !hasTrackedQuote.current) {
+        hasTrackedQuote.current = true
+        trackEvent('configurator_complete', {
+          configurator_type: 'full',
+        })
+        trackMetaEvent('Lead', {
+          content_name: 'Full Configurator Quote',
+        })
+        trackMetaCustomEvent('ConfiguratorComplete', {
+          configurator_type: 'full',
+        })
+      }
 
       // Auto-scroll to top on all step changes for mobile, and always on Step 5
       // Check if on mobile (screen width < 768px) or if entering Step 5

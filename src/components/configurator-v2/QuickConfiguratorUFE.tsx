@@ -7,7 +7,7 @@
  * It provides the same UI as QuickConfiguratorV2 but uses UFE for business logic.
  */
 
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { ConfiguratorHeader } from './ConfiguratorHeader'
 import { ConfiguratorWrapper } from './ConfiguratorWrapper'
@@ -17,6 +17,8 @@ import { CallScheduler } from '@/components/contact/CallScheduler'
 import { useQuickWizard } from '@/lib/ufe/hooks'
 import { formatCurrency, getRampModel } from '@/lib/ufe'
 import type { UFEResult } from '@/lib/ufe/types'
+import { trackEvent } from '@/components/analytics/GoogleAnalytics'
+import { trackMetaEvent, trackMetaCustomEvent } from '@/components/analytics/MetaPixel'
 
 // =============================================================================
 // COMPONENTS
@@ -327,6 +329,67 @@ function QuickConfiguratorContent() {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const hasTrackedStart = useRef(false);
+  const hasTrackedComplete = useRef(false);
+  const lastTrackedStep = useRef(0);
+
+  // Track configurator start
+  useEffect(() => {
+    if (!hasTrackedStart.current) {
+      hasTrackedStart.current = true;
+      trackEvent('begin_configurator', {
+        configurator_type: 'quick',
+      });
+      trackMetaCustomEvent('ConfiguratorStart', {
+        configurator_type: 'quick',
+      });
+    }
+  }, []);
+
+  // Track step progression
+  useEffect(() => {
+    if (currentStep > lastTrackedStep.current && currentStep > 1) {
+      lastTrackedStep.current = currentStep;
+      trackEvent('configurator_step', {
+        step_number: currentStep,
+        step_name: currentQuestion?.id || 'unknown',
+        progress_percent: Math.round(progress),
+      });
+    }
+  }, [currentStep, currentQuestion?.id, progress]);
+
+  // Track completion
+  useEffect(() => {
+    if (isComplete && result && !hasTrackedComplete.current) {
+      hasTrackedComplete.current = true;
+      const recommendation = result.primaryRecommendation;
+
+      if (result.success && recommendation) {
+        trackEvent('configurator_complete', {
+          configurator_type: 'quick',
+          recommended_product: recommendation.rampId,
+          recommended_price: recommendation.price,
+        });
+        trackMetaEvent('Lead', {
+          content_name: `Configurator: ${recommendation.name}`,
+          value: recommendation.price,
+          currency: 'USD',
+        });
+        trackMetaCustomEvent('ConfiguratorComplete', {
+          recommended_product: recommendation.rampId,
+          success: true,
+        });
+      } else {
+        trackEvent('configurator_complete', {
+          configurator_type: 'quick',
+          result: 'custom_solution_needed',
+        });
+        trackMetaCustomEvent('ConfiguratorComplete', {
+          success: false,
+        });
+      }
+    }
+  }, [isComplete, result]);
 
   // Handle answer with animation
   const handleAnswer = useCallback((questionId: string, value: string) => {
@@ -359,6 +422,12 @@ function QuickConfiguratorContent() {
       reset();
       setSelectedOption(null);
       setIsTransitioning(false);
+      // Reset tracking refs for new session
+      hasTrackedComplete.current = false;
+      lastTrackedStep.current = 0;
+      trackEvent('configurator_reset', {
+        configurator_type: 'quick',
+      });
     }, 300);
   }, [reset]);
 
