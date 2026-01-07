@@ -12,6 +12,12 @@ This project uses Beads (bd) for issue tracking. Run `bd onboard` for workflow i
 
 This is the EZCR (EZCycleramp) project - an e-commerce website for motorcycle ramps and accessories.
 
+## Documentation
+
+- **PRD:** `docs/PRD.md` - Product requirements, UFE logic, checkout flow, permissions
+- **Skills:** `.skills/SKILL-REGISTRY.md` - Pattern documentation
+- **Index:** `docs/NEXCYTE-DOCS-INDEX.md` - Cross-repo documentation links
+
 ## Key Technologies
 
 - Next.js (App Router)
